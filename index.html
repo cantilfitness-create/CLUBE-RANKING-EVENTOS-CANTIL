@@ -1408,12 +1408,15 @@ async function renderEventPublicView() {
 
   const isFull = max > 0 && count >= max;
   const isClosed = !info.name || info.active === false;
+  const jumpBtn = document.getElementById('jump-to-form-btn');
   if (isClosed || isFull) {
     formWrap.style.display = 'none';
+    if (jumpBtn) jumpBtn.style.display = 'none';
     let msg = isClosed ? 'Inscrições fechadas no momento.' : 'Vagas esgotadas! 🎉';
     capWrap.insertAdjacentHTML('afterend', `<div class="capacity-full-msg" id="event-closed-msg">${msg}</div>`);
   } else {
     formWrap.style.display = '';
+    if (jumpBtn) jumpBtn.style.display = 'block';
     const oldMsg = document.getElementById('event-closed-msg');
     if (oldMsg) oldMsg.remove();
   }
