@@ -381,6 +381,7 @@ textarea { resize:vertical;min-height:72px; }
         <div class="capacity-label"><span id="capacity-text"></span></div>
         <div class="capacity-bar"><div class="capacity-fill" id="capacity-fill" style="width:0%"></div></div>
       </div>
+      <button id="jump-to-form-btn" onclick="document.getElementById('event-form-wrap').scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>document.getElementById('ev-name')?.focus(),400);" style="display:none;width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:var(--accent);color:#0a0a00;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">📝 Inscreva-se agora</button>
     </div>
 
     <div id="event-form-wrap">
@@ -704,6 +705,7 @@ textarea { resize:vertical;min-height:72px; }
                 <input type="text" id="result-final-input" class="result-final-input">
               </div>
               <button class="btn btn-gold" onclick="saveSelectedResult()" style="width:100%">💾 Salvar Resultado</button>
+              <button class="btn-sm-danger" id="delete-result-btn" style="width:100%;padding:10px;margin-top:8px;display:none" onclick="deleteSelectedResult()">🗑️ Excluir Resultado deste Participante</button>
               <div class="result-saved-tag" id="result-saved-tag"></div>
             </div>
           </div>
@@ -1586,14 +1588,33 @@ async function updateEventRules() {
   toast('✅ Regras atualizadas!');
 }
 
-function startNewEvent() {
-  if (!confirm('Isso limpa o formulário pra você preencher um evento novo. As inscrições do evento anterior continuam salvas no histórico (e faltantes continuam bloqueados), mas vão parar de contar na lista/vagas deste evento. Continuar?')) return;
+async function startNewEvent() {
+  const info = EVENT_INFO || defaultEventInfo();
+  const currentRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  const toDelete = currentRegs.filter(r => r.attended !== false); // keep no-shows (attended===false)
+  const toKeep = currentRegs.filter(r => r.attended === false);
+
+  const msg = toDelete.length
+    ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) e resultado(s) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Essa ação não pode ser desfeita. Continuar?`
+    : 'Isso limpa o formulário pra você preencher um evento novo. Continuar?';
+  if (!confirm(msg)) return;
+
+  if (toDelete.length) {
+    const idsToDelete = toDelete.map(r => r.id);
+    const { error } = await sb.from('event_registrations').delete().in('id', idsToDelete);
+    if (error) { toast('⚠️ Erro ao apagar inscrições'); console.error(error); return; }
+    EVENT_REGISTRATIONS = EVENT_REGISTRATIONS.filter(r => !idsToDelete.includes(r.id));
+  }
+
   document.getElementById('ev-cfg-name').value = '';
   document.getElementById('ev-cfg-meta').value = '';
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
   startingFreshEvent = true;
-  toast('📝 Preencha os dados do novo evento e clique em Salvar');
+  renderRegistrationsList();
+  renderNoShowList();
+  renderResultsBoard(defaultEventInfo());
+  toast(`🆕 Evento limpo! ${toDelete.length} registro(s) apagado(s). Preencha os dados do novo evento e clique em Salvar`);
 }
 
 function renderRegistrationsList() {
@@ -1708,12 +1729,36 @@ function onResultSelectChange() {
   document.getElementById('result-remaining-input').value = '';
   const finalInput = document.getElementById('result-final-input');
   const levelWrap = document.getElementById('result-level-wrap');
-  if (!regId) { finalInput.value = ''; levelWrap.style.display = 'none'; return; }
+  const deleteBtn = document.getElementById('delete-result-btn');
+  if (!regId) { finalInput.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; return; }
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   finalInput.value = reg && reg.result_value ? reg.result_value : '';
   finalInput.placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
   document.getElementById('result-level-select').value = (reg && reg.fitness_level) || 'Iniciante';
+  deleteBtn.style.display = (reg && reg.result_value) ? 'block' : 'none';
+}
+
+async function deleteSelectedResult() {
+  const regId = parseInt(document.getElementById('result-select').value);
+  if (!regId) return;
+  const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
+  if (!reg) return;
+  if (!confirm(`Excluir o resultado de ${reg.name}? Isso não remove a inscrição, só apaga o tempo/resultado lançado.`)) return;
+
+  const { error } = await sb.from('event_registrations').update({ result_value: null }).eq('id', regId);
+  if (error) { toast('⚠️ Erro ao excluir resultado'); console.error(error); return; }
+  reg.result_value = null;
+
+  populateResultSelect();
+  document.getElementById('result-select').value = '';
+  document.getElementById('result-final-input').value = '';
+  document.getElementById('result-remaining-input').value = '';
+  document.getElementById('delete-result-btn').style.display = 'none';
+  document.getElementById('result-saved-tag').textContent = `🗑️ Resultado de ${reg.name} removido`;
+  renderRegistrationsList();
+  renderResultsBoard(EVENT_INFO || defaultEventInfo());
+  toast(`🗑️ Resultado de ${reg.name} excluído!`);
 }
 
 async function updateResultLevel() {
@@ -1769,9 +1814,11 @@ async function saveSelectedResult() {
   document.getElementById('result-select').value = '';
   document.getElementById('result-final-input').value = '';
   document.getElementById('result-remaining-input').value = '';
+  document.getElementById('delete-result-btn').style.display = 'none';
   document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}`;
   renderRegistrationsList();
   renderNoShowList();
+  renderResultsBoard(EVENT_INFO || defaultEventInfo());
   toast(`✅ Resultado de ${reg.name} salvo!`);
 }
 
@@ -2356,9 +2403,21 @@ function setFilter(f) {
 async function start() {
   await loadMembers();
   renderRanking();
-  const urlTab = new URLSearchParams(location.search).get('tab');
+  const params = new URLSearchParams(location.search);
+  const urlTab = params.get('tab');
   if (urlTab && ['ranking','desafios','evento','assinante'].includes(urlTab)) {
     await setMainTab(urlTab);
+  }
+  // Link direto para inscrição: ?tab=evento&inscrever=1
+  if (urlTab === 'evento' && params.get('inscrever') === '1') {
+    setTimeout(() => {
+      const formWrap = document.getElementById('event-form-wrap');
+      if (formWrap && formWrap.style.display !== 'none') {
+        formWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+        const nameInput = document.getElementById('ev-name');
+        if (nameInput) setTimeout(() => nameInput.focus(), 400);
+      }
+    }, 500);
   }
 }
 start();
