@@ -169,26 +169,16 @@ body::before {
 .attend-btn.no.active { background:rgba(255,95,109,.15);color:var(--red);border-color:rgba(255,95,109,.4); }
 .blocked-msg { text-align:center;padding:20px;background:rgba(255,95,109,0.08);border:1px solid rgba(255,95,109,0.3);border-radius:14px;font-size:13px;color:var(--red);font-weight:600;line-height:1.5; }
 
-/* TIMER */
-.timer-box { background:#000;border:2px solid var(--accent);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px; }
-.timer-cap-inputs { display:flex;gap:8px;justify-content:center;margin-bottom:14px; }
-.timer-cap-inputs input { width:70px;text-align:center;font-size:20px;font-family:'DM Mono',monospace;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text); }
-.timer-display { font-family:'DM Mono',monospace;font-size:64px;font-weight:700;line-height:1;color:var(--accent);letter-spacing:2px;margin-bottom:14px; }
-.timer-display.warn { color:var(--red);animation:glowPulse 1s ease-in-out infinite; }
-.timer-btns { display:flex;gap:8px;justify-content:center; }
-.timer-btns button { flex:1;max-width:120px;padding:12px;border-radius:12px;font-weight:800;font-size:13px;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer; }
-.timer-btns button.start { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
-.timer-btns button.stop { background:var(--red);color:#fff;border-color:var(--red); }
-
-/* LANÇAMENTO RÁPIDO DE RESULTADO */
-.result-search { width:100%;padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);background:var(--s2);color:var(--text);margin-bottom:12px; }
-.result-row { display:flex;align-items:center;gap:10px;padding:14px 12px;border-radius:14px;background:var(--s1);border:1px solid var(--border);margin-bottom:8px; }
-.result-row-name { flex:1;font-size:18px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.result-row-level { font-size:20px;flex-shrink:0; }
-.result-row-input { width:90px;text-align:center;font-size:18px;font-family:'DM Mono',monospace;padding:10px 6px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);flex-shrink:0; }
-.result-row-cap { padding:12px 14px;border-radius:12px;font-size:18px;font-weight:800;background:var(--accent);color:#0a0a00;border:none;cursor:pointer;flex-shrink:0; }
-.result-row-save { padding:12px 16px;border-radius:12px;font-size:18px;font-weight:800;background:var(--green);color:#062;border:none;cursor:pointer;flex-shrink:0; }
-.result-row.done { border-color:rgba(61,232,154,.5);background:rgba(61,232,154,.06); }
+/* LANÇAMENTO DE RESULTADO — painel único, vertical, sem estouro lateral */
+.result-panel { background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px; }
+.result-timecap-note { font-size:13px;color:var(--muted);margin-bottom:14px;text-align:center;background:var(--s2);border-radius:10px;padding:10px; }
+.result-timecap-note strong { color:var(--accent);font-size:16px; }
+.result-actions-row { display:flex;flex-direction:column;gap:8px;margin-bottom:14px; }
+.result-actions-row button { width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:15px;border:1px solid var(--border);cursor:pointer; }
+.btn-calc { background:var(--accent);color:#0a0a00;border-color:var(--accent) !important; }
+.btn-timecap { background:var(--red);color:#fff;border-color:var(--red) !important; }
+.result-final-input { width:100%;padding:16px;font-size:20px;font-weight:800;text-align:center;font-family:'DM Mono',monospace;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text); }
+.result-saved-tag { font-size:12px;color:var(--green);text-align:center;margin-top:8px; }
 
 /* BOARD DE RESULTADOS (público) */
 .results-board { max-width:680px;margin:0 auto 24px;padding:0 24px; }
@@ -336,7 +326,7 @@ textarea { resize:vertical;min-height:72px; }
 <div class="main-tabs">
   <button class="main-tab active" id="mt-ranking" onclick="setMainTab('ranking')"><span class="mt-icon">🏆</span>Ranking</button>
   <button class="main-tab" id="mt-desafios" onclick="setMainTab('desafios')"><span class="mt-icon">🎬</span>Desafios</button>
-  <button class="main-tab" id="mt-evento" onclick="setMainTab('evento')"><span class="mt-icon">🎪</span>Evento</button>
+  <button class="main-tab" id="mt-evento" onclick="setMainTab('evento')"><span class="mt-icon">🏁</span>Evento</button>
   <button class="main-tab" id="mt-assinante" onclick="setMainTab('assinante')"><span class="mt-icon">🔒</span>Assinante</button>
 </div>
 
@@ -517,7 +507,7 @@ textarea { resize:vertical;min-height:72px; }
           <button class="adm-tab" onclick="admTab('pts')">Pontos</button>
           <button class="adm-tab" onclick="admTab('members')">Membros</button>
           <button class="adm-tab" onclick="admTab('challenges')">🎬 Desafios</button>
-          <button class="adm-tab" onclick="admTab('evento')">🎪 Evento</button>
+          <button class="adm-tab" onclick="admTab('evento')">🏁 Evento</button>
           <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
           <button class="adm-tab" onclick="admTab('settings')">Config</button>
         </div>
@@ -620,7 +610,7 @@ textarea { resize:vertical;min-height:72px; }
 
         <!-- EVENTO -->
         <div class="adm-panel" id="tab-evento">
-          <div class="section-label">🎪 Configurar Evento</div>
+          <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
             <label class="field-label">Nome do evento</label>
             <input type="text" id="ev-cfg-name" placeholder="ex: Desafio de Verão Cantil">
@@ -666,24 +656,44 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn btn-blue" onclick="updateEventRules()" style="margin-bottom:20px">💾 Salvar Regras</button>
           <hr class="divider">
           <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
-          <div id="timer-widget" style="display:none">
-            <div class="timer-box">
-              <div class="timer-cap-inputs">
-                <input type="number" id="timer-cap-min" placeholder="min" min="0">
-                <span style="align-self:center;font-size:20px">:</span>
-                <input type="number" id="timer-cap-sec" placeholder="seg" min="0" max="59">
-              </div>
-              <div class="timer-display" id="timer-display">00:00</div>
-              <div class="timer-btns">
-                <button class="start" onclick="startTimer()">▶️ Iniciar</button>
-                <button onclick="pauseTimer()">⏸️ Pausar</button>
-                <button class="stop" onclick="resetTimer()">⏹️ Zerar</button>
+          <div id="result-panel-wrap" style="display:none">
+            <div class="field-group">
+              <label class="field-label">Time Cap deste evento (para resultados de tempo)</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>min</span>
+                <input type="number" id="ev-cfg-timecap-sec" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>seg</span>
+                <button class="btn btn-blue" style="padding:12px 16px;margin:0" onclick="saveTimeCap()">💾</button>
               </div>
             </div>
+
+            <div class="result-panel">
+              <div class="field-group" style="margin-bottom:14px">
+                <label class="field-label">Selecionar inscrito</label>
+                <select id="result-select" onchange="onResultSelectChange()"></select>
+              </div>
+
+              <div id="result-tempo-helper" style="display:none">
+                <div class="result-timecap-note">TIME CAP deste evento: <strong id="result-timecap-display">—</strong></div>
+                <div class="field-group">
+                  <label class="field-label">Tempo restante no relógio quando terminou (MM:SS)</label>
+                  <input type="text" id="result-remaining-input" class="result-final-input" placeholder="ex: 14:30" style="font-size:18px">
+                </div>
+                <div class="result-actions-row">
+                  <button class="btn-calc" onclick="calcResultFromRemaining()">🧮 Calcular tempo final</button>
+                  <button class="btn-timecap" onclick="markTimeCap()">⏰ Marcar TIME CAP (não terminou)</button>
+                </div>
+              </div>
+
+              <div class="field-group" style="margin-bottom:10px">
+                <label class="field-label" id="result-final-label">Resultado final (editável — corrige se estiver errado)</label>
+                <input type="text" id="result-final-input" class="result-final-input">
+              </div>
+              <button class="btn btn-gold" onclick="saveSelectedResult()" style="width:100%">💾 Salvar Resultado</button>
+              <div class="result-saved-tag" id="result-saved-tag"></div>
+            </div>
           </div>
-          <input type="text" id="result-search" class="result-search" placeholder="🔎 Buscar nome pra lançar resultado rápido..." oninput="renderResultEntryList()" style="display:none">
-          <div id="result-entry-list"></div>
-          <hr class="divider" id="result-entry-divider" style="display:none">
           <div class="section-label">📋 Inscritos (<span id="ev-count">0</span>)</div>
           <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
           <div id="event-registrations-list"></div>
@@ -1263,7 +1273,7 @@ let eventRegLoaded = false;
 let eventIsMember = false;
 
 function defaultEventInfo() {
-  return { id:null, name:'', meta:'', desc:'', max:0, points:10, active:false, result_type:null };
+  return { id:null, name:'', meta:'', desc:'', max:0, points:10, active:false, result_type:null, time_cap_seconds:0 };
 }
 async function getEventInfo() {
   if (EVENT_INFO) return EVENT_INFO;
@@ -1484,10 +1494,20 @@ async function renderEventAdminView() {
 
   const hasResultType = !!info.result_type;
   document.getElementById('result-entry-label').style.display = hasResultType ? '' : 'none';
-  document.getElementById('timer-widget').style.display = (info.result_type === 'tempo') ? '' : 'none';
-  document.getElementById('result-search').style.display = hasResultType ? '' : 'none';
-  document.getElementById('result-entry-divider').style.display = hasResultType ? '' : 'none';
-  renderResultEntryList();
+  document.getElementById('result-panel-wrap').style.display = hasResultType ? '' : 'none';
+
+  const isTempo = info.result_type === 'tempo';
+  document.getElementById('result-tempo-helper').style.display = isTempo ? '' : 'none';
+  document.getElementById('result-final-label').textContent = isTempo
+    ? 'Resultado final (editável — corrige se estiver errado)'
+    : 'Resultado (rounds/reps)';
+
+  const capSec = info.time_cap_seconds || 0;
+  document.getElementById('ev-cfg-timecap-min').value = capSec ? Math.floor(capSec/60) : '';
+  document.getElementById('ev-cfg-timecap-sec').value = capSec ? capSec%60 : '';
+  document.getElementById('result-timecap-display').textContent = capSec ? formatTime(capSec) : '—';
+
+  populateResultSelect();
 }
 
 let startingFreshEvent = false;
@@ -1514,7 +1534,7 @@ async function updateEventConfig() {
     await loadEventRegistrations();
   }
   const result_type = document.getElementById('ev-cfg-result-type').value || null;
-  const newInfo = { id, name, meta, desc, max, points, active, result_type };
+  const newInfo = { id, name, meta, desc, max, points, active, result_type, time_cap_seconds: prevInfo.time_cap_seconds || 0 };
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -1598,13 +1618,8 @@ function renderNoShowList() {
 }
 
 // ══════════════════════════════════════════════
-//  CRONÔMETRO REGRESSIVO (time cap automático)
+//  RESULTADOS: TIME CAP FIXO + LANÇAMENTO ÚNICO
 // ══════════════════════════════════════════════
-let timerCapSeconds = 0;
-let timerRemaining = 0;
-let timerInterval = null;
-let timerRunning = false;
-
 function formatTime(totalSeconds) {
   const s = Math.max(0, Math.round(totalSeconds));
   const m = Math.floor(s/60);
@@ -1612,96 +1627,79 @@ function formatTime(totalSeconds) {
   return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
 }
 
-function updateTimerDisplay() {
-  const el = document.getElementById('timer-display');
-  el.textContent = formatTime(timerRemaining);
-  el.classList.toggle('warn', timerRemaining <= 10 && timerRemaining > 0);
+function parseTimeToSeconds(str) {
+  if (!str) return null;
+  const parts = str.trim().split(':');
+  if (parts.length !== 2) return null;
+  const m = parseInt(parts[0]), s = parseInt(parts[1]);
+  if (isNaN(m) || isNaN(s)) return null;
+  return m*60 + s;
 }
 
-function startTimer() {
-  if (timerRunning) return;
-  if (timerRemaining <= 0) {
-    const min = parseInt(document.getElementById('timer-cap-min').value) || 0;
-    const sec = parseInt(document.getElementById('timer-cap-sec').value) || 0;
-    timerCapSeconds = min*60 + sec;
-    if (timerCapSeconds <= 0) return toast('⚠️ Defina o time cap primeiro!');
-    timerRemaining = timerCapSeconds;
-  }
-  timerRunning = true;
-  timerInterval = setInterval(() => {
-    timerRemaining--;
-    updateTimerDisplay();
-    if (timerRemaining <= 0) {
-      clearInterval(timerInterval);
-      timerRunning = false;
-      toast('⏰ Time cap atingido!');
-    }
-  }, 1000);
-  updateTimerDisplay();
-}
-
-function pauseTimer() {
-  clearInterval(timerInterval);
-  timerRunning = false;
-}
-
-function resetTimer() {
-  clearInterval(timerInterval);
-  timerRunning = false;
-  timerRemaining = 0;
-  timerCapSeconds = 0;
-  updateTimerDisplay();
-}
-
-// ══════════════════════════════════════════════
-//  LANÇAMENTO RÁPIDO DE RESULTADOS
-// ══════════════════════════════════════════════
 function levelColor(level) {
   if (level === 'Avançado') return { emoji:'🟠', name:'Laranja' };
   if (level === 'Intermediário') return { emoji:'🟡', name:'Amarelo' };
   return { emoji:'🟢', name:'Verde' };
 }
 
-function renderResultEntryList() {
-  const el = document.getElementById('result-entry-list');
+async function saveTimeCap() {
+  const min = parseInt(document.getElementById('ev-cfg-timecap-min').value) || 0;
+  const sec = parseInt(document.getElementById('ev-cfg-timecap-sec').value) || 0;
+  const seconds = min*60 + sec;
+  const info = await getEventInfo();
+  const newInfo = { ...info, time_cap_seconds: seconds };
+  const ok = await setSetting('event_info', newInfo);
+  if (!ok) return;
+  EVENT_INFO = newInfo;
+  document.getElementById('result-timecap-display').textContent = formatTime(seconds);
+  toast('✅ Time Cap salvo: ' + formatTime(seconds));
+}
+
+function populateResultSelect() {
   const info = EVENT_INFO || defaultEventInfo();
-  if (!info.result_type) { el.innerHTML = ''; return; }
-  const search = (document.getElementById('result-search').value || '').toLowerCase().trim();
-  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
-  if (search) regs = regs.filter(r => r.name.toLowerCase().includes(search));
-  regs = regs.slice().sort((a,b)=>a.name.localeCompare(b.name));
-
-  if (!regs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhum inscrito encontrado.</div>'; return; }
-
-  el.innerHTML = regs.map(r => {
+  const sel = document.getElementById('result-select');
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id)
+    .slice().sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— Selecione —</option>' + regs.map(r => {
     const lvl = levelColor(r.fitness_level);
-    const captureBtn = info.result_type === 'tempo'
-      ? `<button class="result-row-cap" onclick="captureTimerResult(${r.id})">⏱️</button>`
-      : '';
-    const inputType = info.result_type === 'tempo' ? 'text' : 'number';
-    const placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
-    return `
-    <div class="result-row ${r.result_value ? 'done' : ''}" id="result-row-${r.id}">
-      <div class="result-row-level" title="${lvl.name}">${lvl.emoji}</div>
-      <div class="result-row-name">${r.name}</div>
-      ${captureBtn}
-      <input type="${inputType}" class="result-row-input" id="result-input-${r.id}" placeholder="${placeholder}" value="${r.result_value||''}">
-      <button class="result-row-save" onclick="saveEventResult(${r.id})">💾</button>
-    </div>`;
+    const done = r.result_value ? ' ✓' : '';
+    return `<option value="${r.id}">${lvl.emoji} ${r.name}${done}</option>`;
   }).join('');
 }
 
-function captureTimerResult(regId) {
-  if (timerCapSeconds <= 0) return toast('⚠️ Inicie o cronômetro primeiro!');
-  const elapsed = timerCapSeconds - timerRemaining;
-  document.getElementById('result-input-'+regId).value = formatTime(elapsed);
+function onResultSelectChange() {
+  const info = EVENT_INFO || defaultEventInfo();
+  const regId = parseInt(document.getElementById('result-select').value);
+  document.getElementById('result-saved-tag').textContent = '';
+  document.getElementById('result-remaining-input').value = '';
+  const finalInput = document.getElementById('result-final-input');
+  if (!regId) { finalInput.value = ''; return; }
+  const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
+  finalInput.value = reg && reg.result_value ? reg.result_value : '';
+  finalInput.placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
 }
 
-async function saveEventResult(regId) {
+function calcResultFromRemaining() {
+  const info = EVENT_INFO || defaultEventInfo();
+  const cap = info.time_cap_seconds || 0;
+  if (!cap) return toast('⚠️ Salve o Time Cap do evento primeiro!');
+  const remainingSec = parseTimeToSeconds(document.getElementById('result-remaining-input').value);
+  if (remainingSec === null) return toast('⚠️ Digite o tempo restante no formato MM:SS!');
+  const elapsed = Math.max(0, cap - remainingSec);
+  document.getElementById('result-final-input').value = formatTime(elapsed);
+}
+
+function markTimeCap() {
+  document.getElementById('result-final-input').value = 'TIME CAP';
+}
+
+async function saveSelectedResult() {
+  const regId = parseInt(document.getElementById('result-select').value);
+  if (!regId) return toast('⚠️ Selecione um inscrito primeiro!');
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   if (!reg) return;
-  const value = document.getElementById('result-input-'+regId).value.trim();
-  if (!value) return toast('⚠️ Digite o resultado antes de salvar!');
+  const value = document.getElementById('result-final-input').value.trim();
+  if (!value) return toast('⚠️ Digite ou calcule o resultado antes de salvar!');
 
   const { error } = await sb.from('event_registrations').update({ result_value: value, attended: true }).eq('id', regId);
   if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
@@ -1716,7 +1714,11 @@ async function saveEventResult(regId) {
     await loadMembers();
     renderRanking();
   }
-  renderResultEntryList();
+  populateResultSelect();
+  document.getElementById('result-select').value = '';
+  document.getElementById('result-final-input').value = '';
+  document.getElementById('result-remaining-input').value = '';
+  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}`;
   renderRegistrationsList();
   renderNoShowList();
   toast(`✅ Resultado de ${reg.name} salvo!`);
