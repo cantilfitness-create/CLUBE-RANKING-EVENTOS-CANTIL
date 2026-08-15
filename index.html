@@ -167,6 +167,8 @@ body::before {
 .attend-btn { padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--muted); }
 .attend-btn.yes.active { background:rgba(61,232,154,.15);color:var(--green);border-color:rgba(61,232,154,.4); }
 .attend-btn.no.active { background:rgba(255,95,109,.15);color:var(--red);border-color:rgba(255,95,109,.4); }
+.attend-btn.reset { color:var(--muted);opacity:.7; }
+.attend-btn.reset:hover { opacity:1;border-color:var(--muted); }
 .blocked-msg { text-align:center;padding:20px;background:rgba(255,95,109,0.08);border:1px solid rgba(255,95,109,0.3);border-radius:14px;font-size:13px;color:var(--red);font-weight:600;line-height:1.5; }
 
 /* LANÇAMENTO DE RESULTADO — painel único, vertical, sem estouro lateral */
@@ -174,9 +176,10 @@ body::before {
 .result-timecap-note { font-size:13px;color:var(--muted);margin-bottom:14px;text-align:center;background:var(--s2);border-radius:10px;padding:10px; }
 .result-timecap-note strong { color:var(--accent);font-size:16px; }
 .result-actions-row { display:flex;flex-direction:column;gap:8px;margin-bottom:14px; }
-.result-actions-row button { width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:15px;border:1px solid var(--border);cursor:pointer; }
+.result-actions-row button { width:100%;padding:14px;border-radius:12px;font-weight:800;font-size:15px;border:1px solid var(--border);cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px; }
 .btn-calc { background:var(--accent);color:#0a0a00;border-color:var(--accent) !important; }
-.btn-timecap { background:var(--red);color:#fff;border-color:var(--red) !important; }
+.btn-timecap { background:var(--red) !important;color:#fff !important;border-color:var(--red) !important;text-align:center;justify-content:center; }
+.btn-timecap:hover { filter:brightness(1.1); }
 .result-final-input { width:100%;padding:16px;font-size:20px;font-weight:800;text-align:center;font-family:'DM Mono',monospace;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text); }
 .result-saved-tag { font-size:12px;color:var(--green);text-align:center;margin-top:8px; }
 
@@ -189,6 +192,7 @@ body::before {
 .results-item:last-child { border-bottom:none; }
 .results-item-name { font-weight:700; }
 .results-item-value { font-family:'DM Mono',monospace;color:var(--accent);font-weight:700; }
+.results-header-row { display:flex;justify-content:space-between;align-items:center;padding:6px 16px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700; }
 
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
@@ -361,7 +365,7 @@ textarea { resize:vertical;min-height:72px; }
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
   <div class="results-board" id="results-board" style="display:none">
-    <div class="section-label">🏁 Resultados</div>
+    <div class="section-label" id="results-title">🏁 Resultados</div>
     <div id="results-groups"></div>
   </div>
   <div class="video-wrap">
@@ -690,8 +694,8 @@ textarea { resize:vertical;min-height:72px; }
                   <input type="text" id="result-remaining-input" class="result-final-input" placeholder="ex: 14:30" style="font-size:18px">
                 </div>
                 <div class="result-actions-row">
-                  <button class="btn-calc" onclick="calcResultFromRemaining()">🧮 Calcular tempo final</button>
-                  <button class="btn-timecap" onclick="markTimeCap()">⏰ Marcar TIME CAP (não terminou)</button>
+                  <button class="btn-calc" onclick="calcResultFromRemaining()">⏱️ Calcular Tempo Final</button>
+                  <button class="btn-timecap" onclick="markTimeCap()">🚫 MARCAR TIME CAP (não terminou)</button>
                 </div>
               </div>
 
@@ -1298,6 +1302,13 @@ async function loadEventRegistrations() {
 }
 
 // ── Público ──
+function formatTimeCap(seconds) {
+  if (!seconds) return null;
+  const m = Math.floor(seconds/60);
+  const s = seconds%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
 function renderResultsBoard(info) {
   const board = document.getElementById('results-board');
   if (!info.result_type) { board.style.display = 'none'; return; }
@@ -1311,6 +1322,17 @@ function renderResultsBoard(info) {
     { key:'Avançado', emoji:'🟠', name:'Laranja' }
   ];
 
+  // Title with TIME CAP info
+  const capLabel = formatTimeCap(info.time_cap_seconds);
+  const titleEl = document.getElementById('results-title');
+  if (titleEl) {
+    titleEl.innerHTML = capLabel
+      ? `🏁 Resultados <span style="color:var(--red);font-weight:800;margin-left:6px">— TIME CAP: ${capLabel}</span>`
+      : '🏁 Resultados';
+  }
+
+  const colLabel = info.result_type === 'tempo' ? 'TEMPO DE PROVA' : 'RESULTADO';
+
   let html = '';
   groupsOrder.forEach(g => {
     const items = regs.filter(r => (r.fitness_level||'Iniciante') === g.key)
@@ -1320,6 +1342,7 @@ function renderResultsBoard(info) {
       <div class="results-group">
         <div class="results-group-title">${g.emoji} Grupo ${g.name}</div>
         <div class="results-list">
+          <div class="results-header-row"><span>PARTICIPANTES</span><span>${colLabel}</span></div>
           ${items.map(r => `
             <div class="results-item">
               <span class="results-item-name">${r.name}</span>
@@ -1588,6 +1611,7 @@ function renderRegistrationsList() {
       <div class="attend-btns">
         <button class="attend-btn yes ${r.attended===true?'active':''}" onclick="toggleAttendance(${r.id}, true)">✓</button>
         <button class="attend-btn no ${r.attended===false?'active':''}" onclick="toggleAttendance(${r.id}, false)">✕</button>
+        ${r.attended!==null ? `<button class="attend-btn reset" onclick="toggleAttendance(${r.id}, null)" title="Voltar para sem presença">↺</button>` : ''}
       </div>
     </div>`).join('');
 }
@@ -1609,7 +1633,8 @@ async function toggleAttendance(id, attended) {
   }
   renderRegistrationsList();
   renderNoShowList();
-  toast(attended ? '✅ Presença confirmada!' : '🚫 Marcado como faltante');
+  if (attended === null) toast('↺ Presença desmarcada — voltou para sem presença');
+  else toast(attended ? '✅ Presença confirmada!' : '🚫 Marcado como faltante');
 }
 
 function renderNoShowList() {
