@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking de Pontos</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #080808;
+  --s1: #141414;
+  --s2: #1c1c1c;
+  --border: rgba(255,255,255,0.09);
+  --gold: #ffd060;
+  --silver: #c8d6e5;
+  --bronze: #e8965a;
+  --accent: #e8ff00;
+  --accent2: #fff35c;
+  --green: #3de89a;
+  --text: #f4f4ef;
+  --muted: #8a8a8a;
+  --red: #ff5f6d;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(232,255,0,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,255,0,0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+.orb { position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; opacity:.35; }
+.orb1 { width:400px;height:400px;background:#1a3a8f;top:-100px;left:-100px; }
+.orb2 { width:300px;height:300px;background:#0d2f5c;bottom:-80px;right:-80px; }
+
+/* HEADER */
+.header { text-align:center; padding:56px 24px 32px; }
+.header-eyebrow { font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:12px;opacity:0;animation:fadeUp .6s ease forwards; }
+.header-title { font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,10vw,96px);letter-spacing:4px;line-height:.9;background:linear-gradient(160deg,#fff 30%,#e8ff00 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:0;animation:fadeUp .6s ease .1s forwards; }
+.header-sub { margin-top:12px;font-size:15px;color:var(--muted);font-weight:400;opacity:0;animation:fadeUp .6s ease .2s forwards; }
+.update-time { display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:12px;color:var(--muted);background:var(--s1);border:1px solid var(--border);padding:6px 14px;border-radius:20px;opacity:0;animation:fadeUp .6s ease .3s forwards; }
+.live-dot { width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+/* PODIUM */
+.podium-wrap { max-width:680px;margin:0 auto 48px;padding:0 24px;opacity:0;animation:fadeUp .7s ease .4s forwards; }
+.podium { display:flex;align-items:flex-end;justify-content:center;gap:12px;height:240px; }
+.podium-slot { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative; }
+.podium-card { width:100%;border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;padding:20px 12px 16px;position:relative;overflow:hidden;transition:transform .2s; }
+.podium-card:hover { transform:translateY(-4px); }
+.podium-1 .podium-card { background:linear-gradient(160deg,rgba(255,208,96,.18),rgba(255,208,96,.06));border:1px solid rgba(255,208,96,.3);min-height:180px;height:auto;padding-top:24px;padding-bottom:20px; }
+.podium-2 .podium-card { background:linear-gradient(160deg,rgba(200,214,229,.12),rgba(200,214,229,.04));border:1px solid rgba(200,214,229,.2);min-height:140px;height:auto;padding-top:20px;padding-bottom:16px; }
+.podium-3 .podium-card { background:linear-gradient(160deg,rgba(232,150,90,.12),rgba(232,150,90,.04));border:1px solid rgba(232,150,90,.2);min-height:120px;height:auto;padding-top:20px;padding-bottom:16px; }
+.podium-pos { font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1; }
+.podium-1 .podium-pos{color:var(--gold)} .podium-2 .podium-pos{color:var(--silver)} .podium-3 .podium-pos{color:var(--bronze)}
+.podium-emoji { font-size:28px;margin:4px 0; }
+.podium-name { font-size:13px;font-weight:700;text-align:center;line-height:1.2; }
+.podium-pts { font-size:20px;font-weight:900;margin-top:4px; }
+.podium-1 .podium-pts{color:var(--gold)} .podium-2 .podium-pts{color:var(--silver)} .podium-3 .podium-pts{color:var(--bronze)}
+.crown { position:absolute;top:-14px;font-size:22px;animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+/* RANKING LIST */
+.ranking-wrap { max-width:680px;margin:0 auto;padding:0 24px 100px; }
+.ranking-card { background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
+.rank-item { display:flex;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid var(--border);transition:background .15s;opacity:0;animation:fadeUp .5s ease forwards; }
+.rank-item:last-child { border-bottom:none; }
+.rank-item:hover { background:rgba(232,255,0,.06); }
+.rank-num { font-family:'Bebas Neue',sans-serif;font-size:22px;min-width:32px;text-align:center;color:var(--muted); }
+.rank-avatar { width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--s2);border:1px solid var(--border); }
+.rank-info { flex:1;min-width:0; }
+.rank-name { font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.rank-badge-small { font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.5px;margin-top:2px; }
+.rank-bar-wrap { flex:1;display:flex;flex-direction:column;gap:4px; }
+.rank-bar { height:4px;background:var(--s2);border-radius:4px;overflow:hidden; }
+.rank-bar-fill { height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1.2s cubic-bezier(.34,1.56,.64,1); }
+.rank-pts { font-size:22px;font-weight:900;color:var(--accent);min-width:64px;text-align:right; }
+.rank-pts-label { font-size:10px;color:var(--muted);text-align:right;font-weight:500; }
+.empty-state { text-align:center;padding:64px 24px;color:var(--muted);font-size:14px; }
+.bonus-badge { display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(61,232,154,0.18),rgba(61,232,154,0.08));border:1px solid rgba(61,232,154,0.35);color:var(--green);font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:6px;letter-spacing:0.3px;vertical-align:middle; }
+.challenge-badge { display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(255,208,96,0.2),rgba(255,140,0,0.1));border:1px solid rgba(255,208,96,0.4);color:var(--gold);font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:4px;letter-spacing:0.3px;vertical-align:middle;animation:glowPulse 2s ease-in-out infinite; }
+.category-badges { font-size:12px;letter-spacing:1px;vertical-align:middle; }
+.challenge-tag { display:inline-block;font-size:9px;font-weight:800;color:var(--accent);background:rgba(232,255,0,0.1);border:1px solid rgba(232,255,0,0.3);padding:2px 7px;border-radius:7px;margin-top:3px;letter-spacing:.3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.stars-legend { font-size:11px;color:var(--muted);margin:-6px 0 14px;text-align:center; }
+@keyframes glowPulse { 0%,100%{box-shadow:0 0 4px rgba(255,208,96,0.2)} 50%{box-shadow:0 0 10px rgba(255,208,96,0.5)} }
+.rank-last-seen { font-size:10px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace; }
+.quick-tap-item { display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;user-select:none; }
+.quick-tap-item:hover { border-color:var(--accent); }
+.quick-tap-item:active { transform:scale(.97);background:rgba(232,255,0,0.15); }
+.quick-tap-item.flash { animation:flashGreen .5s ease; }
+@keyframes flashGreen { 0%{background:rgba(61,232,154,.35);border-color:var(--green);} 100%{background:var(--s2);border-color:var(--border);} }
+.qt-avatar { font-size:20px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--s1);border-radius:50%;flex-shrink:0; }
+.qt-name { flex:1;font-size:14px;font-weight:700; }
+.qt-pts { font-size:16px;font-weight:900;color:var(--accent);min-width:40px;text-align:right; }
+.qt-plus { width:32px;height:32px;border-radius:50%;background:var(--green);color:#061510;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;flex-shrink:0; }
+.qt-search { width:100%;margin-bottom:14px; }
+.rank-item.top-1 { background:linear-gradient(90deg,rgba(255,208,96,0.13),transparent);border-left:3px solid var(--gold); }
+.rank-item.top-1 .rank-num { color:var(--gold);font-size:28px; }
+.rank-item.top-1 .rank-pts { color:var(--gold);font-size:26px; }
+.rank-item.top-1 .rank-name { font-size:17px; }
+.rank-item.top-2 { background:linear-gradient(90deg,rgba(200,214,229,0.1),transparent);border-left:3px solid var(--silver); }
+.rank-item.top-2 .rank-num { color:var(--silver);font-size:25px; }
+.rank-item.top-2 .rank-pts { color:var(--silver); }
+.rank-item.top-3 { background:linear-gradient(90deg,rgba(232,150,90,0.1),transparent);border-left:3px solid var(--bronze); }
+.rank-item.top-3 .rank-num { color:var(--bronze);font-size:23px; }
+.rank-item.top-3 .rank-pts { color:var(--bronze); }
+.section-label { font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px; }
+.section-label::after { content:'';flex:1;height:1px;background:var(--border); }
+.filter-tabs { display:flex;gap:8px;margin-bottom:16px; }
+.filter-tab { padding:8px 18px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:20px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s; }
+.filter-tab.active { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
+.filter-tab:hover:not(.active) { color:var(--text);border-color:var(--muted); }
+
+/* MAIN NAV TABS */
+.main-tabs { max-width:680px;margin:0 auto 32px;padding:0 24px;display:flex;gap:8px;opacity:0;animation:fadeUp .6s ease .35s forwards; }
+.main-tab { flex:1;padding:12px 8px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px; }
+.main-tab span.mt-icon { font-size:18px; }
+.main-tab.active { background:linear-gradient(135deg,rgba(232,255,0,.18),rgba(232,255,0,.06));color:var(--text);border-color:var(--accent); }
+.main-tab:hover:not(.active) { color:var(--text);border-color:var(--muted); }
+.view-section { display:none; }
+.view-section.active { display:block; }
+
+/* VIDEO GRID */
+.video-wrap { max-width:680px;margin:0 auto;padding:0 24px 100px; }
+.video-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:14px; }
+.video-card { background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .2s;text-decoration:none;color:var(--text);display:block; }
+.video-card:hover { border-color:var(--accent);transform:translateY(-2px); }
+.video-thumb-wrap { position:relative;width:100%;aspect-ratio:9/16;background:var(--s2);overflow:hidden; }
+.video-thumb-wrap img { width:100%;height:100%;object-fit:cover;display:block; }
+.video-play { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,8,15,0.15); }
+.video-play::after { content:'▶';width:40px;height:40px;background:rgba(6,8,15,.55);border:1px solid rgba(255,255,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;backdrop-filter:blur(4px); }
+.video-title { padding:10px 12px;font-size:12px;font-weight:700;line-height:1.3; }
+.video-desc { padding:0 12px 10px;font-size:11px;color:var(--muted);line-height:1.4; }
+/* EVENTO */
+.event-hero { background:linear-gradient(135deg,rgba(232,255,0,0.12),rgba(232,255,0,0.03));border:1px solid rgba(232,255,0,0.3);border-radius:20px;padding:22px 20px;margin-bottom:20px; }
+.event-name { font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;line-height:1; }
+.event-meta { font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5; }
+.event-desc { font-size:13px;color:var(--text);margin-top:10px;line-height:1.5;white-space:pre-line; }
+.capacity-wrap { margin-top:16px; }
+.capacity-label { font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px; }
+.capacity-bar { height:10px;background:var(--s2);border-radius:6px;overflow:hidden; }
+.capacity-fill { height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease; }
+.capacity-fill.full { background:linear-gradient(90deg,var(--red),#ff8f8f); }
+.capacity-full-msg { text-align:center;font-size:13px;font-weight:700;color:var(--red);margin-top:14px;padding:10px;background:rgba(255,95,109,0.1);border:1px solid rgba(255,95,109,0.3);border-radius:12px; }
+.member-toggle { display:flex;gap:8px;margin-bottom:16px; }
+.member-toggle button { flex:1;padding:12px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer; }
+.member-toggle button.active { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
+.reg-chip { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
+.reg-chip:last-child { border-bottom:none; }
+.reg-chip-info { flex:1;min-width:0; }
+.reg-chip-name { font-size:13px;font-weight:700; }
+.reg-chip-meta { font-size:11px;color:var(--muted); }
+.reg-member-badge { font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;background:rgba(232,255,0,0.12);color:var(--accent);border:1px solid rgba(232,255,0,0.3); }
+.reg-guest-badge { font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border); }
+.attend-btns { display:flex;gap:4px; }
+.attend-btn { padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--muted); }
+.attend-btn.yes.active { background:rgba(61,232,154,.15);color:var(--green);border-color:rgba(61,232,154,.4); }
+.attend-btn.no.active { background:rgba(255,95,109,.15);color:var(--red);border-color:rgba(255,95,109,.4); }
+.blocked-msg { text-align:center;padding:20px;background:rgba(255,95,109,0.08);border:1px solid rgba(255,95,109,0.3);border-radius:14px;font-size:13px;color:var(--red);font-weight:600;line-height:1.5; }
+
+/* TIMER */
+.timer-box { background:#000;border:2px solid var(--accent);border-radius:20px;padding:20px;text-align:center;margin-bottom:16px; }
+.timer-cap-inputs { display:flex;gap:8px;justify-content:center;margin-bottom:14px; }
+.timer-cap-inputs input { width:70px;text-align:center;font-size:20px;font-family:'DM Mono',monospace;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text); }
+.timer-display { font-family:'DM Mono',monospace;font-size:64px;font-weight:700;line-height:1;color:var(--accent);letter-spacing:2px;margin-bottom:14px; }
+.timer-display.warn { color:var(--red);animation:glowPulse 1s ease-in-out infinite; }
+.timer-btns { display:flex;gap:8px;justify-content:center; }
+.timer-btns button { flex:1;max-width:120px;padding:12px;border-radius:12px;font-weight:800;font-size:13px;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer; }
+.timer-btns button.start { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
+.timer-btns button.stop { background:var(--red);color:#fff;border-color:var(--red); }
+
+/* LANÇAMENTO RÁPIDO DE RESULTADO */
+.result-search { width:100%;padding:16px;font-size:16px;border-radius:14px;border:1px solid var(--border);background:var(--s2);color:var(--text);margin-bottom:12px; }
+.result-row { display:flex;align-items:center;gap:10px;padding:14px 12px;border-radius:14px;background:var(--s1);border:1px solid var(--border);margin-bottom:8px; }
+.result-row-name { flex:1;font-size:18px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.result-row-level { font-size:20px;flex-shrink:0; }
+.result-row-input { width:90px;text-align:center;font-size:18px;font-family:'DM Mono',monospace;padding:10px 6px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);flex-shrink:0; }
+.result-row-cap { padding:12px 14px;border-radius:12px;font-size:18px;font-weight:800;background:var(--accent);color:#0a0a00;border:none;cursor:pointer;flex-shrink:0; }
+.result-row-save { padding:12px 16px;border-radius:12px;font-size:18px;font-weight:800;background:var(--green);color:#062;border:none;cursor:pointer;flex-shrink:0; }
+.result-row.done { border-color:rgba(61,232,154,.5);background:rgba(61,232,154,.06); }
+
+/* BOARD DE RESULTADOS (público) */
+.results-board { max-width:680px;margin:0 auto 24px;padding:0 24px; }
+.results-group { margin-bottom:18px; }
+.results-group-title { font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px; }
+.results-list { background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
+.results-item { display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px; }
+.results-item:last-child { border-bottom:none; }
+.results-item-name { font-weight:700; }
+.results-item-value { font-family:'DM Mono',monospace;color:var(--accent);font-weight:700; }
+
+.mini-list { display:flex;flex-direction:column;gap:8px; }
+.mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
+.mini-row:hover { border-color:var(--accent); }
+.mini-thumb-wrap { position:relative;width:40px;height:64px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--s2); }
+.mini-thumb-wrap img { width:100%;height:100%;object-fit:cover;display:block; }
+.mini-info { flex:1;min-width:0; }
+.mini-title { font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.mini-desc { font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.category-badge { cursor:pointer;font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;flex-shrink:0; }
+.category-badge.open { background:rgba(232,255,0,.14);color:var(--accent);border:1px solid rgba(232,255,0,.35); }
+.category-badge.mini { background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border); }
+.video-card.locked .video-play::after { content:'🔒'; background:rgba(6,8,15,.7); }
+.sub-info-box { background:linear-gradient(135deg,rgba(255,208,96,.14),rgba(255,140,0,.06));border:1px solid rgba(255,208,96,.3);border-radius:16px;padding:16px 18px;margin-bottom:20px; }
+.sub-info-title { font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:#ffd060;margin-bottom:4px; }
+.sub-info-body { font-size:12.5px;color:var(--muted);line-height:1.5; }
+
+/* SUBSCRIBER GATE */
+.gate-wrap { max-width:420px;margin:40px auto;padding:0 24px;text-align:center; }
+.gate-icon { font-size:40px;margin-bottom:12px; }
+.gate-title { font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;margin-bottom:6px; }
+.gate-sub { font-size:13px;color:var(--muted);margin-bottom:20px; }
+.gate-input { text-align:center;letter-spacing:3px;font-weight:800;text-transform:uppercase; }
+
+/* ADMIN CODE / VIDEO LIST ITEMS */
+.code-chip,.vid-chip { display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border); }
+.code-chip:last-child,.vid-chip:last-child { border-bottom:none; }
+.code-chip-code { font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;flex:1; }
+.code-chip-label { font-size:11px;color:var(--muted); }
+.badge-active { background:rgba(61,232,154,.12);color:var(--green);border:1px solid rgba(61,232,154,.3);font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px; }
+.badge-inactive { background:rgba(255,95,109,.12);color:var(--red);border:1px solid rgba(255,95,109,.3);font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px; }
+.vid-chip-thumb { width:36px;height:56px;border-radius:6px;object-fit:cover;background:var(--s2);flex-shrink:0; }
+.vid-chip-title { flex:1;font-size:13px;font-weight:700; }
+@media(max-width:480px){ .video-grid{grid-template-columns:repeat(2,1fr);gap:10px} .main-tab{font-size:11px;padding:10px 4px} }
+
+/* ADMIN TRIGGER */
+.admin-trigger { position:fixed;bottom:24px;right:24px;width:44px;height:44px;background:var(--s1);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .2s;z-index:50;opacity:.35; }
+.admin-trigger:hover { opacity:1;border-color:var(--accent);transform:scale(1.1); }
+
+/* MODAL */
+.modal-overlay { position:fixed;inset:0;background:rgba(6,8,15,.88);backdrop-filter:blur(14px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s; }
+.modal-overlay.open { opacity:1;pointer-events:all; }
+.modal { background:var(--s1);border:1px solid var(--border);border-radius:24px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;transform:translateY(24px);transition:transform .3s;scrollbar-width:none; }
+.modal::-webkit-scrollbar { display:none; }
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-header { display:flex;align-items:center;justify-content:space-between;padding:24px 28px 0; }
+.modal-title { font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--gold); }
+.close-btn { width:36px;height:36px;border:1px solid var(--border);background:var(--s2);border-radius:50%;cursor:pointer;font-size:16px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .2s; }
+.close-btn:hover { color:var(--text);border-color:var(--muted); }
+.modal-body { padding:20px 28px 28px; }
+.pass-label { font-size:13px;color:var(--muted);margin-bottom:20px; }
+.field-group { margin-bottom:14px; }
+.field-label { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;display:block; }
+input[type="password"],input[type="text"],input[type="number"],select,textarea { width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s; }
+input:focus,select:focus,textarea:focus { border-color:var(--accent); }
+input::placeholder,textarea::placeholder { color:var(--muted); }
+textarea { resize:vertical;min-height:72px; }
+.btn { width:100%;padding:13px;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
+.btn-gold { background:linear-gradient(135deg,#ffd060,#ffb020);color:#0a0a00; }
+.btn-gold:hover { filter:brightness(1.1);transform:translateY(-1px); }
+.btn-blue { background:linear-gradient(135deg,var(--accent),#c4d600);color:#0a0a00; }
+.btn-blue:hover { filter:brightness(1.1);transform:translateY(-1px); }
+.btn-sm-danger { background:rgba(255,95,109,.12);border:1px solid rgba(255,95,109,.25);color:var(--red);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif; }
+.btn-sm-danger:hover { background:rgba(255,95,109,.22); }
+.err { color:var(--red);font-size:12px;margin-top:8px;min-height:16px; }
+.adm-tabs { display:flex;background:var(--s2);border-radius:10px;padding:3px;margin-bottom:20px;gap:3px; }
+.adm-tab { flex:1;padding:8px 4px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s; }
+.adm-tab.active { background:var(--accent);color:#0a0a00; }
+.adm-panel { display:none; }
+.adm-panel.active { display:block; }
+.member-chip { display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border); }
+.member-chip:last-child { border-bottom:none; }
+.chip-avatar { font-size:22px; }
+.chip-info { flex:1; }
+.chip-name { font-size:14px;font-weight:700; }
+.chip-id { font-size:11px;color:var(--muted); }
+.chip-pts { font-size:18px;font-weight:900;color:var(--accent);margin-right:8px; }
+.divider { border:none;border-top:1px solid var(--border);margin:20px 0; }
+.pts-tag { display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700; }
+.pts-pos { background:rgba(61,232,154,.12);color:var(--green); }
+.pts-neg { background:rgba(255,95,109,.12);color:var(--red); }
+.toast { position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#061510;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none; }
+.toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@media(max-width:480px){
+  .podium{height:200px;gap:8px}
+  .podium-1 .podium-card{height:150px}
+  .podium-2 .podium-card{height:115px}
+  .podium-3 .podium-card{height:95px}
+  .rank-bar-wrap{display:none}
+  .modal-body{padding:16px 20px 24px}
+  .modal-header{padding:20px 20px 0}
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+
+<!-- LOGO TOP -->
+<div style="text-align:center;padding:40px 24px 8px;">
+  <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QDsRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAC5ADAAIAAAAUAAAApJAEAAIAAAAUAAAAuJAQAAIAAAAHAAAAzJARAAIAAAAHAAAA1JASAAIAAAAHAAAA3JKQAAIAAAAEMDAwAJKRAAIAAAAEMDAwAJKSAAIAAAAEMDAwAKABAAMAAAABAAEAAKACAAQAAAABAAAFAKADAAQAAAABAAAEHwAAAAAyMDI0OjEyOjExIDIxOjE4OjUyADIwMjQ6MTI6MTEgMjE6MTg6NTIALTAzOjAwAAAtMDM6MDAAAC0wMzowMAAA/+0AfFBob3Rvc2hvcCAzLjAAOEJJTQQEAAAAAABEHAFaAAMbJUccAgAAAgACHAI/AAYyMTE4NTIcAj4ACDIwMjQxMjExHAI3AAgyMDI0MTIxMRwCPAALMjExODUyLTAzMDA4QklNBCUAAAAAABD/hDj3uLn3GHFD70+HiTz9/8IAEQgEHwUAAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAMCBAEFAAYHCAkKC//EAMMQAAEDAwIEAwQGBAcGBAgGcwECAAMRBBIhBTETIhAGQVEyFGFxIweBIJFCFaFSM7EkYjAWwXLRQ5I0ggjhU0AlYxc18JNzolBEsoPxJlQ2ZJR0wmDShKMYcOInRTdls1V1pJXDhfLTRnaA40dWZrQJChkaKCkqODk6SElKV1hZWmdoaWp3eHl6hoeIiYqQlpeYmZqgpaanqKmqsLW2t7i5usDExcbHyMnK0NTV1tfY2drg5OXm5+jp6vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAQIAAwQFBgcICQoL/8QAwxEAAgIBAwMDAgMFAgUCBASHAQACEQMQEiEEIDFBEwUwIjJRFEAGMyNhQhVxUjSBUCSRoUOxFgdiNVPw0SVgwUThcvEXgmM2cCZFVJInotIICQoYGRooKSo3ODk6RkdISUpVVldYWVpkZWZnaGlqc3R1dnd4eXqAg4SFhoeIiYqQk5SVlpeYmZqgo6SlpqeoqaqwsrO0tba3uLm6wMLDxMXGx8jJytDT1NXW19jZ2uDi4+Tl5ufo6ery8/T19vf4+fr/2wBDAAICAgICAgMCAgMFAwMDBQYFBQUFBggGBgYGBggKCAgICAgICgoKCgoKCgoMDAwMDAwODg4ODg8PDw8PDw8PDw//2wBDAQIDAwQEBAcEBAcQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/2gAMAwEAAhEDEQAAAfz/ANtW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bYlD36nel/m3Z+M2+xPjv7nm229BNtq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbatut9IrwrfTer5k3ufA1xW2rbattq211VLu/JXnm7/h6Btq22rbdJXN70Ka88z1lW21bbrq5HeiclVRtq27OwrzzehxXnu9C1ee70Ka883orauD21bWPY157uz4yttq27OyrzrWtVW6/rP0N+Y28m9f+G/I/Kdg65vt/uub9gS0l3/Df0fgP5d/qJ+Xf9S+PnDf6t+25a2j/UEP4F6n4jOPZ/Ef6D8v9L/FvH/oT4vo+GBfYvx19bz7bdg22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattqsv0q8i/Ruqqyb/l9X6hx+GKK/ddp+S/6r189/mN+7v5318K7attquP2c/Mn9e6bqafINfY/wt96eV1+K+IOttqJ+2X4nfuhV6o0V8rflj++H48V4ptq37T/ix+0FeqfEf3J8SV+byk6v207/8n+ir9Po/L3ra/RaCEpvPwx5RX6f0f5v1FfN1eQdfbP6Nfnj+i9c5+HX7o/hfVUURa/b/ALDm+sr4D+avqLuPndvYPkz7OY/zN6/41C/ZQP6pw/kXzf7T1OZ8p93QX8S9H8+/kX9tOB/afP8AyF/Trg/pHuXs9t/MXr/Bnxh+in57/wBo/Ps3Lr0D6zH9Kfzh/QRP4j6H5P7b9v8AP22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbatsqv1t+jfMvTa8C/ID9QPy/rbat+sH5P8A6K19z/LXq/iNfl/tq22r77/QH58+g68d/MT7B/O+v3mDRdPX4icB9a/JVbbUX90Pwv8A3Qq9+LvtD8Xq/ar5c9s62vwP3tHi9b9fvyB/WCvpz4k+2/ievzb21bbVvT/MPUK/adaF1+THzZ9J/NlbbVttX3L+i/50fovVP+GH7n/hhVUURa/cvrOS62vgv4b+4Pz7r6u9w/OHfNbfqzbfkg6+Y3/bZXkvrX81ertt4Wm21aJzW2yzdnaeI/X4+rufgzyL9N4/0i+Nvk9l+j8m233fNttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21Ygy1+3/ccZ2dfG35mfpn+ZlbbVttW21bbVryj+hq/Ve9hrX5b/ACx3fCV+tP0n+fH6D18Y/mj+0/4tUnbUX90Pww/dCr78Uv2y/HCvev0W/CH9p68T/Kr97/xzrxr9Rfy6/S6vs74l+2viWvzd21bbVvUPL/UK/adaF1+TPzX9KfNdbbVttX3L+i/50fovVR+F/wC6H4X1VFEWv3L6zlOrr4H/AD7/AEE/Puttq22r6v8A0T/Kn9Uv5z9Um2/DfRwDt9LyT2P8uP05/aeB9tvxLvZflD+lf5B/0t5Idt+0efttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttWKItfuJ2fE9tXxt+Zn6Z/mZW21bbVttW21b9APz/AP19r3/y/wBQ+N6/M1O1fQP68fhN+4tPPxM/bz8tq+TttRv3Q/C790K6X8jP1z/Juvmn7g+H7uv3f+WPbuvr8Ef0M+Uvoyv0P+Jftr4lr83dtW21b0/zD1Cv2nWhdfkz81/SnzXW21bbV9y/ov8AnR+i9VH4X/uh+F9VRRFr9zeq5Xqq+Cfz5/QT8+622rbavf8A9P8A4P8AvT+bfX22/E+/NXSWvyn+/i9v+9+b0G2/AvS8d/J/9gfyG/rDxW+2/TuPbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbatMav249E8B9+r47/Mf9bPyTrbat9+/AX6uV23if2t8p1+V+2rof2//ACj/AF1pfjnr3w7XYT5pFeo/Tvwj9BV9AfGX2b5fX4p5SaL+534Y/uZXU/lh+qP5rV8Wbavt79HPwd/aevEfBf0Y+Xq+rviX7a+JK/N7bVttW9R8u9Sr9pVxNfkz81/SnzXW21bbV9y/ov8AnR+i9U/4Yfuf+GFVRRFr9zeq5Tq6+B/z7/QL8/a22rbavYf1g+Avvz+d/VVtvwn0dtq22rbah/m9+kvy1+u8P5xbb+ofH22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbav0K+8vw1/XCu3/AB1/aqor8Hd+zRa/LH9fbp/Rfzi+mfyhql21foJ98eC+9VyX4efqv+TlbbVvrP5M9Gr9tmkuK/ETgPrP5Mov7mfhn+5ddZ+eX6G/Adfn/tq3258R3FfvFuA9BrfE/wBsfElfm9tq22repeW+p1+00xNfkz81/SnzXW21bbV90fop+dH6L1T/AIYfuh+F9VRRFr9zOr5Tq6+I/hr9uw1+JW/baK/Erl/3d+C69b9rAf8Aif6Hbb5nXbattq24az91Om8h9er3X8T09txP9vfPbbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttWsK/V9EepfEur9Bx/n5q+0fIfDNRwbVttX0f1HyRq9d8i2rbasYOr6itPknV6T5ttW+jvnHV9beJebattq22r0/2X5L1fWfhXA6ttq22rWdZq+rXHyVq6bmdq22rbau894+S9X058zI1bbV9H9J8mavrPfJmr61T8mavrFt8r/THG36UKSr+DfpB+I9P+T/AO6ed+zr74R+7PhOlTdxS/KbfnVa/ObT+2vnv2vjkuu/iz6H8tfCfoj53/tz53bbtXbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbattq22rbats9plu4iuIzxnW21bbVtulrmttW21bbVtcXNcduyrKoNtW21bbVs8Z1trOqzP2FbbVttW2vKo92wa4/bVttW21bbtK4veh+fUnbVttW21bOvRq8v13SVvr75G/V347f17lbX8jfwr0/Y/mPb+nPGtf10/Hb9HPhun6mor0f8re1+LVN9X/KH9wfOfoB9hfkr+sH88et8BfIn6P8A5wfs3nbbfW47bVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVvbfEvbq+qPDPoTxWvl6j6PnK22rbat+jv5xfo5X5x7attq22r0T6a+Ifeq+iPlL1D5arbattq22r9E/kP6tra+Dfourf1SeKe2+JVttW21b7x+DvuyuM4vu+br5j21bbVttXoX3D+f/wCh9fOfgHpPiNJ21bbVttX6D+HdF6DXjXzX03M16T+uX5a/qV+Bep4t+Vv1Z8p/pvFtt9hh0H7E/mv+nv4R6Xn/AHv57fSnmP0P5Mfs5+Nv2eDX9LfzS+nfsOf9CPx4/Z/8zPy3s+ddt+8+bttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW9v8AEPbK9I+Vvpv5ZpaNq22rbat+j35w/ovX50battq22re8eD+8V1/yx9T/ACxW21bbVttX3d8LfdnwdX2h6f8AnB9f15X4p7F47W21bbVvvP4M+6q+TeU+3ORr5E21bbVttWd9l9bVzXIe0fOFeD7attq22pXe/R5a9t/Mb9I/zZr3P9FflLufyDv/AD5rdv1/g22r7P8Atn55rvwb0vhvo/L9+7eb+1n5C/pJ86/kHf8AGb9hv2Lg/X7wDyH7M/DvR/JLKT+4+dttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttWMHU4b7VttW21bbVnTXVttW21bbVjB1OG+1bbVttW21Omu1bbUQe1bbVttWcttVgljq22rbattq1vUarql2rbattq22ovTcpqc9bxP3n57/XHh/pn5zfh/o+I7b+gPL1hX/f3lP9BfnR+qP5Nflvd5Vtv2fzv1p674f+0f559X8kaX6y+Tf33zLP9m/xb/ZL8x7PhT5O/a78pvRTyrbfo3JttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVlJ1LRtW21O/1h/JPeBp98fCzDdQ229VNtq22rdVyur7O8K8m3lPtt6qbbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttW21bbVttX/9oACAEBAAEFAv8A5wxIBUfCXhLb9q2ubZ9tmT9YXg6y2y2/5Yxs+y3++XWy/VdtVom78NbFJZbpae4bhs1pPfbogUS/rFtprjw32jjXKvbfqv3y9h3j6u982qJxxmSTw99X+zWFj4r+rZVslSSk/wDIp2mx7vfi2+rnxVctP1UeKC1fVT4oS5/q78VwO78Pb3Yj79rYXt8f6LeIS/6KeI2vwv4hjC0KjV9202jc78f0U8Rlnwp4jDmgmtpPuWmw7xfI/on4kd1Y3livtbeH97vIv6KeJH/RTxI/6KeI3/RXxG/6K+I3/RTxG/6KeJH/AES8Subwzv8Abx9re1ubyT+iniMu58P73Zx97bw/vV7F/RPxI7qyu7KR+GPCW4eJZ7Hadq8J7Zvn1g71eXUu+7zOySo+G92/Qm87fewbjZvxt4ists27t9Ve0IvN04NaApPj7aE7Tvz2/wAfeJ9th8I/WLd7pf8A1k+FPd1/8ija2s97ceEfqy27b4YbK1t09IfNiD50L6C5baCZPin6ttr3WLcLC52u8+5YWq7682DYLDZ9v5MQeEbMUZf1t+G7SOz+4nVXhzbrS02jlRvlIL+sjwlDue0/c8IQwjw9y0P65reJG29vDEEKdk5cb5cb5Ub5Ub5Ub5Ub5cbwQ9xijNlc6XD+pu3ilveUh7hbwSWl4Am6afa2K2hj2rlof1zW8KIvB3hSbxLe2NhbbdbfWZu93jLt1/Am3sb27P8AR7ew1288Un1eR3UXht/WbtW6S7mQQX9W+3RWfh7t9bVqoSdo5FxL2yS237YPGHhuTw7uf/IofVDsUdxPwc8yLeLxb9ZW67ndL3TcpSnc9xQ/D31ib7s8+138O52T+uLZkRS/c+raw9+8UJ0F5LyLfwP47u963x+MbD9JeHyKHuj2tn/2ncHWrljEqPHWwq2Dfe/geTmeGH9dP+0nttf1oeItrtP9nB4lf+ze8Svw99Z2/wC5b0jVL8a/WHvXh/fP9nB4lf8As4fEjvPrX8S3cBORf1Lf4077/Fb3/G2j2tk12x/XT/i31dzWCvDnFqtoVLls7eZMNhawDkRlq2qwVIlOPZcSFu+8KbHuCd0+qewlexbUNl23t9asKpNm5E1IbO6uFW/gzxLcvwXtd3tWx+Mtkg3nZ/8AkUPqwtPdvC7+si7VZeE/ufVVKqXws/rYs/ePDH3PqZ2/t46vU2HhrwNfiw8ToOSJk5x+J9vXte/d0e1s/wDtNl/d+CvGF1N4k4v6z/Dn6W2fv9W0nM8LP66f9pX3fBv/ABkyPYf1qf8AGW/d+pf/ABp3/wDil5/jbR7Wyf7S39dP7jbt23HaZdt+tfd7d7b9aew3LHj7wuXt3i/Yt0ueP80uJEj9zt2izto2rlIe5eINr2qLxH9ZS7xP/IoeEIuT4ef1wS4+HfufVh4n2Tbti/pl4Yf1g+KfD934a+59W21/o3wy/rk3BKNrtpzbXGzXaL7bX9bu2+6793R7Wz/7Tpf3e43k22eK/D26xbztU0SZo/HOwq2Hfe31VLy8Lv66P9pX3fBn/GTo9l/Wp/xlv3fqX/xp3/8Ait5/jbT7Wyf7S39dP7v7kMslvL4P39G/7T/NeK/F1v4din+tq9Wm/wDHXiG/cs8s6v8AkUE+14dFNnf1yf7Qv5rbbY3l/ttuLWy4P62dx988RP6r9xF94Zf1xbcJtn7o9rZ/9p0mqPFqOX4j+qPxHyZ+L+s/w7+ltn7fVDJl4cf1z/7Svu+DP+MnR7L+tX/jLfu/Uv8A4077/Fb3/G2n2tk/2lv66f3f3fqovpIt2+5IrFG2eLLW/wB67zLwj8Y7srdt7/5FNHtbB/tJf1yf7Qv5r6s9uF/4nHCdfLi8S336R31/UxuNC/GW3jcvD3Duj29n/wBpyuH1gxcnxZt19Ntt74e3eLetrmiTNH452E7Bvz+ptf8ArK/rn/2lfd8Gf8ZOj2X9av8Axlv3fqX/AMad9/it7/jbR7Wyf7S39dP7v7v1fyqi8To1T3k9jcb5W0eO7eXnQ9vEt2qy2dSipX/Ipo9rYP8AaS/rk/2hfzX1M7dRL8X7h+jPD517fVruBsfFA1cyBJH4msv0fv3ZHt7P/tOPD6z04+L39UfiLkXPF/Wh4d/Su0P6l5f4q/rn/wBpX3fBv/GTI9l/Wr/xlv3fqX/xp33+K3v+NtHtbJ/tMf10/u/u/Vtb+8eJk6DvL7Hj2PDxH4IvJL3w328dE/0Y/wCRUT7Xh7XZ39cn+0L+a+rjbvcPDL+uHcFW+ydtquzY7jYzc+1f1ubebfxB2R7Wz/7TX9aop4qe33su3Xvh3dot62qeJM0XjbYF+H98+pVf0z+uf/aV93wZ/wAZOj2X9av/ABlv3fqX/wAad9/it7/jbR7Wyf7S39dP7v7v1S2KVXH3OL3nwdse+Sbbt1rtdp28S2a7/ZpI1xL/AORU8Kr5mwv64k12D7n1a+D9l3bZ/wCgHhV+P/Bnh+w8PdtrtDfbjt1uLazfiXwlt/id/wCyi8OP/ZReG3/sovDTtLZFpbv64dtNxs3ZHtbN/tNf1tox8R9vqk8R+73PF/Wj4cG67P8AUwqm5v65/wDaV93wZ/xk6PZf1q/8Zb936l/8ad//AIre/wCNtHtbJ/tLf10/u/u+C9z3Sx3vj/MqFX9ZexR7duf/ACKn1b3XvPhd/Wja+8+FPufVRGY/C7+tu75Hhrt9Wm3+/eJho16J3T62xtu5f7Ot/wCzrZ+ut+CfGY8Vxvxftv6U2A6dke1sv+0x/XLDjunawvJdvvPDm7RbztM8SZ4vCXgq78PeJH9dP+0n7vgv/jJ0+y/rV/4y37v1L/407/8AxS8/xto9rZP9pb+un2Pu/VTtSZrnh/NfWpbhew/8ip9Tm8JNu90sI9ysfEXhfcvD1528PeFN08QXWy7ZFtG3P64t4TPedvqZ20cp73dix2ueZc83f6or4weIHMgSReJ7H9G780e1sv8AtMf11J+m7/VJ4j92uuPf66P9pX3fBf8AxlCfZf1q/wDGW/d+pb/GXf8A+KXn+NtHtbJ/tLf1t7TuG4x/0Z39/wBGd/f9Gd/f9Gd/LurO6spfAuz/AKJ2H+a8abd+kdh/5FTYt4udi3Lw34t2rxFaVDubC2vEL8DeG1mLwT4chVDaQW4Kkpfi3x7tfh22v7643K77fV1YJsfDL+tO+9z8L/c8J3qtv8QRLzjf1u7d7r4gaPa2Q12x/XSn6PvY3kthd+G94g3nau31zqT+i/u+Cv8AjKE8H9av/GW/d+pdVLp33+K3v+NtPtbL/tLakJU+RE+RE+TE+TE/rAsY7/xihAQj7+9b3a7Nb7Zulrutq7hCZIvEVqLPev8AkVILme1k2/6zvFO3i3+ujcktP12QOT67IiLj6593U90+sTxTugWtUiu+0/Wd4i2iz/2cPid+JPGe8eKB9xKihVp9bHie0g/2cHih+IvFG6eJ5+21fWd4k2m0/wBnD4nfiDxTu3iaX7mw+Lt68OH/AGcHid/7OHxOXvniPdfEM/3bS6msbmP63vFCEf7OHxO913W83q9+7sPiHcfDt1/s4PE7vfrV8T3tuTXvtf1n+JdrtP8AZw+J3/s4fE7/ANnD4nf+zh8Tv/ZweJ3/ALODxO/DW+bj4k8ZjsTR7t462jZr6C4iuYu0q+Wj6xN9N/f/AFY777luQ1atR9YkSYvEv/LEvqri5niLt4m3mLZ9tvbya/uvqy8UKQsa9r5JVbbkJBf2s67W42LcEbntZf1lim//APLEvqjgX+k3eb1ttg/rD8TW+8TOyuV2d3sW82m82j3HmG2v1TqvX9VO686wf1rWXKvP+RUggmuZP6N78/6N785oZbeT7ytp3JNr961sLy9P9H96L/o9vYd3tm4WKfvKglTH2trS5vZLi3ntZfvWm3X9+/6Ob85Nh3qFH37Hw/vO5pu/C2/2afvxRSzrT4N8SqTebfe7etpBUfBexp2TZb2YQW/iDeJt73Lv9V+0qs9mahUfWZ4d9yu34M3n9Cb5FImVH1m7Uu82f/kVPq9SFeK/rA8a7p4b3f8A2bHiR7hfTbne/e3RKf8AZVfe2HxLuHh1fgzxvvG8+IPH3jLdNg3jf/F26eI4/veA9isN+8GeKPCt94Zu39WH/GT/AFhaeLPvfU4EFO6fWZ4gtNyvfrI3+/tfveFtuj3bfvrB8Rz+Eodm+s/dbWXd76Pctw+99VGyWiNr3P6y/EU99vnj1G+7I/CNh+kfESBRPjvcUWOwd9rszuG4WFsi0tN38R2exzIUFp8Z7eNw2Ht9Wu9K3HZdwtk3VpuVmvb7/wD5FP6vdPFnjrwUfEG5/wCyqU91sf0ZuH3ty/5pR9/6tzTxX9bf/GSff8I3K7T6uPDvi7bvFVn4u8FXnh6X6sv+Mo+sT/jLfvfU77G7fV1cT7nefVzNZ2P3tr3CXatwuJvDP1kbZv3gLe9j/mPq38a2mxvxH9W1tux3Ladx2iZ/V5p4n4J+s7fPfL7v9WsKZfE/AfWrf8zc/APiJO9bPuyc7CVOEr+q/dU2W88U/WVt3uW//wDIp/V5/wAZZ9bcsg8R8+ZnX7+5f80o+/8AVx/xlf1tf8ZJ9/w5/wA0zBIPhDx3FcxbT4DXsvin6wv+Mt+99Tf7rfLmf9NG4nP8xFLLAvwH44v7jcPrR2O12jefv7N4l3rYV2slh9YnhWRBjX9XSMvEu+7lHtO13VzLeXHf6o7NK5b65RaW297krdd08Jb6vYN4Co7q28QW/um9O2uJbSfwzvUW+7V9bFile3f8in9Xykp8V/W2pKvEn8xuUsZ+qr7/ANXCkp8V/W0QfEn3/Dqo/wDZZdvAv1iSbWfHk0dx4o+99T0iER7j9V4u77cPqwTY7f8Ae8OXdhZbtvngLb/ES/DPgK38NXH1geJYvEm8/e8Ex+Gd82U/U7fc/cL/AGf6vPDZNT9Vvh2dCvrWXInYvufVZaCLw99aG9e6bX28B3M114b+szwuuOft9WfiA7fufi/b/wBJ7CdP+RTSpSSpa5D/ADHOlx++lSklUi5D9/myhPckn76ZZI371cM3E5/mIL68tXPuF9dD74UUkb3u4TJJJKrYNmuN83KztY7K2+spCJvDPe2tpry48O7V+hNl8d7qrdN/7eC7Ndl4e3iwRuW339jcbddO0lXBdQjO2+sLwjHtiv8Alh31VXO1Qbff+Idq2+LxT4x3DfLjv9W/hL3aJeifGtomz8SdvBn1h3VlPD4k2G4T9Z+57Lf3DhIEu1XlteWdzbRXUPi3w/NsG6f8sNrR1J+5DiJbTxT4ZRa+LPrGt4obi4mupvv7XvO47NPafW5cJR4p8U3HiWf/AOcKR//aAAgBAxEBPwH/AM8KsemkRbKNGj/vZkMe7l3xHAGkOQKeo5nwgEmgnpRXlIpBgRtpkDHg/wC9jYobpUXJiuG2L+klflPSH0LjhtjtLPppeQ4cUoz5GmYVMjSePdjEv97HjllHwX9RNhPcNw7Z7R90k9TAfhDPPKXH+9k9KeCNemyX9p06qVy2/wC9l9IOCdcOGUZ2dOpH3/72X0sfMu3qo3C/97LxRqIHZuje1yRuJH+9lDzpnzbfti4cm+KTXLvO7cxlYtlwf97JwxuYc+bZwEknkvTyInQZCxTIGPBelnY2uaNSP+9k9KPJc090706WPmTjzXlIL1QqduKW2YL1cfEv97JxnbiMtcctmK9M33QEtN2/FX5f72REWaLmyREdsdIR3Gg547QIjTFkgYbJJFcPSn7qLnxbTY/3srHkMTYZTMuZdpnI8E/+eDX/2gAIAQIRAT8B/wDPCr1n77/HdL1EunkCa/J6LrMXV4I58J4P+9mfK/M4uiAxjnJLxFPxPyWbJHLn6uv6RHCb9H5OGWHV5BmFSvl/cuOWPxOOOWNeaeq6iPT4ZZ5+I8sf9xGznP8AdiGz/YuLJHJATj4Lk6b5bBnn1UM2+P8AiV6f0ek6nH1OKObGeD/vY3zvX5Oh6GfUYo2Q/B/O4+m+Ql1/Xgzl/vl/4GL0W3+FK3B/uI3SSP8ANxEPznyEev67J1cRQL8T+/nRxwww9RAxoU/vT890nUfDz/SZb3UNP3Yz+98Vgl/T/aJlQsvx/wAzHofnM3Qk/wAqZ4/oT/vY/V/u/wDG9Xzmwi2X7i/EHxEj/O/K/HZPj+qn0uT07fh4/JdXkHR9HM/67j/cX5LqJX1vUf7UvxX7o/H/AB5EwN0/zP8AvZP+4j4AM+HKPUaQFyov79/CYelOPqumjUTwf8On+4edDGHST6s+ZGv97L/3EbqBLqsWEf2R/tdI8F/eP95Pj+u+I9nHL+Zxxp+4mWMviRCPoT/vZf8AuIvWY5ZcfSgfcOSe39weuni+Q/Tf2Z/72X891x63r8uc/n2f3R1f6T9bs/l/m/C9b+k67F1H5H/eyuqnswTkPQJ5L+5n7sYuqxnrOsjcfQf75f3m+Dl8V1e2P4D4elw+7nhjJqy/3fg/R/oq+yqev6SfR9TPp5+Yl6Ke/p8cvzA/3sn96PkI9F8bkl6ngf5390v3Xh8mJZ+p/AHpemx9PijgxCoh/fLpOmy/GzydR/Z8f4Xo8/sdRDMRdF6XqsfU4Y58R4L/ALiD8YcfUx62PiXn/C/uz1Q6j4vBIegr/W/3sn/cR8pJwYv8L+7Pxx6H43Hil+LydP8AcRuskIYukHryX5b92tnwOHNjj98eT/nf3AznJ8YYS/sl/eHof1vx2XCBzXD/ALh11tjL0kv8I/3sn5jFh6794em6Ym9gs6/MdJ/ef7yw6b+zAC/9qyhGUdshw/uxLF8f8l1Xxl+tjSfRj4n948eWP8PL/vZHXZ5YOnnlhDcR6P7r/CfIZPkT8l1Q2/4fW9PkOvxdD08upzHgP7ldZ+u6rqusyfjNf62nzvwvyeD5b+8eljvs3x6f0emyyy4ozlGifR/fzHlPQ454RzGV/wCDh/dP94P7y6fZlP8AMj5/r/X/AHsr5b4fB8niGHqPA5fj/jun6DCMPTRodhALg+M6TBkOXDiAkfyH/ng1/9oACAEBAAY/Av8A5wxISOLhMsKV3C05LKhXV4yW8ev8kP8ASu3J5YyotHz/AOWMi0sEZHzPkGmTdFm5l/BDVb+7RoRTyDuLIHLlLKau2t7ZOUilpYHp2uRCnKmJ7iOMZKVwDE9wtFrX8qtSzOmlxGnjh2TGPzGjpeIF1PKOpSuA/ss3mx1Unzi/uMpUKEf8iplZ2q5B6gOotcP7RfCP/CegjP8AlP8AxTL+yXndWUkaR54/zFLSFUxH7Iq9Nvl/B/7T5fweS9vlA/ssokFCPL72VlbLmA80h/7T5fweu3S/gzFOgxrHkr7vMs7OSVHqA/8AadN/gvl3kKoVeihTuJ7WzkkjPmA/9p8v+C/9p8v+C/8AafL+D/2ny/g/9p8v4P8A2ny/g/8AafL/AIL/ANp03+CzNPYSoQPPHvybWMyrPkl/7T5f8F826spY0DzKfuCe1s5JEHzAf+06b8HyruJUK/RQp2pF9Hbj25DwDMdv0JGq1nifm5E7fObe3B6ceL+mvplf5ZdVGpLt9xIyTGdfkXFeWxyjmTkO0sEprJMlSUDvNuEoqm1Gn9o9qK1q5BEMYpxzE9hBBdZITwzGTTtu94fTewtIx6n+nbJP0a/3oH8P/IpItbdOUkhoA0XW6J59z+oPGKMJfo9SH7QemrxkQC1z2SPd7niCHJY3acZYjQ/dhtI+MqglxW8MQ0D9kPgHQpDRvNrHitKqLp6fdAdvFDGE0QHwD1Aa721i/jNv1aef3bEoSBWJP8D4OzlSmiuZ3tAlI/dpfAPgHwD9kPgHwD4B8HMCkeyXKP5R7XkkialID4ByJkQCMXME8AtXYO3ShAHQHwdlKhNFlRfXVNpF+8V/U0WtpGI40DQBo2e1Sfp9Tj+y85reRCfUpLpbQrl/sir/AMSl/wAF8qSMpX6UdtHcpKKZaK/tdo7iOFckAj4p1Doe0U6NV3PWo97S6+ae6ZIzRSTUO3XMOYm4iGYaok/4vJrGf6v+RRm3eYfu+lHZU0holIclvtUhtrRPTVPFTrJdyk/2y6oupR/llo58xubeuqVcXFewGqZU5drfd4tM+hX3YCRVMPU6Ncp0xDudvvMcf732vLYCqlINHifuB2/9gdtGY1cCHLEBSGbrR9ywP+wk9rP/AHd/yD3RZRiKREYoMkv93B/gl+xD/gl21lciPlzKxNAx2Xt9mmPlpSk9Qf7uD/BL/dQf4JaoKRRhX7KXU+fa+/ye0n9lz/21fw9g7f8AsDtY/wBsuBNnTJP7z+325ikAkPCVAIeMMaUj4B8HzlQIKx54ug7UWKsi4tEV9aav/WyY25/l9QcG35Z8lAFe6FpT+6kBdeWqnyeMMKln4B5IsVgfHRwWt5pImujliXQLQMkH0I/5FG3NNV9X49rxaDQrGP8Ahafdhr+QqHaSX/SSFfdu9yI/kjtfS1oeWQPmXZzK4KVj+LBDUn1DvbNQpjIafI6/cDt/7AZ+Tvtm3KXP6RfK+w8OxvIRWe16vuWnwT2s/wDd3/IP3tv/AN2BjtL/ALrR969/ye0n9lz/ANtX8PYO3/sDtY/2i+ft8yoVfB430KLgfDpLpe52p+Iy/gf+OpfutrdJMh4D1/m8VgGrpgHVCAHVWgfMuZ0oa7ba00SrTNX/ACKNmgeUY7BH7Uifu+5X10iCVKyaLNH/ALUof8N3VpbXsc00nAJNfu29eMoz/wALtBYA9Uq6/wCC4rhPGNQV+Dt7mPULQD2jvBwuUf8ABfuB2/8AYDV8ncXkBouG4Ur9bgvoz+8SzGvUFzQgUhl60d4fgT2s/wDdv3tv/wB2BjtL/utH3r3/ACe0n9lz/wBtX8PYfN2/9gdrL+0fupmiOK0GoLjuP76npkH8r+bBIzkVwS6QWoSfiXiZ+Un+Ro85llZ/lGv/ACKIdqPSNPaL/dg/m7e1H99WEuKBP5UjsLZHC3R+s9oUHjB0dor8e1Av+H7gdv8A2AyHfp/2IWvY5z0q6o+xu4RWe16u+PotXaz/AN2/e2//AHYGO0v+60fevf8AJ7Sf2XP/AG1fw9h83b/2B2sv7R+9NY1oiVGX+D90q9Hc7KU8uW3/AN6+4VOZf97iOCfs/wCRUDtv7A7R/wC7B/Nw5iqYRk6NSz5B3t55SSGn2drvbT/bHa8tqVJjNPm6dw7f+wO18n1IP6nDfQGi4VZBwXsR9tLVGvUEOaAD6KXrR8j2mR/sQ9rP/dv3tv8A92BjtL/utH3r3/J7Sf2XP/bV/D2Dt/7A7WX9o/etsfOoY+4XNfeSJ/1FolH5h3urpH97jUWVK4n/AJFQO2/sDtF/uwfzd1uSx7RxHa8uhxSguvaBP/FjodWpJ8w721pQJkNPt7h2/wDYHa5/sp7L2Oc9MnUjt75Cms1t1druH0X2s/8Adv3tv/3YGO0v+60fevf8ntJ/Zc/9tX8PYO3/ALA7WX9o/ej/ANhoUp0+4XOf2gC7KaTU4Y/4One/p/pf/Iqh2p9Y09ov92D+btgoUUsZfj2js0/8CV/wd7a8T/elhTjl9U9kXgFE3CP+C9w7f+wOy/jGntDew+3CrIOC+jPtpaol6ghy29KRS9cfyd8j+z2s/wDdv3tv/wB2BjtL/utH3r3/ACe0n9lz/wBtX8PYO3/sDtZf2j9673A8UUQPvCa+h+k/aQcS47GzTjFEKAd7uzi1MsakhmOQUUnQ/wDIq2Sx5xp7IV/sRP3f0huEImkUojqf+0+P8HcX9nbJhli4Y97ezH99WEuKAaYp7Ri+r9Fw1f5/8J/n/wAJ8F/4TRbR+zGKDtFfo/4DL/4N3Dt/7A7JPrH3Xsc6umTqj7G+hH09p1fY7xPqgdrP/dv3tv8A92BjtL/utH3r3/J7Sf2XP/bV/D2Dt/7A7WX9o/et4NuV/jCwlSfIh6fzNGm+txRFzx/tf8iraE/lTj+Ha5PnHir8D92M/tKV2VD/AKcsDvErygGbo6ueyTZmQQKKa5ej/wBp5/wn/tPP+E9NvP8AhOZRi5Kojw7Xlr6oLp2Dt/7A7Wcv7aFd4ryA0XErIOC9jPtpaol6gh3t5VPukv7vtZ/7u/5B+9t/+7Ax2l/3Wj717/k9pP7Ln/tq/h7B2/8AYHay/tH71xui9eV0J/m+d5xyJ/5FWfaZDqg5D7e0tnMKpkSQ5IbiI8oHpX5Ed0RW8REROsh4OGwh4Rpp2t9ojNeT1q73W5KHniO1zdqNOWgqa51+0tRUft+4u2JomaP+DsqNXBQd7aDQJkNPkewdv/YHbb1f2/uL2S4PTL1I+5Z/7t+9t/8AuwMdpf8AdaPvX3+T2k/suf8Atq/h7B2/9gdrRVlCqbEmuL/xGX8H/iMv4P8AxGX8H/iMv4Pk3URiX6KdulaaSyDNf+V/N3UI44ZD/J/5FWLcbbig6j1DTLbSgSU6kfmHYx3EYWD6vJVlH/gvNFlGKfyXjCgJAdS1ojkE14fZjH9blvrpWUsxyPe001WMj9vaZAPVMQj7tlcA0+kCT/lNKh5jtHdJFE3Ef/BewduR+wO1gr4q+5FeQGi4jkHBeRH2k97NHnzfvbd/uwMdpf8AdaPvXo/s9pP7Ln/tq/h7B239gduoP2Q/ZD9gPRIe0WONOcqhYQPL+YM9yqiQ03dovmIV59ilYrV3lukUCZDT/kVRLbSGNY80mjw5ybhP+xA/4zZIV/ZL6ttV/hv6Pblfat0trSNH9o5MpkuuSk+UfSytZqT5n7iLGHlSRx8Mkv2IP8EuNG4FIRHwSgUH3QpOhDTbjkrCfNSX7EH+CWifcin6PRISKDuiyiMcqEcM01L9iD/BLTJuSwcOASKD7pG3S0QfyK1S/Yg/wS/Yg/wSxPucuePADgPvR3dsrGWI5JLCCIFf5JfsQf4Jcm4XyspZPvG725QCiKEHUF+xB/glqtjyogviUp1dT3RZxqjlRGKDNNS/Yg/wS/Zg/wAEv2IP8Ev2IP8ABL9iD/BL9mD/AAS7S+vyFKhqQB3qWi0uiTmfy/l+JaZ4FBSFCoPcrPk/cI1Vji4/NnbJl0iuPZ/tOvabH8yUn/lia/hCrvLcyH2R+tyXc5quQ1f6Cu16f3r/AJJdeywnSodwJvb5iquO5iNFxqCg7e8R/fEg9q+qB/yxO6u6dKY8Px7fxudEX9o0cdnYyZxR6qI8z2iu4jRUSgpie2kSsgDKh4dpOT7dNHOq5/elZy+faXbVq1gNR/ZV2trscF1T/wAiqIYEFaz5B/4hN/gvWwm/wWYZklC08Qfv++qtliD9umn3yLSFUpHHEP8AxKX/AAX/AIlL/gsKvLdcIVwyFPvplUkhCuB78m1jMq/RLMFwgxyJ4g/fPucCpqfsir/xCX/BapZLOVKU8SU/zHMsrVciPWmjMk9lIEjz4/zAihSVrPAB5ixXR8u+hVCr+UOwSnzcMJH0q+tf9otcqjSgcl3IemvSPRP3PfJBRV0qv+SO1GN3t0/RzaL/ALXaG4UfopOhfyLEiDUF+9R/8Bjl/wAirZpV8f4HFY7aiLAxhRzRV+xbf7jct9cUEkxyOOg++ggf3hH35JLAIrLxzTk4rK8TEY1hXsoo0WdgiIIwy6kVccd+I6RGowTj9/3S9RXqVQsxTjKE+wvsj+wp3oH8n/gv37/MVoQ7q2hRBy4pVpH0f7JclnMIMJRiaI+/aWM37ta+r5B2m1bIhMKpE1yx4AMjeQL2BQ9AFOa9hhFumU1wH35t9nQFyEkD4BLkXZyCCGvSjFixu7FPvR4y/wBztZWyuGeR/wAnV0dySdVpxHzV9yCyT/fVhLitohRMaQkOAXnCZWA+1hSdau7h9EFQ/wAnuLaZVZLU4f5LkgWK5Jo57NfGJRT/AMipZ/b/AANF6LtMPRjQv/ajG57HPmclWNR5/fT/ALpR/MW3yU0f7qT/ADF5NEcVhEtC/wBA+JgOfwSv9tmeIGWyVwX6fNxf2FO9/wAn/go+/f8A2OeZF0mkqyr/AAi5bxV6hQiSVU+/BuEPtQqycaOdyryMaftJLMhR7xAPzo/mJNq3Xptpjor9lq3bw1OkiXqw/Kfk+RuEKoVfHtAfQF1adrhNUQaq/tfciUsVEaFK7QWaTpEnL7S0RSH+MW3Sv+65kjzSWtPoeyrKQ0TdJ0/tB/N85PC4Tl/yKln9v8DjAUdIUv8AeK/F1P30f7oR/MW3yU0f7qH8xe/2ZXVOj/QPiX6SGTpTIr/kJo3PbznYrSr/ACXe/wCT/wAF+/uH2O++kV+/k8/5ToZFfj/MCSFRQseY0cWx7ufeYrjpST7QcclonBNynIj4/wAxnttwUD9nik/Y1z3cOE0dUn4KHo1Rnik0cXwSpz3q/wC9pclzMarlOR+5e3quKcUhyTyGiUCpdxfn++K0+Tju/wC9K6ZP7LC09SFh3tv+xKrtHcwmi4zUOG+j4kdQ9FOG9A6ol/8ABv8AkVLNSuGv8DQU/wCkp/mUIB15KP5i2KuFFNBH+lD+YvQTQ4y90bXvCsrX8i/2HdzQmqVY0/wR9+/CzStHPdJ3AUmWVcP2nPencArkpKqY/fhn3KIS24PVXy+L/S3h25QkSipT+VjfN7u0fxfUegfMtf8AF4Bgj4/H78uxXiUw3i/zfmV8Q6Ivkcr9qjXtNpMJbyQHTzKlfmeRa97uU4pUMYv7rQlOiVSDL7vvXnPIr9TG3x6Luj/vPe152uKaNW/2o+jX+9H9ff8ARcyvobrh/bd1bpFVYdPzDp/yKeSTR1kJV8/5nDM4+lf5jJJo6yKy+f8AMYBRx9K/c1+/9Gop+T/er/F0Mivx/mP4tOuL+yoh43NxJKP5Sif5jJJoXiL6YD/dinzJFFSj5nVxWMCSqp6j6JcdrCKIjGIdxXijFX6/uR2tunKSQ0AdvYcTGnq/tOYD2Lf6NP2d7KOT2jGD+Lns168xJDktLpJRJGadopozRSVghoy1qkP9KbegiJZ+kHp/yw+dK5UIulL1y/ZZknuoxT4uaBK6WmXSB5j7id9vU/Sy/ux6J7XkadQVZf4XeLbt5kBswMQunUl5RX8Kv8t26dvUmaeOua08KenZCj5EOKS2kEgxHBrgmSFIUNQ1wqH0EhJjPw/5Ydo9fuIK/ZqKuOm426aJ9nmJfu2ySCWVX5x7KWqe4UVyL4k/zAudvmVGofg8byzzV6pU0Lkj5SI/ZH/zhSf/xAAzEAEAAwACAgICAgMBAQAAAgsBEQAhMUFRYXGBkaGxwfDREOHxIDBAUGBwgJCgsMDQ4P/aAAgBAQABPyH/AP0MSbMrAoD5DHKrEjysNjQ//czj9efiHytEu+hqw2GZkUYjkDsKl1kHwy0fEP8AiUnNDwP/AFP7wAlVvXSYNRVNlUiNZ+EgvGsUQGcQaDWHK3Np2xI8j/8Asoa+DzYOC+C9A/Kv6tFf9qld8qEo/wDyH/PiSj/iP6kkpIL4UQn/AOJnyaSlOBeOtPnLCSJ/+GTzcPj/AJw269r/AK4UO53/APJtYc5jsTZAKv8AojwYBWnCuecxkQf/AIOGD+d/5n2PgL/kJVeKhJhX82Ku3MAEiur9B12zQrq05v8Aj6IbAfxfT/z2MhF/7FWMtCFfAAXGnR/wRmIDQhnh9YN7NkC4f/2SsCIBQe+yxEueALA9U/8AAgHpUsDvSDT5D4Fqi2A/s/8Aw8B3Ptpzscsat/8AAU/86nqB8UXJjDlf/hHsEpKboX/41f6SofiYR0//AIZcBfzXp0IMv+P+/wDj4f8A1m/+Nf8A5l/+Nf8A43/G9atwHi9UgnB/P/wvAsp/41RR1IlHqCA9D/wCHsoaA6L6NLyDs9K4/wBOw4FBpV1GZVF9NrQrr5Y0il/Pvvm1DXZ+AIxTw3gOmoGvhROR/wCPqIf+RvsL/wB3aHIdJTYTo8ptFBXf/wBkWl7zoAKNBpV8FduCKbz3Nd2Q+qg0Wc2HpokBg/NSlNJP/wCGXSA6IaBJrZrBhyx8D/2VsdghGH/8H7Zf8z4q0HkpWSobOeD8P/4P8S8//DyZQxZr/gP81/yz+bzXlGtRWtXSBlv+A/3T/Df5sIuoqV13Ur/z9D/n9l/1b9sq/wCI/wAh4rfnhdlZQYFQKC1R4PQS+vlkV62g+ACC0Cf8AUArBq5BL+r3K5nMgPC/9WgyX3RYfYlfTN1aIIPcagz1gzFmXP8A/sjQKcBf+DjRfzH/AOEYNf8Aih2P/wCFnjkUb/itnU7uR2z4kl9+hdwyfgv/AMH7Zf8AM+L+yqbx+BSYocdh/wDmrOe/Ur/+Pn6//P7L/s37Z/2n+a8U32zLH5LA+WaM8+OPzXGXO97nbH/8SKH/AENC9EmqHD8QVT6OBUOFGZvoWtFEr/8AZED/AOEf/H//AAzcg0Qv/wCCoMtA9f8A4UCOd+f+OSCR6rio19pqFQxXi/8As4//AIH7Zf8AE+L+8rLjijPIC0jAaJUaofh/7DvB/wCfsv4//Gb9Cv8A+Pn6/wDz+2/7N+q//IoxQZQORLLcDPAH/wCWi5sHWvn6pzLujSby2i//AGR/YKf+cD/80f8AtaZpeQEqwocI4/8AFTud/wDBgw/j/wDB/bL/AJnxT8NXft3b/wA1GF6ty+P/AMM/+5/j/wDGb9Cv/wCPn6v/AD+y/wCrfqv/AMmjOk83uj/8HqhX+8ZXLP8AvxZZ0sgf/wBlH7Z/+cc6ZIFkDQ8UZsDM/VsH/B9M/wCSamn4iotXJ/39kv8AifF07/8AcGqDElCrIS0iBYSwRmf+KD4n/P8Ac/x/+M36Ff8A8fP1/wDn9l/1b9s//JYxCXGy/wDwgHTtvuwcAJPh/wC8xhNXKXVfb/8Asp+2f/nHH0oj/wDG6E1Slcv/ADrVL864FF1IhWWnMetH/f2S/wCJ8XmvzB/+L/Mc0xZPUxHj/nwI/j/n7n+P/wAfv0K//j5+v/z+y/6t+2f9Z/jvH/4pH1SEP/4H63/DOXthJ/6H97/+yv7BX/hCP/zRpvx/n/lYeEfj/tOIfxzfQ014v8qU/wDr9sv+Z8V4s4/4Wzgn0UTyEvpoASw0jTT8m/lr/n7n+P8A8Zv0K/8A47fq/wDP7L/q37Z/0n+O8f8A4uNW+3T/APAkKiZBBQM+nEy/9PysGeNQek//AGUOaLj/AMf/ABvBf/hnX/HiDH3gv/ovZfrloMQI/wCKlY1ijm+r8tPF+Wgo/v2ZSPN4P+FJwT8f9ftl/wAz4rx/+A5b+UopiyKwfnY/8N/uf4//AB2/Qr/+O36v/P7b/q37Z/0n+O8f/i5wJRNQn/5IJa6hv+B/+ys+P+RExP8A+FRznI/55d/6cscijApSU25L3NRrD/wowNnH/ku0efJQtXJ/z9sv+B8f8L/PT/1ZhyHqnmQFoACwlHaHg5//ACUe/Ur/APjt+r/z+y/7N+2f9Z/jPH/4tLBPkaEP/wAouD+4/wD2V4jtfX/ISFk+SsQsjJ/7Ak8iISmpBv8AiFsL8r/3kAT/AMIoD8cVFZcPan/8H870v+efADSGS/8AMP8An7Zf8D4/5D5P/wCD/fDNGFg/5+2/j/8AHb9Sv/47fpf8/sv+zftn/WZQjP8A8AlCHEsQeNCGj+dKv/yxcQr5Nf8A7Krj/vEWGLE7C0Y5vNA4M1H+DUQm9FL+DhFJkAoSMj+bUzaV/wCixD75/wAHCIz/APDCefQYpOuBrS/kcP8Aj9sovM/p/wCfEf8A8FF+f6LI3Cn0/wDdi5P4/wDxq/Sr/wDjkHpv+f2X/Vv2Ss/4XCjf/hX/AONf/kWD+hQqP5DeLAgfX/5Ahua0r/DH/IRAMllaIHp3/wDZXiyaxUsiepb+9lLD0/W4TfDTfthXYkR0mPcpK/8A4IaBict/y/8AurW+d0//AApFLEfCUDBQE3/I/wC7i3GDE/8ATASDSj/i/wDNMVdcv/wlDXKNj/E/5qL/AAvzZkjjo/8AxUcyfAS+xCP+6v8Am383ur9CADo//FDhEsCn+J/zXcJhMpG6Lq/9LAKUp/iX93/Gv7p/iX83/F/7v+Zf3X/Gv5p1iMwF4n/DLRZ2AvTQkCiaI/8AR4gKMlGfe0X9FXAoS1y4/wD7k5+TWnB/zxXs89StjbV94xtOB/wmEkvAIH5TZZBD2NbOS5x//cosdN5L2/8An6lWhPT+C/5w6EH4bFfQArf+DzT+1/uZk/4/B3f+CcKP/wBlbhBKUrf/ALmp/wBjUFPAoR//ABh3WGay/wD4+D8qSKKg/NqqH8+4riSS/wDxyJRxxj/p3n6KW8OsXCf/AI/aeyQv/wBnTJuqAB/+R6i9hXLyAH9P/wAhTIwCVsDf4X1++D/g8SoA9tg/CVDwFlfipI2PEf8A4E64n/wF6GAm+H/jHJK4mBiJ2NQ8wf8A7Kw4ktzSpxq5/l/dOaIo09H/AOOGj/8AGvYgHhKu6RKIe4K097/8cMvCXyozWAPfZ/yN4nln8X/44yaOroH0qdslY2H/APHwjpPnSu7w4KHUqyMalEpWQ/8AyP8AqoOxmCGArBPqA9/8B1b+CkdUXl//AODpbJ+oebBAY+gvBhW8NNhAZe33yjX/AFBVwJSWY+ykfDz/APZRqbI8QXtLF/qL/wDQB3yn/wDIJfUJKBkxP4pUw/6v/EP2/wD8iaE/8TpGMGD/APHxp8HnyV+6UKFiP/5FABQyXWmz9gfJG/Geej8P/FWYwel/mdW//CFCCKrzMtRRxBfxbdQX5Knmc/D/AMxMNQx8Sl0T+x/+yvj/AIq/+oqWpL5f/wA+In/8rJmNtIZE5Lksn9BQP3R5bf3f4v8A8if2XPlQVgeRX/5CtVkVRZNA7Mol3w+P/wCQR7Nb9qyuG9Fc3zEBfVS9cLbvy2Z5qe3/APAFOF40F29BWZYdL0OKOnUL2rYAaPkbCnAT4X/kBK39lRwzeI5LmRAvr/8AZQyMVLrJ/wDkhwY//kaJRU+P/wCRhI/9Z8HEvNlNn0f/AIwoMljmwPrL/wDIkilH6QBJQETQdpuhCfF/JZn7f/jT0sJQeCivldcTZ7lyCrskqy1h/wDvyltR/wD+E/VqzXAfh/1ZahL6LPigP+vClfrWrOmoLlif/smDU/Iw2eU8pf8A8lSf5ZH/AOQDU/Iw2ax+Uv8A+QNDLkKP/wAD8tet/wDxzX2pL/8AU09XHkX/APkf5Hz4vqzRv7//ACCyA4RhL6NLRBy8VT9tL2Glx3LTgBh6KM8sv/wWAFm7WmS/tTWzkDofv/3nIiUbEPzpU6oQn/EELT2N89I/ZZx5waN//cfKGMUC18WBboDwKEfP/wCA82P76wT4qGwX4p/7KHqKYsb4F0ak4/8ABwIqfzeWj9j1WQKEJEbn5DcP/wC46JSorzy//gXCBvhNACghAlZezaFTas8hf/yEsvwOvSWFOiFhL7Xf/wDQpP8A/9oADAMBAAIRAxEAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQEoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwggAAAAgAAAAggAQwAQwAwgAwAAAhcfYCBPHMOEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADRSAQgAACgAABjigBSAAQhSyggigTjxR4kNpICAjUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACigBRAAAjgSgCjjQBAAABTwAAAABSDBDYkABAAYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASCgAAABDSggwCSTyARQABTygAAChSAAAC0BSgDsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABACgAAABBSAwgBihDhxQABTygAAChQAAADoBKYCMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAABSQBBhShAiyABghAAATSgAAABQAgABsAAADEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQQjxwAhgAQyjgAADhAAABSgAAAhAgQzSkAAARcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACADAADAAAAABBAADCAAACCAABBABDACYKAoCkOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAwQAAAgQAAAQgAAAAgAAAgBMYEcWkwoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQgAAQAACSgAABxSAAAAwAADgAAACADyMDVOIdEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBgAABAAAAAAAACgCAABRwAABDQAABTikAC3KNBwgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAACAABAAAABCAAABDIQBZQB+iiIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCABMIAABAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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" alt="Cantil Fitness" style="width:260px;max-width:75%;">
+</div>
+
+
+<!-- ANIVERSÁRIO (automático, sem precisar editar nada) -->
+<div style="max-width:680px;margin:0 auto 12px;padding:0 24px;display:none;" id="birthday-wrap">
+  <div style="background:linear-gradient(135deg,rgba(232,255,0,0.18),rgba(232,255,0,0.06));border:1px solid rgba(232,255,0,0.4);border-radius:16px;padding:14px 20px;text-align:center;">
+    <div style="font-size:20px" id="birthday-text"></div>
+  </div>
+</div>
+
+<!-- DESAFIO BANNER -->
+<div style="max-width:680px;margin:0 auto 0;padding:0 24px;display:none;" id="challenge-wrap">
+  <div style="background:linear-gradient(135deg,rgba(255,208,96,0.15),rgba(255,140,0,0.1));border:1px solid rgba(255,208,96,0.35);border-radius:16px;padding:14px 20px;text-align:center;">
+    <div style="font-size:18px;margin-bottom:4px" id="challenge-title"></div>
+    <div style="font-size:13px;font-weight:700;color:#ffd060;letter-spacing:0.5px;" id="challenge-body"></div>
+    <div style="font-size:11px;color:#a0a0c0;margin-top:4px;font-weight:500;" id="challenge-sub"></div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-eyebrow">🏆 Tabela Oficial</div>
+  <div class="header-title">RANKING</div>
+  <div class="header-sub">Acompanhe sua pontuação e posição no grupo</div>
+  <div class="update-time">
+    <span class="live-dot"></span>
+    <span id="last-update">Atualizado agora</span>
+  </div>
+  <div id="last-launch-banner" style="display:none;margin-top:12px;background:rgba(232,255,0,0.1);border:1px solid rgba(232,255,0,0.3);border-radius:20px;padding:8px 24px;font-size:11px;color:#e8ff00;font-weight:600;max-width:92%;text-align:center;letter-spacing:0.3px;"></div>
+</div>
+
+<div class="main-tabs">
+  <button class="main-tab active" id="mt-ranking" onclick="setMainTab('ranking')"><span class="mt-icon">🏆</span>Ranking</button>
+  <button class="main-tab" id="mt-desafios" onclick="setMainTab('desafios')"><span class="mt-icon">🎬</span>Desafios</button>
+  <button class="main-tab" id="mt-evento" onclick="setMainTab('evento')"><span class="mt-icon">🎪</span>Evento</button>
+  <button class="main-tab" id="mt-assinante" onclick="setMainTab('assinante')"><span class="mt-icon">🔒</span>Assinante</button>
+</div>
+
+<!-- VIEW: RANKING -->
+<div class="view-section active" id="view-ranking">
+  <div class="podium-wrap" id="podium-wrap">
+    <div class="podium" id="podium"></div>
+  </div>
+
+  <div class="ranking-wrap">
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('all')">🏆 Geral</button>
+      <button class="filter-tab" onclick="setFilter('F')">👩 Feminino</button>
+      <button class="filter-tab" onclick="setFilter('M')">👨 Masculino</button>
+    </div>
+    <div class="stars-legend">🔥 = desafio feito &nbsp;·&nbsp; ⭐ = evento feito (escolhido ao lançar o ponto)</div>
+    <div class="ranking-card" id="ranking-list"></div>
+  </div>
+</div>
+
+<!-- VIEW: DESAFIOS (público) -->
+<div class="view-section" id="view-desafios">
+  <div class="video-wrap">
+    <div class="section-label">🎬 Desafios em Destaque</div>
+    <div class="video-grid" id="desafios-grid"></div>
+
+    <div class="section-label" id="desafios-mini-label" style="margin-top:24px">📋 Mais Desafios</div>
+    <div id="desafios-mini-list"></div>
+  </div>
+</div>
+
+<!-- VIEW: EVENTO -->
+<div class="view-section" id="view-evento">
+  <div class="results-board" id="results-board" style="display:none">
+    <div class="section-label">🏁 Resultados</div>
+    <div id="results-groups"></div>
+  </div>
+  <div class="video-wrap">
+    <div class="event-hero" id="event-hero">
+      <div class="event-name" id="event-name">Carregando...</div>
+      <div class="event-meta" id="event-meta"></div>
+      <div class="event-desc" id="event-desc"></div>
+      <div id="event-rules-wrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(232,255,0,0.2)">
+        <div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:4px">📌 REGRAS DO EVENTO</div>
+        <div id="event-rules-text" style="font-size:12px;color:var(--muted);line-height:1.6;white-space:pre-line"></div>
+      </div>
+      <div class="capacity-wrap" id="event-capacity-wrap">
+        <div class="capacity-label"><span id="capacity-text"></span></div>
+        <div class="capacity-bar"><div class="capacity-fill" id="capacity-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div id="event-form-wrap">
+      <div class="member-toggle">
+        <button class="active" id="mt-not-member" onclick="setEventPersonType(false)">🙋 Visitante</button>
+        <button id="mt-is-member" onclick="setEventPersonType(true)">🏆 Membro / Aluno do CT Cantil</button>
+      </div>
+
+      <div class="field-group" id="ev-internal-checks-wrap" style="display:none">
+        <label class="field-label">Marque uma ou as duas opções</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="ev-is-clube" onchange="toggleInternalFields()" style="width:18px;height:18px;flex-shrink:0">
+            <span>🏆 Membro do Clube</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="ev-is-ct" onchange="toggleInternalFields()" style="width:18px;height:18px;flex-shrink:0">
+            <span>🏋️ Aluno do CT</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field-group" id="ev-member-select-wrap" style="display:none">
+        <label class="field-label">Selecione seu nome</label>
+        <select id="ev-member-select"></select>
+      </div>
+      <div class="field-group" id="ev-name-wrap">
+        <label class="field-label">Nome</label>
+        <input type="text" id="ev-name" placeholder="Seu nome completo">
+      </div>
+      <div class="field-group" id="ev-age-wrap">
+        <label class="field-label">Idade</label>
+        <input type="number" id="ev-age" placeholder="ex: 28">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Nível de condicionamento</label>
+        <select id="ev-level">
+          <option value="Iniciante">🟢 Iniciante</option>
+          <option value="Intermediário">🟡 Intermediário</option>
+          <option value="Avançado">🟠 Avançado</option>
+        </select>
+      </div>
+      <div class="field-group" id="ev-phone-wrap">
+        <label class="field-label">Telefone (WhatsApp)</label>
+        <input type="tel" id="ev-phone" placeholder="(21) 90000-0000">
+      </div>
+      <div class="field-group" id="ev-source-wrap">
+        <label class="field-label">Como ficou sabendo do nosso evento?</label>
+        <select id="ev-source" onchange="toggleReferralField()">
+          <option value="Instagram">📷 Instagram</option>
+          <option value="WhatsApp">💬 WhatsApp</option>
+          <option value="Indicação de amigo(a)">🗣️ Indicação de amigo(a)</option>
+          <option value="Já sou aluno(a)">🏋️ Já sou aluno(a) da Cantil</option>
+          <option value="Outro">✨ Outro</option>
+        </select>
+      </div>
+      <div class="field-group" id="ev-referral-wrap" style="display:none">
+        <label class="field-label">Nome de quem indicou</label>
+        <input type="text" id="ev-referral" placeholder="Nome do amigo(a) que indicou">
+      </div>
+      <div class="field-group" style="display:flex;gap:10px;align-items:flex-start;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <input type="checkbox" id="ev-consent" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;">
+        <label for="ev-consent" style="font-size:11.5px;color:var(--muted);line-height:1.5;cursor:pointer">
+          Ao me inscrever, declaro estar apto(a) para praticar exercícios físicos e ciente da importância de estar em boas condições de saúde — ainda assim, um profissional de Educação Física estará presente para me orientar conforme meu nível de condicionamento. Sei que o evento acontece em área aberta e está sujeito a condições climáticas, e que vou receber informes pelo WhatsApp informado neste formulário. Este é um evento gratuito mediante inscrição prévia, e autorizo o uso de fotos e vídeos com minha imagem para divulgação nas redes sociais da Cantil Fitness.
+        </label>
+      </div>
+      <button class="btn btn-gold" onclick="submitEventRegistration()">✅ Confirmar Inscrição</button>
+      <div class="err" id="ev-error"></div>
+      <div id="ev-blocked" class="blocked-msg" style="display:none">🚫 No último evento não identificamos sua presença. Entre em contato com a administração da Cantil para validar seu cadastro.</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="view-section" id="view-assinante">
+  <div class="video-wrap">
+    <div class="sub-info-box" id="sub-info-box"></div>
+    <div class="section-label">🔒 Vídeos Exclusivos</div>
+    <div class="video-grid" id="assinante-grid"></div>
+  </div>
+</div>
+
+<!-- CODE OVERLAY: aparece ao clicar num vídeo de assinante travado -->
+<div class="modal-overlay" id="code-overlay" onclick="if(event.target===this)closeCodeOverlay()">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-header">
+      <div class="modal-title">🔒 CÓDIGO DE ACESSO</div>
+      <button class="close-btn" onclick="closeCodeOverlay()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pass-label" id="code-overlay-video-title" style="margin-bottom:14px"></div>
+      <div class="field-group">
+        <input type="text" id="code-overlay-input" class="gate-input" placeholder="CÓDIGO">
+      </div>
+      <button class="btn btn-gold" onclick="submitCodeOverlay()">🔓 Desbloquear e assistir</button>
+      <div class="err" id="code-overlay-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin trigger: small gear icon, discreet -->
+<div class="admin-trigger" onclick="openAdminModal()" title="Admin">⚙</div>
+
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">ACESSO</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- PASSWORD GATE -->
+      <div id="pass-gate">
+        <div class="pass-label">Área restrita. Digite a senha para continuar.</div>
+        <div class="field-group">
+          <input type="password" id="pass-input" placeholder="••••••••">
+        </div>
+        <button class="btn btn-gold" onclick="checkPass()">🔑 Entrar</button>
+        <div class="err" id="pass-err"></div>
+      </div>
+
+      <!-- ADMIN PANEL -->
+      <div id="admin-panel" style="display:none">
+        <div class="adm-tabs" style="flex-wrap:wrap;">
+          <button class="adm-tab active" onclick="admTab('quick')">⚡ Rápido</button>
+          <button class="adm-tab" onclick="admTab('pts')">Pontos</button>
+          <button class="adm-tab" onclick="admTab('members')">Membros</button>
+          <button class="adm-tab" onclick="admTab('challenges')">🎬 Desafios</button>
+          <button class="adm-tab" onclick="admTab('evento')">🎪 Evento</button>
+          <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
+          <button class="adm-tab" onclick="admTab('settings')">Config</button>
+        </div>
+
+        <!-- TOQUE RÁPIDO -->
+        <div class="adm-panel active" id="tab-quick">
+          <div class="section-label">Toque no nome para somar +3 pts</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input type="number" id="quick-value" value="3" style="width:70px;text-align:center;font-weight:800;font-size:16px;">
+            <div style="flex:1;display:flex;align-items:center;font-size:11px;color:var(--muted);">pontos por toque</div>
+          </div>
+          <input type="text" id="quick-search" class="qt-search" placeholder="🔍 Buscar membro...">
+          <div id="quick-tap-list"></div>
+        </div>
+
+        <!-- PONTOS -->
+        <div class="adm-panel" id="tab-pts">
+          <div class="section-label">Adicionar / Remover Pontos</div>
+          <div class="field-group">
+            <label class="field-label">Membro</label>
+            <select id="a-member"></select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Pontos (negativo para remover)</label>
+            <input type="number" id="a-points" placeholder="ex: 100 ou -30">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Motivo</label>
+            <input type="text" id="a-reason" placeholder="ex: Participação no evento">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Categoria</label>
+            <select id="a-category" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+              <option value="treino" selected>🏋️ Treino diário</option>
+              <option value="desafio">🔥 Desafio</option>
+              <option value="evento">⭐ Evento</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" onclick="addPoints()">⚡ Registrar</button>
+          <hr class="divider">
+          <div class="section-label">Últimos registros</div>
+          <div id="recent-history"></div>
+        </div>
+
+        <!-- MEMBROS -->
+        <div class="adm-panel" id="tab-members">
+          <div class="section-label">Cadastrar Novo Membro</div>
+          <div class="field-group">
+            <label class="field-label">Nome</label>
+            <input type="text" id="n-name" placeholder="Nome completo">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Emoji (avatar)</label>
+            <input type="text" id="n-emoji" placeholder="😊" maxlength="2">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Gênero (categoria do ranking)</label>
+            <select id="n-gender" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+              <option value="F">👩 Feminino</option>
+              <option value="M">👨 Masculino</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Aniversário (opcional)</label>
+            <input type="date" id="n-birthday" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+          </div>
+          <button class="btn btn-blue" onclick="addMember()" style="margin-bottom:20px">✅ Cadastrar</button>
+          <hr class="divider">
+          <div class="section-label">Membros ativos</div>
+          <div id="members-list"></div>
+        </div>
+
+        <!-- DESAFIOS (público) -->
+        <div class="adm-panel" id="tab-challenges">
+          <div class="section-label">🎬 Adicionar Short de Desafio</div>
+          <div class="field-group">
+            <label class="field-label">Título</label>
+            <input type="text" id="cv-title" placeholder="ex: Desafio 12 — Prancha 1min">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Link do YouTube</label>
+            <input type="text" id="cv-url" placeholder="Cole o link do vídeo (normal ou Short)">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Descrição (gera interesse)</label>
+            <input type="text" id="cv-desc" placeholder="ex: Quantos você consegue fazer em 1 minuto?">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Categoria</label>
+            <select id="cv-category" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+              <option value="true" selected>🔓 Aberto (destaque, card grande)</option>
+              <option value="false">📋 Lista (miniatura)</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" onclick="addChallengeVideo()" style="margin-bottom:20px">✅ Gerar link de Short</button>
+          <hr class="divider">
+          <div class="section-label">Desafios publicados</div>
+          <div id="challenges-admin-list"></div>
+        </div>
+
+        <!-- EVENTO -->
+        <div class="adm-panel" id="tab-evento">
+          <div class="section-label">🎪 Configurar Evento</div>
+          <div class="field-group">
+            <label class="field-label">Nome do evento</label>
+            <input type="text" id="ev-cfg-name" placeholder="ex: Desafio de Verão Cantil">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Data e local</label>
+            <input type="text" id="ev-cfg-meta" placeholder="ex: 20/08 às 9h · CT Cantil Fitness">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Descrição</label>
+            <textarea id="ev-cfg-desc" rows="4" placeholder="ex: Traga sua garrafinha e disposição!" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Vagas totais</label>
+            <input type="number" id="ev-cfg-max" placeholder="ex: 40">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Pontos por presença confirmada (membros)</label>
+            <input type="number" id="ev-cfg-points" placeholder="ex: 10">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Tipo de resultado deste evento</label>
+            <select id="ev-cfg-result-type" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+              <option value="">— Sem resultado (só presença)</option>
+              <option value="tempo">⏱️ Tempo (For Time)</option>
+              <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Status</label>
+            <select id="ev-cfg-active" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+              <option value="true">✅ Inscrições abertas</option>
+              <option value="false">🚫 Inscrições fechadas</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
+          <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
+          <hr class="divider">
+          <div class="section-label">📌 Regras do Evento <span style="font-weight:400;color:var(--muted);font-size:11px">(fixas — valem para todos os eventos, edite quando quiser)</span></div>
+          <div class="field-group">
+            <textarea id="ev-cfg-rules" rows="5" placeholder="ex: Chegar 15 min antes • Trazer garrafa d'água • Uso de tênis obrigatório" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;resize:vertical"></textarea>
+          </div>
+          <button class="btn btn-blue" onclick="updateEventRules()" style="margin-bottom:20px">💾 Salvar Regras</button>
+          <hr class="divider">
+          <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
+          <div id="timer-widget" style="display:none">
+            <div class="timer-box">
+              <div class="timer-cap-inputs">
+                <input type="number" id="timer-cap-min" placeholder="min" min="0">
+                <span style="align-self:center;font-size:20px">:</span>
+                <input type="number" id="timer-cap-sec" placeholder="seg" min="0" max="59">
+              </div>
+              <div class="timer-display" id="timer-display">00:00</div>
+              <div class="timer-btns">
+                <button class="start" onclick="startTimer()">▶️ Iniciar</button>
+                <button onclick="pauseTimer()">⏸️ Pausar</button>
+                <button class="stop" onclick="resetTimer()">⏹️ Zerar</button>
+              </div>
+            </div>
+          </div>
+          <input type="text" id="result-search" class="result-search" placeholder="🔎 Buscar nome pra lançar resultado rápido..." oninput="renderResultEntryList()" style="display:none">
+          <div id="result-entry-list"></div>
+          <hr class="divider" id="result-entry-divider" style="display:none">
+          <div class="section-label">📋 Inscritos (<span id="ev-count">0</span>)</div>
+          <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
+          <div id="event-registrations-list"></div>
+          <hr class="divider">
+          <div class="section-label">🚫 Faltantes de eventos anteriores <span style="font-weight:400;color:var(--muted);font-size:11px">(só você vê essa lista)</span></div>
+          <div id="event-noshow-list"></div>
+        </div>
+
+        <!-- ASSINANTE -->
+        <div class="adm-panel" id="tab-subscribers">
+          <div class="section-label">🔑 Gerar Código de Acesso</div>
+          <div class="field-group">
+            <label class="field-label">Rótulo (opcional, ex: nome da aluna)</label>
+            <input type="text" id="code-label" placeholder="ex: Turma Julho/2026">
+          </div>
+          <button class="btn btn-gold" onclick="generateCode()" style="margin-bottom:20px">🎲 Gerar novo código</button>
+          <div id="codes-admin-list"></div>
+          <hr class="divider">
+          <div class="section-label">✍️ Mensagem: Como virar assinante</div>
+          <div class="field-group">
+            <label class="field-label">Título</label>
+            <input type="text" id="subinfo-title" placeholder="ex: 💛 Quer virar assinante?">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Texto</label>
+            <input type="text" id="subinfo-body" placeholder="ex: Fale com a Cantil pelo WhatsApp pra liberar seu código">
+          </div>
+          <button class="btn btn-blue" onclick="updateSubInfo()" style="margin-bottom:20px">💾 Atualizar mensagem</button>
+          <hr class="divider">
+          <div class="section-label">🔒 Adicionar Vídeo Exclusivo</div>
+          <div class="field-group">
+            <label class="field-label">Título</label>
+            <input type="text" id="sv-title" placeholder="ex: Treino completo — Assinantes">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Link do YouTube</label>
+            <input type="text" id="sv-url" placeholder="Cole o link do vídeo (normal ou Short)">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Descrição (gera interesse)</label>
+            <input type="text" id="sv-desc" placeholder="ex: O treino secreto que só assinante vê...">
+          </div>
+          <button class="btn btn-blue" onclick="addSubscriberVideo()" style="margin-bottom:20px">✅ Gerar link de Short</button>
+          <hr class="divider">
+          <div class="section-label">Vídeos exclusivos publicados</div>
+          <div id="subscriber-videos-admin-list"></div>
+        </div>
+
+        <!-- CONFIG -->
+        <div class="adm-panel" id="tab-settings">
+          <div class="section-label">🔥 Editar Banner de Desafios</div>
+          <div class="field-group">
+            <label class="field-label">Título</label>
+            <input type="text" id="ch-title" placeholder="ex: 🔥 DESAFIOS ABERTOS">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Texto principal</label>
+            <input type="text" id="ch-body" placeholder="ex: Desafio 8 — Squats | Desafio 11 — Corda 1'">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Texto pequeno (abaixo)</label>
+            <input type="text" id="ch-sub" placeholder="ex: Participe e acumule pontos!">
+          </div>
+          <button class="btn btn-gold" onclick="updateChallenge()" style="margin-bottom:8px">🔥 Atualizar Banner</button>
+          <button class="btn-sm-danger" onclick="hideChallenge()" style="margin-bottom:20px">👁️ Ocultar banner</button>
+          <hr class="divider">
+          <div class="section-label">📅 Última Atualização (manual)</div>
+          <div class="field-group">
+            <label class="field-label">Texto a exibir</label>
+            <input type="text" id="manual-date" placeholder="ex: Segunda-feira, 15/06/2026 · 19:20">
+          </div>
+          <button class="btn btn-blue" onclick="setManualDate()" style="margin-bottom:20px">📌 Atualizar Data</button>
+          <hr class="divider">
+          <div class="section-label">Alterar Senha Admin</div>
+          <div class="field-group">
+            <label class="field-label">Nova Senha</label>
+            <input type="text" id="new-pass" placeholder="Mínimo 4 caracteres">
+          </div>
+          <button class="btn btn-blue" onclick="changePass()" style="margin-bottom:20px">💾 Salvar</button>
+          <hr class="divider">
+          <div class="section-label" style="color:var(--red)">Zona de Perigo</div>
+          <button class="btn-sm-danger" onclick="resetPts()">🔄 Zerar todos os pontos</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  SUPABASE CONNECTION
+// ══════════════════════════════════════════════
+// ⚠️ Requer 3 tabelas novas no Supabase: challenge_videos, subscriber_videos, access_codes
+// Rode o arquivo supabase-setup.sql (fornecido junto) uma única vez no SQL Editor do Supabase.
+const SUPABASE_URL = 'https://nuljckddhhajwjvtvkfx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_KtIrookldRFSrxz5NJL0EQ_iBLow_I-';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Local-only settings (per-device, not synced) ──
+const LK = { prev:'rk_prev', manualDate:'rk_manualDate' };
+const lget = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const lset = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+let MEMBERS = [];
+let HISTORY = [];
+let currentFilter = 'all';
+let CHALLENGE_VIDEOS = [];
+let SUBSCRIBER_VIDEOS = [];
+let ACCESS_CODES = [];
+let challengesLoaded = false;
+const SK = { subUnlocked:'rk_sub_unlocked' };
+
+// ── Configurações persistentes no Supabase (senha, banner, mensagem assinante) ──
+async function getSetting(key, fallback) {
+  const { data, error } = await sb.from('app_settings').select('value').eq('key', key).limit(1);
+  if (error || !data || !data.length) return fallback;
+  try { return JSON.parse(data[0].value); } catch { return data[0].value; }
+}
+async function setSetting(key, value) {
+  const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+  const { error } = await sb.from('app_settings').upsert({ key, value: strVal, updated_at: new Date().toISOString() });
+  if (error) { console.error(error); toast('⚠️ Erro ao salvar configuração'); return false; }
+  return true;
+}
+
+// ── YOUTUBE HELPERS ──
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/,
+    /(?:youtu\.be\/)([A-Za-z0-9_-]{11})/,
+    /(?:youtube\.com\/watch\?v=)([A-Za-z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+function buildShortUrl(id) { return `https://www.youtube.com/shorts/${id}`; }
+function buildThumbUrl(id) { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
+function genCode(len=6) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i=0;i<len;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+
+// ── DATA LAYER ──
+async function loadMembers() {
+  const { data, error } = await sb.from('members').select('*').order('points', { ascending:false });
+  if (error) { console.error(error); toast('⚠️ Erro ao carregar dados'); return []; }
+  MEMBERS = data || [];
+
+  // Fetch last activity date and category badges per member
+  const { data: hist, error: histFetchError } = await sb.from('history')
+    .select('member_id, points, created_at, reason, balance_after, category')
+    .order('created_at', { ascending:false });
+
+  if (histFetchError) {
+    console.error('Erro ao buscar histórico para badges:', histFetchError);
+    alert('ERRO ao buscar histórico (isso está impedindo o emoji de aparecer):\n\n' + histFetchError.message);
+  }
+
+  if (hist) {
+    const lastActivity = {};
+    const desafioCount = {};
+    const eventoCount = {};
+    const lastTag = {};
+    const lastChange = {};
+    hist.forEach(h => {
+      if (!lastActivity[h.member_id]) {
+        lastActivity[h.member_id] = h.created_at;
+      }
+      if (!lastChange[h.member_id]) {
+        lastChange[h.member_id] = {
+          date: h.created_at,
+          prevPts: h.balance_after != null ? h.balance_after - h.points : null
+        };
+      }
+      if (h.category === 'desafio') {
+        desafioCount[h.member_id] = (desafioCount[h.member_id] || 0) + 1;
+      }
+      if (h.category === 'evento') {
+        eventoCount[h.member_id] = (eventoCount[h.member_id] || 0) + 1;
+      }
+      if ((h.category === 'desafio' || h.category === 'evento') && !lastTag[h.member_id]) {
+        lastTag[h.member_id] = { reason: h.reason, category: h.category };
+      }
+    });
+    MEMBERS = MEMBERS.map(m => ({
+      ...m,
+      lastActivity: lastActivity[m.id] || null,
+      desafioCount: desafioCount[m.id] || 0,
+      eventoCount: eventoCount[m.id] || 0,
+      lastTag: lastTag[m.id] || null,
+      lastChange: lastChange[m.id] || null
+    }));
+  }
+  return MEMBERS;
+}
+
+async function loadHistory() {
+  const { data, error } = await sb.from('history').select('*').order('created_at', { ascending:false }).limit(50);
+  if (error) { console.error(error); return []; }
+  HISTORY = data || [];
+  return HISTORY;
+}
+
+async function loadChallengeVideos() {
+  const { data, error } = await sb.from('challenge_videos').select('*').order('created_at', { ascending:false });
+  if (error) { console.error(error); toast('⚠️ Erro ao carregar desafios'); return []; }
+  CHALLENGE_VIDEOS = data || [];
+  challengesLoaded = true;
+  return CHALLENGE_VIDEOS;
+}
+
+async function loadSubscriberVideos() {
+  const { data, error } = await sb.from('subscriber_videos').select('*').order('created_at', { ascending:false });
+  if (error) { console.error(error); toast('⚠️ Erro ao carregar vídeos exclusivos'); return []; }
+  SUBSCRIBER_VIDEOS = data || [];
+  return SUBSCRIBER_VIDEOS;
+}
+
+async function loadAccessCodes() {
+  const { data, error } = await sb.from('access_codes').select('*').order('created_at', { ascending:false });
+  if (error) { console.error(error); toast('⚠️ Erro ao carregar códigos'); return []; }
+  ACCESS_CODES = data || [];
+  return ACCESS_CODES;
+}
+
+async function addPointsToMember(id, pts, reason, category='treino') {
+  const member = MEMBERS.find(m=>m.id===id);
+  if (!member) return;
+  const newPts = Math.max(0, member.points + pts);
+  const now_iso = new Date().toISOString();
+  const updateData = { points: newPts };
+  if (pts !== 0) updateData.last_updated = now_iso;  // update date on any change, add or remove
+  const { error } = await sb.from('members').update(updateData).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  if (pts !== 0) {
+    const { error: histError } = await sb.from('history').insert({ member_id:id, member_name:member.name, points:pts, reason: reason||'Sem motivo', balance_after: newPts, category });
+    if (histError) {
+      console.error('Erro ao salvar histórico:', histError);
+      alert('ERRO ao salvar histórico (isso está impedindo o emoji de aparecer):\n\n' + histError.message);
+    }
+  }
+  member.points = newPts;
+  const now = new Date();
+  const days = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  lset('rk_lastUpdate', { date: now.toLocaleDateString('pt-BR'), time: now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), member: member.name, pts, dayName: days[now.getDay()] });
+  return member;
+}
+
+// ══════════════════════════════════════════════
+//  RENDER PUBLIC RANKING
+// ══════════════════════════════════════════════
+function renderRanking() {
+  const all = MEMBERS.slice().sort((a,b)=>b.points-a.points);
+  const members = currentFilter === 'all' ? all : all.filter(m=>m.gender===currentFilter);
+  const max = members[0]?.points || 1;
+
+  const ranked = [];
+  let pos = 1;
+  for (let i = 0; i < members.length; i++) {
+    if (i > 0 && members[i].points < members[i-1].points) pos++;
+    ranked.push({ ...members[i], pos });
+  }
+
+  const podiumWrap = document.getElementById('podium-wrap');
+  const podiumEl = document.getElementById('podium');
+  const topPositions = [...new Set(ranked.map(m=>m.pos))].slice(0,3);
+  const podiumMembers = ranked.filter(m=>topPositions.includes(m.pos)).slice(0,3);
+
+  if (!podiumMembers.length) { podiumWrap.style.display='none'; }
+  else {
+    podiumWrap.style.display='';
+    const visual = [podiumMembers[1], podiumMembers[0], podiumMembers[2]].filter(Boolean);
+    const clsMap = { 1:'podium-1', 2:'podium-2', 3:'podium-3' };
+    podiumEl.innerHTML = visual.map(m => `
+      <div class="podium-slot ${clsMap[m.pos]||'podium-3'}">
+        ${m.pos===1?'<div class="crown">👑</div>':''}
+        <div class="podium-card">
+          <div class="podium-pos">${m.pos}º</div>
+          <div class="podium-name">${m.name}</div>
+          <div class="podium-pts">${m.points}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  const listEl = document.getElementById('ranking-list');
+  if (!members.length) {
+    listEl.innerHTML='<div class="empty-state">🌱 Nenhum membro ainda.</div>';
+    return;
+  }
+
+  listEl.innerHTML = ranked.map((m,i) => {
+    const pos = m.pos;
+    const pct = Math.round((m.points/max)*100);
+    const prev = lget(LK.prev)||{};
+    const prevPts = prev[m.id];
+    let trend = '';
+    if (prevPts !== undefined) {
+      if (m.points > prevPts) trend = '<span style="color:#3de89a;font-size:16px;font-weight:900" title="Subindo">▲</span>';
+      else if (m.points < prevPts) trend = '<span style="color:#ff5f6d;font-size:16px;font-weight:900" title="Descendo">▼</span>';
+      else trend = '<span style="color:#5a6380;font-size:16px" title="Estacionado">●</span>';
+    }
+    const bonusMap = { 'LUCAS': '🪢 +10 Desafio da Corda' };
+    const bonus = bonusMap[m.name] ? `<span class="bonus-badge">${bonusMap[m.name]}</span>` : '';
+
+    // Emojis de categoria — 🔥 desafio, ⭐ evento (contagem explícita, escolhida no lançamento)
+    let categoryBadges = '';
+    if (m.desafioCount > 0) {
+      categoryBadges += `<span title="${m.desafioCount} desafio(s)">🔥${m.desafioCount>1?'×'+m.desafioCount:''}</span>`;
+    }
+    if (m.eventoCount > 0) {
+      categoryBadges += `<span title="${m.eventoCount} evento(s)" style="margin-left:3px">⭐${m.eventoCount>1?'×'+m.eventoCount:''}</span>`;
+    }
+
+    // Tag visível com a descrição do último desafio/evento (ex: "EVENTO CANTIL")
+    let challengeTag = '';
+    if (m.lastTag && m.lastTag.reason) {
+      const tagIcon = m.lastTag.category === 'evento' ? '⭐' : '🔥';
+      challengeTag = `<div class="challenge-tag" title="Último registro">${tagIcon} ${m.lastTag.reason}</div>`;
+    }
+
+    // Última alteração real (vinda do histórico, com pontuação anterior de verdade)
+    let lastSeen = '';
+    const lastDate = m.last_updated || m.lastActivity;
+    if (lastDate) {
+      const d = new Date(lastDate);
+      const dateStr = d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit'});
+      const timeStr = d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+      const prevText = (m.lastChange && m.lastChange.prevPts != null) ? ` · antes: ${m.lastChange.prevPts} pts` : '';
+      lastSeen = `<div class="rank-last-seen">🕐 última alteração: ${dateStr} às ${timeStr}${prevText}</div>`;
+    }
+
+    return `
+      <div class="rank-item${pos===1?' top-1':pos===2?' top-2':pos===3?' top-3':''}" style="animation-delay:${.05*i}s">
+        <div class="rank-num">${pos}º</div>
+        <div class="rank-avatar">${m.emoji}</div>
+        <div class="rank-info">
+          <div class="rank-name">${m.name} ${trend}${bonus}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-badge-small">${m.points} pts</div>
+          ${challengeTag}
+          ${lastSeen}
+        </div>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar">
+            <div class="rank-bar-fill" style="width:0%" data-pct="${pct}"></div>
+          </div>
+        </div>
+        <div>
+          <div class="rank-pts">${m.points}</div>
+          <div class="rank-pts-label">pontos</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  setTimeout(()=>{
+    document.querySelectorAll('.rank-bar-fill').forEach(el=>{
+      el.style.width = el.dataset.pct+'%';
+    });
+  },120);
+
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    'Atualizado às '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const lu = lget('rk_lastUpdate');
+  const manualDate = lget(LK.manualDate);
+  const banner = document.getElementById('last-launch-banner');
+  if (manualDate) {
+    banner.style.display='inline-block';
+    banner.innerHTML='📋 Última atualização &nbsp;·&nbsp; <strong>'+manualDate+'</strong>';
+  } else if (lu && banner) {
+    banner.style.display='inline-block';
+    banner.innerHTML='📋 Último lançamento &nbsp;·&nbsp; <strong>'+(lu.dayName ? lu.dayName+', ' : '')+lu.date+' &nbsp;·&nbsp; '+lu.time+'</strong>';
+  }
+
+  renderChallengeBanner();
+  renderBirthdayBanner();
+}
+
+function renderBirthdayBanner() {
+  const wrap = document.getElementById('birthday-wrap');
+  const today = new Date();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  const todaysBirthdays = MEMBERS.filter(m => {
+    if (!m.birthday) return false;
+    const parts = m.birthday.split('-'); // YYYY-MM-DD
+    if (parts.length < 3) return false;
+    return parts[1] === mm && parts[2] === dd;
+  });
+  if (!todaysBirthdays.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  const names = todaysBirthdays.map(m => `${m.emoji} ${m.name}`).join(' e ');
+  const isPlural = todaysBirthdays.length > 1;
+  document.getElementById('birthday-text').innerHTML =
+    `🎂 Aniversário de ${names} hoje! Parabéns! 🎉`;
+  wrap.style.display = '';
+}
+
+// ══════════════════════════════════════════════
+//  MAIN TABS (Ranking / Desafios / Assinante)
+// ══════════════════════════════════════════════
+async function setMainTab(tab) {
+  document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mt-'+tab).classList.add('active');
+  document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
+
+  if (tab==='desafios') {
+    if (!challengesLoaded) await loadChallengeVideos();
+    renderDesafiosView();
+  }
+  if (tab==='evento') {
+    await renderEventPublicView();
+  }
+  if (tab==='assinante') {
+    renderSubInfoBox();
+    await loadSubscriberVideos();
+    const mode = await getSubscriberAccessMode();
+    renderVideoGrid('assinante-grid', SUBSCRIBER_VIDEOS, 'Nenhum vídeo exclusivo publicado ainda.', mode);
+  }
+}
+
+// Revalida o código salvo no aparelho contra o banco: se foi excluído/desativado, revoga o acesso local
+async function getSubscriberAccessMode() {
+  const savedCode = lget(SK.subUnlocked);
+  if (!savedCode) return 'gated';
+  const { data, error } = await sb.from('access_codes').select('*').eq('code', savedCode).eq('active', true).limit(1);
+  if (error || !data || !data.length) {
+    localStorage.removeItem(SK.subUnlocked);
+    return 'gated';
+  }
+  return 'open';
+}
+
+// mode: 'open' = clique abre o vídeo direto | 'gated' = clique pede código antes
+function renderVideoGrid(elId, videos, emptyMsg, mode) {
+  const el = document.getElementById(elId);
+  if (!videos.length) { el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:32px 0">${emptyMsg}</div>`; return; }
+  el.innerHTML = videos.map((v,i) => `
+    <div class="video-card ${mode==='gated' ? 'locked' : ''}" ${mode==='open' ? `onclick="window.open('${v.youtube_url}','_blank')"` : `onclick="openCodeOverlay('${elId}',${i})"`}>
+      <div class="video-thumb-wrap">
+        <img src="${buildThumbUrl(v.video_id)}" alt="${v.title}" loading="lazy">
+        <div class="video-play"></div>
+      </div>
+      <div class="video-title">${v.title}</div>
+      ${v.description ? `<div class="video-desc">${v.description}</div>` : ''}
+    </div>`).join('');
+}
+
+// Desafios: separa "Abertos" (destaque, card grande) de "Mini" (lista compacta)
+function renderDesafiosView() {
+  const abertos = CHALLENGE_VIDEOS.filter(v => v.is_open !== false);
+  const minis = CHALLENGE_VIDEOS.filter(v => v.is_open === false);
+  renderVideoGrid('desafios-grid', abertos, 'Nenhum desafio em destaque ainda.', 'open');
+  document.getElementById('desafios-mini-label').style.display = minis.length ? 'block' : 'none';
+  renderMiniList('desafios-mini-list', minis);
+}
+
+function renderMiniList(elId, videos) {
+  const el = document.getElementById(elId);
+  if (!videos.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<div class="mini-list">` + videos.map(v => `
+    <div class="mini-row" onclick="window.open('${v.youtube_url}','_blank')">
+      <div class="mini-thumb-wrap"><img src="${buildThumbUrl(v.video_id)}" alt="${v.title}" loading="lazy"></div>
+      <div class="mini-info">
+        <div class="mini-title">${v.title}</div>
+        ${v.description ? `<div class="mini-desc">${v.description}</div>` : ''}
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
+// ── DESAFIOS (admin) ──
+async function addChallengeVideo() {
+  const title = document.getElementById('cv-title').value.trim();
+  const url = document.getElementById('cv-url').value.trim();
+  const description = document.getElementById('cv-desc').value.trim();
+  const is_open = document.getElementById('cv-category').value === 'true';
+  if (!title) return toast('⚠️ Digite o título!');
+  const id = extractYouTubeId(url);
+  if (!id) return toast('⚠️ Link do YouTube inválido!');
+  const { data, error } = await sb.from('challenge_videos').insert({ title, youtube_url: buildShortUrl(id), video_id: id, description, is_open }).select();
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  CHALLENGE_VIDEOS.unshift(data[0]);
+  challengesLoaded = true;
+  document.getElementById('cv-title').value='';
+  document.getElementById('cv-url').value='';
+  document.getElementById('cv-desc').value='';
+  renderChallengesAdminList();
+  toast('✅ Short de desafio publicado!');
+}
+
+async function toggleChallengeCategory(id, newVal) {
+  await sb.from('challenge_videos').update({ is_open: newVal }).eq('id', id);
+  const v = CHALLENGE_VIDEOS.find(v=>v.id===id);
+  if (v) v.is_open = newVal;
+  renderChallengesAdminList();
+}
+
+let editingChallengeId = null;
+function renderChallengesAdminList() {
+  const el = document.getElementById('challenges-admin-list');
+  if (!CHALLENGE_VIDEOS.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum desafio ainda.</div>'; return; }
+  el.innerHTML = CHALLENGE_VIDEOS.map(v => {
+    if (editingChallengeId === v.id) {
+      return `
+      <div class="vid-chip" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 0">
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Título</label><input type="text" id="ecv-title-${v.id}" value="${v.title.replace(/"/g,'&quot;')}"></div>
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Link do YouTube</label><input type="text" id="ecv-url-${v.id}" value="${v.youtube_url}"></div>
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Descrição</label><input type="text" id="ecv-desc-${v.id}" value="${(v.description||'').replace(/"/g,'&quot;')}"></div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label">Categoria</label>
+          <select id="ecv-category-${v.id}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+            <option value="true" ${v.is_open!==false?'selected':''}>🔓 Aberto (destaque, card grande)</option>
+            <option value="false" ${v.is_open===false?'selected':''}>📋 Lista (miniatura)</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-blue" style="flex:1;padding:10px" onclick="saveEditChallenge(${v.id})">💾 Salvar</button>
+          <button class="btn" style="flex:1;padding:10px;background:var(--s2);color:var(--text)" onclick="cancelEditChallenge()">Cancelar</button>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="vid-chip">
+      <img class="vid-chip-thumb" src="${buildThumbUrl(v.video_id)}" alt="">
+      <div class="vid-chip-title">${v.title}${v.description ? `<div style="color:var(--muted);font-size:11px;font-weight:400">${v.description}</div>` : ''}</div>
+      <span class="category-badge ${v.is_open !== false ? 'open' : 'mini'}" onclick="toggleChallengeCategory(${v.id}, ${v.is_open === false})">${v.is_open !== false ? '🔓 ABERTO' : '📋 MINI'}</span>
+      <button class="btn-sm-danger" style="background:none;color:var(--muted);border:1px solid var(--border)" onclick="startEditChallenge(${v.id})">✏️</button>
+      <button class="btn-sm-danger" onclick="deleteChallengeVideo(${v.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function startEditChallenge(id) { editingChallengeId = id; renderChallengesAdminList(); }
+function cancelEditChallenge() { editingChallengeId = null; renderChallengesAdminList(); }
+async function saveEditChallenge(id) {
+  const title = document.getElementById(`ecv-title-${id}`).value.trim();
+  const url = document.getElementById(`ecv-url-${id}`).value.trim();
+  const description = document.getElementById(`ecv-desc-${id}`).value.trim();
+  const is_open = document.getElementById(`ecv-category-${id}`).value === 'true';
+  if (!title) return toast('⚠️ Digite o título!');
+  const vid = extractYouTubeId(url);
+  if (!vid) return toast('⚠️ Link do YouTube inválido!');
+  const { error } = await sb.from('challenge_videos').update({ title, youtube_url: buildShortUrl(vid), video_id: vid, description, is_open }).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  const v = CHALLENGE_VIDEOS.find(v=>v.id===id);
+  if (v) Object.assign(v, { title, youtube_url: buildShortUrl(vid), video_id: vid, description, is_open });
+  editingChallengeId = null;
+  renderChallengesAdminList();
+  toast('✅ Desafio atualizado!');
+}
+
+async function deleteChallengeVideo(id) {
+  await sb.from('challenge_videos').delete().eq('id', id);
+  CHALLENGE_VIDEOS = CHALLENGE_VIDEOS.filter(v=>v.id!==id);
+  renderChallengesAdminList();
+  toast('🗑️ Removido!');
+}
+
+// ══════════════════════════════════════════════
+//  EVENTO
+// ══════════════════════════════════════════════
+let EVENT_INFO = null;
+let EVENT_REGISTRATIONS = [];
+let eventRegLoaded = false;
+let eventIsMember = false;
+
+function defaultEventInfo() {
+  return { id:null, name:'', meta:'', desc:'', max:0, points:10, active:false, result_type:null };
+}
+async function getEventInfo() {
+  if (EVENT_INFO) return EVENT_INFO;
+  EVENT_INFO = await getSetting('event_info', defaultEventInfo());
+  return EVENT_INFO;
+}
+async function loadEventRegistrations() {
+  const { data, error } = await sb.from('event_registrations').select('*').order('created_at', { ascending:false });
+  if (error) { console.error(error); toast('⚠️ Erro ao carregar inscrições'); return []; }
+  EVENT_REGISTRATIONS = data || [];
+  eventRegLoaded = true;
+  return EVENT_REGISTRATIONS;
+}
+
+// ── Público ──
+function renderResultsBoard(info) {
+  const board = document.getElementById('results-board');
+  if (!info.result_type) { board.style.display = 'none'; return; }
+
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r.result_value);
+  if (!regs.length) { board.style.display = 'none'; return; }
+
+  const groupsOrder = [
+    { key:'Iniciante', emoji:'🟢', name:'Verde' },
+    { key:'Intermediário', emoji:'🟡', name:'Amarelo' },
+    { key:'Avançado', emoji:'🟠', name:'Laranja' }
+  ];
+
+  let html = '';
+  groupsOrder.forEach(g => {
+    const items = regs.filter(r => (r.fitness_level||'Iniciante') === g.key)
+                       .slice().sort((a,b)=>a.name.localeCompare(b.name));
+    if (!items.length) return;
+    html += `
+      <div class="results-group">
+        <div class="results-group-title">${g.emoji} Grupo ${g.name}</div>
+        <div class="results-list">
+          ${items.map(r => `
+            <div class="results-item">
+              <span class="results-item-name">${r.name}</span>
+              <span class="results-item-value">${r.result_value}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('results-groups').innerHTML = html;
+  board.style.display = html ? '' : 'none';
+}
+
+async function renderEventPublicView() {
+  const info = await getEventInfo();
+  if (!eventRegLoaded) await loadEventRegistrations();
+
+  renderResultsBoard(info);
+
+  document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
+  document.getElementById('event-meta').textContent = info.meta || '';
+  document.getElementById('event-desc').textContent = info.desc || '';
+
+  const rules = await getEventRules();
+  const rulesWrap = document.getElementById('event-rules-wrap');
+  if (rules) {
+    document.getElementById('event-rules-text').textContent = rules;
+    rulesWrap.style.display = '';
+  } else {
+    rulesWrap.style.display = 'none';
+  }
+
+  const currentRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  const count = currentRegs.length;
+  const max = info.max || 0;
+  const capWrap = document.getElementById('event-capacity-wrap');
+  const formWrap = document.getElementById('event-form-wrap');
+
+  if (max > 0) {
+    capWrap.style.display = '';
+    const pctFilled = Math.min(100, Math.round((count/max)*100));
+    const pctAvailable = Math.max(0, 100 - pctFilled);
+    const fill = document.getElementById('capacity-fill');
+    fill.style.width = pctFilled+'%';
+    fill.classList.toggle('full', count >= max);
+    const text = document.getElementById('capacity-text');
+    if (count >= max) {
+      text.textContent = '🎟️ Vagas esgotadas';
+    } else if (pctAvailable <= 20) {
+      text.textContent = `🔥 Últimas vagas — ${pctAvailable}% disponíveis, corre!`;
+    } else {
+      text.textContent = `🎟️ ${pctAvailable}% das vagas ainda disponíveis`;
+    }
+  } else {
+    capWrap.style.display = 'none';
+  }
+
+  // populate member select
+  const sel = document.getElementById('ev-member-select');
+  sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join('');
+
+  const isFull = max > 0 && count >= max;
+  const isClosed = !info.name || info.active === false;
+  if (isClosed || isFull) {
+    formWrap.style.display = 'none';
+    let msg = isClosed ? 'Inscrições fechadas no momento.' : 'Vagas esgotadas! 🎉';
+    capWrap.insertAdjacentHTML('afterend', `<div class="capacity-full-msg" id="event-closed-msg">${msg}</div>`);
+  } else {
+    formWrap.style.display = '';
+    const oldMsg = document.getElementById('event-closed-msg');
+    if (oldMsg) oldMsg.remove();
+  }
+}
+
+function setEventPersonType(isInternal) {
+  eventIsMember = isInternal; // mantém nome da variável por compatibilidade interna
+  document.getElementById('mt-is-member').classList.toggle('active', isInternal);
+  document.getElementById('mt-not-member').classList.toggle('active', !isInternal);
+  document.getElementById('ev-internal-checks-wrap').style.display = isInternal ? '' : 'none';
+  document.getElementById('ev-age-wrap').style.display = isInternal ? 'none' : '';
+  document.getElementById('ev-phone-wrap').style.display = isInternal ? 'none' : '';
+  document.getElementById('ev-source-wrap').style.display = isInternal ? 'none' : '';
+  document.getElementById('ev-referral-wrap').style.display = 'none';
+  if (isInternal) {
+    document.getElementById('ev-source').value = 'Instagram';
+  } else {
+    document.getElementById('ev-is-clube').checked = false;
+    document.getElementById('ev-is-ct').checked = false;
+  }
+  toggleInternalFields();
+}
+
+function toggleInternalFields() {
+  const isInternal = eventIsMember;
+  const isClube = isInternal && document.getElementById('ev-is-clube').checked;
+  // Se for membro do clube, seleciona o nome na lista; senão, digita o nome (visitante ou aluno do CT sem ser membro)
+  document.getElementById('ev-member-select-wrap').style.display = isClube ? '' : 'none';
+  document.getElementById('ev-name-wrap').style.display = isClube ? 'none' : '';
+}
+
+function toggleReferralField() {
+  const isReferral = document.getElementById('ev-source').value === 'Indicação de amigo(a)';
+  document.getElementById('ev-referral-wrap').style.display = isReferral ? '' : 'none';
+}
+
+async function submitEventRegistration() {
+  const info = await getEventInfo();
+  document.getElementById('ev-error').textContent = '';
+  document.getElementById('ev-blocked').style.display = 'none';
+
+  const isClube = eventIsMember && document.getElementById('ev-is-clube').checked;
+  const isCT = eventIsMember && document.getElementById('ev-is-ct').checked;
+  if (eventIsMember && !isClube && !isCT) return toast('⚠️ Marque ao menos uma opção: Membro do Clube ou Aluno do CT!');
+
+  let name, memberId = null;
+  if (isClube) {
+    const sel = document.getElementById('ev-member-select');
+    memberId = parseInt(sel.value);
+    const m = MEMBERS.find(m=>m.id===memberId);
+    if (!m) return toast('⚠️ Selecione seu nome!');
+    name = m.name;
+  } else {
+    name = document.getElementById('ev-name').value.trim();
+    if (!name) return toast('⚠️ Digite seu nome!');
+  }
+  const age = eventIsMember ? null : (parseInt(document.getElementById('ev-age').value) || null);
+  const level = document.getElementById('ev-level').value;
+  const phone = eventIsMember ? '' : document.getElementById('ev-phone').value.trim();
+  const heardFrom = eventIsMember ? null : document.getElementById('ev-source').value;
+  const isReferral = !eventIsMember && heardFrom === 'Indicação de amigo(a)';
+  const referredBy = isReferral ? document.getElementById('ev-referral').value.trim() : null;
+  if (!eventIsMember && !phone) return toast('⚠️ Digite seu telefone!');
+  if (isReferral && !referredBy) return toast('⚠️ Digite o nome de quem indicou!');
+  if (!document.getElementById('ev-consent').checked) return toast('⚠️ Você precisa concordar com os termos pra continuar!');
+
+  // checa lista de faltantes de eventos anteriores (por telefone, ou por membro caso não tenha telefone)
+  let blockedQuery = sb.from('event_registrations').select('id').eq('attended', false);
+  blockedQuery = isClube && memberId
+    ? blockedQuery.eq('member_id', memberId)
+    : blockedQuery.eq('phone', phone);
+  const { data: blocked } = await blockedQuery.limit(1);
+  if (blocked && blocked.length) {
+    document.getElementById('ev-blocked').style.display = 'block';
+    return;
+  }
+
+  const { error } = await sb.from('event_registrations').insert({
+    event_name: info.name, event_id: info.id, name, age, fitness_level: level, phone, heard_from: heardFrom, referred_by: referredBy,
+    is_member: isClube, is_ct_student: isCT, member_id: isClube ? memberId : null
+  });
+  if (error) { console.error(error); toast('⚠️ Erro ao inscrever'); return; }
+
+  document.getElementById('ev-name').value='';
+  document.getElementById('ev-age').value='';
+  document.getElementById('ev-phone').value='';
+  document.getElementById('ev-referral').value='';
+  document.getElementById('ev-consent').checked = false;
+  document.getElementById('ev-is-clube').checked = false;
+  document.getElementById('ev-is-ct').checked = false;
+  eventRegLoaded = false;
+  await loadEventRegistrations();
+  await renderEventPublicView();
+  toast('✅ Inscrição confirmada! Nos vemos lá 🎉');
+}
+
+// ── Admin ──
+async function renderEventAdminView() {
+  const info = await getEventInfo();
+  document.getElementById('ev-cfg-name').value = info.name || '';
+  document.getElementById('ev-cfg-meta').value = info.meta || '';
+  document.getElementById('ev-cfg-desc').value = info.desc || '';
+  document.getElementById('ev-cfg-max').value = info.max || '';
+  document.getElementById('ev-cfg-points').value = info.points ?? 10;
+  document.getElementById('ev-cfg-result-type').value = info.result_type || '';
+  document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
+  document.getElementById('ev-cfg-rules').value = await getEventRules();
+
+  if (!eventRegLoaded) await loadEventRegistrations();
+  renderRegistrationsList();
+  renderNoShowList();
+
+  const hasResultType = !!info.result_type;
+  document.getElementById('result-entry-label').style.display = hasResultType ? '' : 'none';
+  document.getElementById('timer-widget').style.display = (info.result_type === 'tempo') ? '' : 'none';
+  document.getElementById('result-search').style.display = hasResultType ? '' : 'none';
+  document.getElementById('result-entry-divider').style.display = hasResultType ? '' : 'none';
+  renderResultEntryList();
+}
+
+let startingFreshEvent = false;
+
+async function updateEventConfig() {
+  const name = document.getElementById('ev-cfg-name').value.trim();
+  const meta = document.getElementById('ev-cfg-meta').value.trim();
+  const desc = document.getElementById('ev-cfg-desc').value.trim();
+  const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
+  const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
+  const active = document.getElementById('ev-cfg-active').value === 'true';
+  if (!name) return toast('⚠️ Digite o nome do evento!');
+  const prevInfo = await getEventInfo();
+  // O ID só muda se ainda não existir um, ou se "Começar evento novo" foi clicado antes de salvar.
+  // Editar nome/descrição/vagas normalmente NUNCA muda o ID — por isso os inscritos não somem.
+  const isFirstIdEver = !prevInfo.id;
+  const id = (startingFreshEvent || isFirstIdEver) ? ('ev_' + Date.now()) : prevInfo.id;
+  startingFreshEvent = false;
+  // Migração: se esse evento já tinha inscritos de antes desta atualização (sem event_id ainda),
+  // vincula eles ao novo ID automaticamente, pra não "sumir" da lista.
+  if (isFirstIdEver && prevInfo.name) {
+    await sb.from('event_registrations').update({ event_id: id }).eq('event_name', prevInfo.name).is('event_id', null);
+    eventRegLoaded = false;
+    await loadEventRegistrations();
+  }
+  const result_type = document.getElementById('ev-cfg-result-type').value || null;
+  const newInfo = { id, name, meta, desc, max, points, active, result_type };
+  const ok = await setSetting('event_info', newInfo);
+  if (!ok) return;
+  EVENT_INFO = newInfo;
+  renderRegistrationsList();
+  renderEventAdminView();
+  toast('✅ Evento salvo!');
+}
+
+// Regras do evento — fixas, valem para todos os eventos, editáveis a qualquer momento
+async function getEventRules() {
+  return await getSetting('event_rules', '');
+}
+async function updateEventRules() {
+  const rules = document.getElementById('ev-cfg-rules').value.trim();
+  const ok = await setSetting('event_rules', rules);
+  if (!ok) return;
+  toast('✅ Regras atualizadas!');
+}
+
+function startNewEvent() {
+  if (!confirm('Isso limpa o formulário pra você preencher um evento novo. As inscrições do evento anterior continuam salvas no histórico (e faltantes continuam bloqueados), mas vão parar de contar na lista/vagas deste evento. Continuar?')) return;
+  document.getElementById('ev-cfg-name').value = '';
+  document.getElementById('ev-cfg-meta').value = '';
+  document.getElementById('ev-cfg-desc').value = '';
+  document.getElementById('ev-cfg-max').value = '';
+  startingFreshEvent = true;
+  toast('📝 Preencha os dados do novo evento e clique em Salvar');
+}
+
+function renderRegistrationsList() {
+  const el = document.getElementById('event-registrations-list');
+  const info = EVENT_INFO || defaultEventInfo();
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  document.getElementById('ev-count').textContent = regs.length;
+  if (!regs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhuma inscrição ainda.</div>'; return; }
+  el.innerHTML = regs.map(r => `
+    <div class="reg-chip">
+      <div class="reg-chip-info">
+        <div class="reg-chip-name">${r.name} ${r.is_member ? '<span class="reg-member-badge">CLUBE</span>' : ''} ${r.is_ct_student ? '<span class="reg-member-badge">CT</span>' : ''} ${(!r.is_member && !r.is_ct_student) ? '<span class="reg-guest-badge">VISITANTE</span>' : ''}</div>
+        <div class="reg-chip-meta">${r.age?r.age+' anos · ':''}${r.fitness_level||''} · ${r.phone}</div>
+      </div>
+      <div class="attend-btns">
+        <button class="attend-btn yes ${r.attended===true?'active':''}" onclick="toggleAttendance(${r.id}, true)">✓</button>
+        <button class="attend-btn no ${r.attended===false?'active':''}" onclick="toggleAttendance(${r.id}, false)">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleAttendance(id, attended) {
+  const reg = EVENT_REGISTRATIONS.find(r=>r.id===id);
+  if (!reg) return;
+  const { error } = await sb.from('event_registrations').update({ attended }).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
+  reg.attended = attended;
+
+  if (attended === true && reg.is_member && reg.member_id && !reg.points_awarded) {
+    const info = await getEventInfo();
+    await addPointsToMember(reg.member_id, info.points || 0, info.name, 'evento');
+    await sb.from('event_registrations').update({ points_awarded: true }).eq('id', id);
+    reg.points_awarded = true;
+    await loadMembers();
+    renderRanking();
+  }
+  renderRegistrationsList();
+  renderNoShowList();
+  toast(attended ? '✅ Presença confirmada!' : '🚫 Marcado como faltante');
+}
+
+function renderNoShowList() {
+  const el = document.getElementById('event-noshow-list');
+  const noShows = EVENT_REGISTRATIONS.filter(r => r.attended === false);
+  if (!noShows.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Ninguém na lista de faltantes.</div>'; return; }
+  el.innerHTML = noShows.map(r => `
+    <div class="reg-chip">
+      <div class="reg-chip-info">
+        <div class="reg-chip-name">${r.name}</div>
+        <div class="reg-chip-meta">${r.phone} · faltou em: ${r.event_name||'—'}</div>
+      </div>
+      <button class="btn-sm-danger" onclick="deleteRegistration(${r.id})" title="Remover da lista (libera pra próxima inscrição)">✕</button>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  CRONÔMETRO REGRESSIVO (time cap automático)
+// ══════════════════════════════════════════════
+let timerCapSeconds = 0;
+let timerRemaining = 0;
+let timerInterval = null;
+let timerRunning = false;
+
+function formatTime(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer-display');
+  el.textContent = formatTime(timerRemaining);
+  el.classList.toggle('warn', timerRemaining <= 10 && timerRemaining > 0);
+}
+
+function startTimer() {
+  if (timerRunning) return;
+  if (timerRemaining <= 0) {
+    const min = parseInt(document.getElementById('timer-cap-min').value) || 0;
+    const sec = parseInt(document.getElementById('timer-cap-sec').value) || 0;
+    timerCapSeconds = min*60 + sec;
+    if (timerCapSeconds <= 0) return toast('⚠️ Defina o time cap primeiro!');
+    timerRemaining = timerCapSeconds;
+  }
+  timerRunning = true;
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerDisplay();
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      toast('⏰ Time cap atingido!');
+    }
+  }, 1000);
+  updateTimerDisplay();
+}
+
+function pauseTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerRemaining = 0;
+  timerCapSeconds = 0;
+  updateTimerDisplay();
+}
+
+// ══════════════════════════════════════════════
+//  LANÇAMENTO RÁPIDO DE RESULTADOS
+// ══════════════════════════════════════════════
+function levelColor(level) {
+  if (level === 'Avançado') return { emoji:'🟠', name:'Laranja' };
+  if (level === 'Intermediário') return { emoji:'🟡', name:'Amarelo' };
+  return { emoji:'🟢', name:'Verde' };
+}
+
+function renderResultEntryList() {
+  const el = document.getElementById('result-entry-list');
+  const info = EVENT_INFO || defaultEventInfo();
+  if (!info.result_type) { el.innerHTML = ''; return; }
+  const search = (document.getElementById('result-search').value || '').toLowerCase().trim();
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  if (search) regs = regs.filter(r => r.name.toLowerCase().includes(search));
+  regs = regs.slice().sort((a,b)=>a.name.localeCompare(b.name));
+
+  if (!regs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhum inscrito encontrado.</div>'; return; }
+
+  el.innerHTML = regs.map(r => {
+    const lvl = levelColor(r.fitness_level);
+    const captureBtn = info.result_type === 'tempo'
+      ? `<button class="result-row-cap" onclick="captureTimerResult(${r.id})">⏱️</button>`
+      : '';
+    const inputType = info.result_type === 'tempo' ? 'text' : 'number';
+    const placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
+    return `
+    <div class="result-row ${r.result_value ? 'done' : ''}" id="result-row-${r.id}">
+      <div class="result-row-level" title="${lvl.name}">${lvl.emoji}</div>
+      <div class="result-row-name">${r.name}</div>
+      ${captureBtn}
+      <input type="${inputType}" class="result-row-input" id="result-input-${r.id}" placeholder="${placeholder}" value="${r.result_value||''}">
+      <button class="result-row-save" onclick="saveEventResult(${r.id})">💾</button>
+    </div>`;
+  }).join('');
+}
+
+function captureTimerResult(regId) {
+  if (timerCapSeconds <= 0) return toast('⚠️ Inicie o cronômetro primeiro!');
+  const elapsed = timerCapSeconds - timerRemaining;
+  document.getElementById('result-input-'+regId).value = formatTime(elapsed);
+}
+
+async function saveEventResult(regId) {
+  const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
+  if (!reg) return;
+  const value = document.getElementById('result-input-'+regId).value.trim();
+  if (!value) return toast('⚠️ Digite o resultado antes de salvar!');
+
+  const { error } = await sb.from('event_registrations').update({ result_value: value, attended: true }).eq('id', regId);
+  if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
+  reg.result_value = value;
+  reg.attended = true;
+
+  if (reg.is_member && reg.member_id && !reg.points_awarded) {
+    const info = await getEventInfo();
+    await addPointsToMember(reg.member_id, info.points || 0, info.name, 'evento');
+    await sb.from('event_registrations').update({ points_awarded: true }).eq('id', regId);
+    reg.points_awarded = true;
+    await loadMembers();
+    renderRanking();
+  }
+  renderResultEntryList();
+  renderRegistrationsList();
+  renderNoShowList();
+  toast(`✅ Resultado de ${reg.name} salvo!`);
+}
+
+async function deleteRegistration(id) {
+  await sb.from('event_registrations').delete().eq('id', id);
+  EVENT_REGISTRATIONS = EVENT_REGISTRATIONS.filter(r=>r.id!==id);
+  renderRegistrationsList();
+  renderNoShowList();
+  toast('🗑️ Removido da lista de faltantes!');
+}
+
+function printEventReport() {
+  const info = EVENT_INFO || defaultEventInfo();
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  if (!regs.length) return toast('⚠️ Não há inscritos nesse evento ainda.');
+
+  const attendedCount = regs.filter(r=>r.attended===true).length;
+  const noShowCount = regs.filter(r=>r.attended===false).length;
+  const pendingCount = regs.filter(r=>r.attended==null).length;
+
+  const rows = regs.map((r,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${r.name}</td>
+      <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
+      <td>${r.age||'—'}</td>
+      <td>${r.fitness_level||'—'}</td>
+      <td>${r.phone||'—'}</td>
+      <td>${r.heard_from||'—'}${r.referred_by?' ('+r.referred_by+')':''}</td>
+      <td>${r.attended===true?'✅ Presente':r.attended===false?'❌ Faltou':'—'}</td>
+    </tr>`).join('');
+
+  const html = `
+    <html><head><meta charset="utf-8"><title>Relatório — ${info.name}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:24px;color:#111}
+      h1{font-size:20px;margin-bottom:2px}
+      .meta{color:#555;font-size:13px;margin-bottom:14px}
+      .summary{display:flex;gap:18px;margin-bottom:18px;font-size:13px}
+      .summary b{font-size:16px;display:block}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+      th{background:#f0f0f0}
+      @media print{ button{display:none} }
+    </style></head>
+    <body>
+      <h1>${info.name}</h1>
+      <div class="meta">${info.meta||''} — Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="summary">
+        <div><b>${regs.length}</b>Inscritos</div>
+        <div><b>${attendedCount}</b>Presentes</div>
+        <div><b>${noShowCount}</b>Faltantes</div>
+        <div><b>${pendingCount}</b>Sem marcação</div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button>
+    </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── ASSINANTE: vídeos exclusivos (admin) ──
+async function addSubscriberVideo() {
+  const title = document.getElementById('sv-title').value.trim();
+  const url = document.getElementById('sv-url').value.trim();
+  const description = document.getElementById('sv-desc').value.trim();
+  if (!title) return toast('⚠️ Digite o título!');
+  const id = extractYouTubeId(url);
+  if (!id) return toast('⚠️ Link do YouTube inválido!');
+  const { data, error } = await sb.from('subscriber_videos').insert({ title, youtube_url: buildShortUrl(id), video_id: id, description }).select();
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  SUBSCRIBER_VIDEOS.unshift(data[0]);
+  document.getElementById('sv-title').value='';
+  document.getElementById('sv-url').value='';
+  document.getElementById('sv-desc').value='';
+  renderSubscriberVideosAdminList();
+  toast('✅ Vídeo exclusivo publicado!');
+}
+
+let editingSubscriberId = null;
+function renderSubscriberVideosAdminList() {
+  const el = document.getElementById('subscriber-videos-admin-list');
+  if (!SUBSCRIBER_VIDEOS.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum vídeo ainda.</div>'; return; }
+  el.innerHTML = SUBSCRIBER_VIDEOS.map(v => {
+    if (editingSubscriberId === v.id) {
+      return `
+      <div class="vid-chip" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 0">
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Título</label><input type="text" id="esv-title-${v.id}" value="${v.title.replace(/"/g,'&quot;')}"></div>
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Link do YouTube</label><input type="text" id="esv-url-${v.id}" value="${v.youtube_url}"></div>
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Descrição</label><input type="text" id="esv-desc-${v.id}" value="${(v.description||'').replace(/"/g,'&quot;')}"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-blue" style="flex:1;padding:10px" onclick="saveEditSubscriberVideo(${v.id})">💾 Salvar</button>
+          <button class="btn" style="flex:1;padding:10px;background:var(--s2);color:var(--text)" onclick="cancelEditSubscriberVideo()">Cancelar</button>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="vid-chip">
+      <img class="vid-chip-thumb" src="${buildThumbUrl(v.video_id)}" alt="">
+      <div class="vid-chip-title">${v.title}${v.description ? `<div style="color:var(--muted);font-size:11px;font-weight:400">${v.description}</div>` : ''}</div>
+      <button class="btn-sm-danger" style="background:none;color:var(--muted);border:1px solid var(--border)" onclick="startEditSubscriberVideo(${v.id})">✏️</button>
+      <button class="btn-sm-danger" onclick="deleteSubscriberVideo(${v.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function startEditSubscriberVideo(id) { editingSubscriberId = id; renderSubscriberVideosAdminList(); }
+function cancelEditSubscriberVideo() { editingSubscriberId = null; renderSubscriberVideosAdminList(); }
+async function saveEditSubscriberVideo(id) {
+  const title = document.getElementById(`esv-title-${id}`).value.trim();
+  const url = document.getElementById(`esv-url-${id}`).value.trim();
+  const description = document.getElementById(`esv-desc-${id}`).value.trim();
+  if (!title) return toast('⚠️ Digite o título!');
+  const vid = extractYouTubeId(url);
+  if (!vid) return toast('⚠️ Link do YouTube inválido!');
+  const { error } = await sb.from('subscriber_videos').update({ title, youtube_url: buildShortUrl(vid), video_id: vid, description }).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  const v = SUBSCRIBER_VIDEOS.find(v=>v.id===id);
+  if (v) Object.assign(v, { title, youtube_url: buildShortUrl(vid), video_id: vid, description });
+  editingSubscriberId = null;
+  renderSubscriberVideosAdminList();
+  toast('✅ Vídeo atualizado!');
+}
+
+async function deleteSubscriberVideo(id) {
+  await sb.from('subscriber_videos').delete().eq('id', id);
+  SUBSCRIBER_VIDEOS = SUBSCRIBER_VIDEOS.filter(v=>v.id!==id);
+  renderSubscriberVideosAdminList();
+  toast('🗑️ Removido!');
+}
+
+// ── ASSINANTE: códigos de acesso (admin) ──
+async function generateCode() {
+  const label = document.getElementById('code-label').value.trim();
+  const code = genCode();
+  const { data, error } = await sb.from('access_codes').insert({ code, label, active:true }).select();
+  if (error) { toast('⚠️ Erro ao gerar código'); console.error(error); return; }
+  ACCESS_CODES.unshift(data[0]);
+  document.getElementById('code-label').value='';
+  renderCodesAdminList();
+  toast(`✅ Código gerado: ${code}`);
+}
+
+function renderCodesAdminList() {
+  const el = document.getElementById('codes-admin-list');
+  if (!ACCESS_CODES.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum código gerado ainda.</div>'; return; }
+  el.innerHTML = ACCESS_CODES.map(c => `
+    <div class="code-chip">
+      <div>
+        <div class="code-chip-code">${c.code}</div>
+        ${c.label ? `<div class="code-chip-label">${c.label}</div>` : ''}
+      </div>
+      <span class="${c.active ? 'badge-active' : 'badge-inactive'}" style="cursor:pointer" onclick="toggleCode(${c.id}, ${!c.active})">${c.active ? 'ATIVO' : 'INATIVO'}</span>
+      <button class="btn-sm-danger" onclick="deleteCode(${c.id})">✕</button>
+    </div>`).join('');
+}
+
+async function toggleCode(id, newActive) {
+  await sb.from('access_codes').update({ active:newActive }).eq('id', id);
+  const c = ACCESS_CODES.find(c=>c.id===id);
+  if (c) c.active = newActive;
+  renderCodesAdminList();
+}
+
+async function deleteCode(id) {
+  await sb.from('access_codes').delete().eq('id', id);
+  ACCESS_CODES = ACCESS_CODES.filter(c=>c.id!==id);
+  renderCodesAdminList();
+  toast('🗑️ Código removido!');
+}
+
+// ── ASSINANTE: mensagem "como virar assinante" (editável) ──
+async function getSubInfo() {
+  return await getSetting('sub_info', {
+    title: '💛 Quer virar assinante?',
+    body: 'Fale com a Cantil Fitness pelo WhatsApp ou no Instagram @cantilfitness pra liberar seu código de acesso.'
+  });
+}
+async function renderSubInfoBox() {
+  const si = await getSubInfo();
+  document.getElementById('sub-info-box').innerHTML = `
+    <div class="sub-info-title">${si.title}</div>
+    <div class="sub-info-body">${si.body}</div>`;
+}
+async function updateSubInfo() {
+  const title = document.getElementById('subinfo-title').value.trim();
+  const body = document.getElementById('subinfo-body').value.trim();
+  if (!title || !body) return toast('⚠️ Preencha título e texto!');
+  const ok = await setSetting('sub_info', { title, body });
+  if (!ok) return;
+  await renderSubInfoBox();
+  toast('✅ Mensagem atualizada!');
+}
+
+// ── ASSINANTE: overlay de código por vídeo (público) ──
+let pendingVideo = null;
+function openCodeOverlay(elId, index) {
+  const list = elId === 'assinante-grid' ? SUBSCRIBER_VIDEOS : CHALLENGE_VIDEOS;
+  pendingVideo = list[index];
+  document.getElementById('code-overlay-video-title').textContent = `Digite o código para assistir: "${pendingVideo.title}"`;
+  document.getElementById('code-overlay-input').value = '';
+  document.getElementById('code-overlay-err').textContent = '';
+  document.getElementById('code-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('code-overlay-input').focus(),200);
+}
+function closeCodeOverlay() {
+  document.getElementById('code-overlay').classList.remove('open');
+  pendingVideo = null;
+}
+async function submitCodeOverlay() {
+  const val = document.getElementById('code-overlay-input').value.trim().toUpperCase();
+  if (!val) return;
+  const { data, error } = await sb.from('access_codes').select('*').eq('code', val).eq('active', true).limit(1);
+  if (error) { document.getElementById('code-overlay-err').textContent='⚠️ Erro ao validar'; console.error(error); return; }
+  if (!data || !data.length) {
+    document.getElementById('code-overlay-err').textContent='✗ Código inválido ou inativo';
+    return;
+  }
+  lset(SK.subUnlocked, val);
+  closeCodeOverlay();
+  if (pendingVideo) window.open(pendingVideo.youtube_url, '_blank');
+  renderVideoGrid('assinante-grid', SUBSCRIBER_VIDEOS, 'Nenhum vídeo exclusivo publicado ainda.', 'open');
+  toast('🔓 Acesso liberado! Aproveite os vídeos.');
+}
+document.getElementById('code-overlay-input')?.addEventListener('keydown', e=>{ if(e.key==='Enter') submitCodeOverlay(); });
+
+// ══════════════════════════════════════════════
+//  CHALLENGE BANNER (editable)
+// ══════════════════════════════════════════════
+async function renderChallengeBanner() {
+  const ch = await getSetting('challenge_banner', null);
+  const wrap = document.getElementById('challenge-wrap');
+  if (!ch || ch.hidden || (!ch.title && !ch.body && !ch.sub)) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  document.getElementById('challenge-title').textContent = ch.title || '';
+  document.getElementById('challenge-body').innerHTML = ch.body || '';
+  document.getElementById('challenge-sub').textContent = ch.sub || '';
+}
+
+async function updateChallenge() {
+  const title = document.getElementById('ch-title').value.trim();
+  const body = document.getElementById('ch-body').value.trim();
+  const sub = document.getElementById('ch-sub').value.trim();
+  const current = await getSetting('challenge_banner', { title:'', body:'', sub:'' });
+  const ok = await setSetting('challenge_banner', {
+    title: title || current.title,
+    body: body || current.body,
+    sub: sub || current.sub,
+    hidden: false
+  });
+  if (!ok) return;
+  document.getElementById('ch-title').value = title || current.title;
+  document.getElementById('ch-body').value = body || current.body;
+  document.getElementById('ch-sub').value = sub || current.sub;
+  await renderChallengeBanner();
+  toast('🔥 Banner de desafio atualizado!');
+}
+
+async function hideChallenge() {
+  const current = await getSetting('challenge_banner', { title:'', body:'', sub:'' });
+  current.hidden = true;
+  const ok = await setSetting('challenge_banner', current);
+  if (!ok) return;
+  await renderChallengeBanner();
+  toast('👁️ Banner ocultado!');
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN MODAL
+// ══════════════════════════════════════════════
+let unlocked = false;
+
+function openAdminModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  if (!unlocked) {
+    document.getElementById('pass-gate').style.display='block';
+    document.getElementById('admin-panel').style.display='none';
+    document.getElementById('modal-title').textContent='ACESSO';
+    setTimeout(()=>document.getElementById('pass-input').focus(),300);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target===document.getElementById('modal-overlay')) closeModal();
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+document.getElementById('pass-input').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPass(); });
+
+async function checkPass() {
+  const val = document.getElementById('pass-input').value;
+  const storedPass = await getSetting('admin_pass', 'admin123');
+  if (val===storedPass) {
+    unlocked=true;
+    document.getElementById('pass-gate').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    document.getElementById('modal-title').textContent='PAINEL ADMIN';
+    document.getElementById('pass-input').value='';
+    document.getElementById('pass-err').textContent='';
+    await loadHistory();
+    renderAdminSelect(); renderMembersList(); renderRecentHistory(); renderQuickTap();
+  } else {
+    document.getElementById('pass-err').textContent='✗ Senha incorreta';
+    document.getElementById('pass-input').value='';
+  }
+}
+
+async function admTab(name) {
+  document.querySelectorAll('.adm-tab').forEach((b,i)=>{
+    b.classList.toggle('active',['quick','pts','members','challenges','evento','subscribers','settings'][i]===name);
+  });
+  document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='members'){renderMembersList();}
+  if(name==='pts'){renderAdminSelect();renderRecentHistory();}
+  if(name==='quick'){renderQuickTap();}
+  if(name==='challenges'){loadChallengeVideos().then(renderChallengesAdminList);}
+  if(name==='evento'){await renderEventAdminView();}
+  if(name==='subscribers'){
+    loadSubscriberVideos().then(renderSubscriberVideosAdminList);
+    loadAccessCodes().then(renderCodesAdminList);
+    const si = await getSubInfo();
+    document.getElementById('subinfo-title').value = si.title;
+    document.getElementById('subinfo-body').value = si.body;
+  }
+  if(name==='settings'){
+    const ch = await getSetting('challenge_banner', { title:'', body:'', sub:'' });
+    document.getElementById('ch-title').value = ch.title || '';
+    document.getElementById('ch-body').value = ch.body || '';
+    document.getElementById('ch-sub').value = ch.sub || '';
+  }
+}
+
+// ── TOQUE RÁPIDO ──
+function renderQuickTap(filterText) {
+  const members = MEMBERS.slice().sort((a,b)=>b.points-a.points);
+  const term = (filterText !== undefined ? filterText : (document.getElementById('quick-search')?.value || '')).toLowerCase().trim();
+  const filtered = term ? members.filter(m => m.name.toLowerCase().includes(term)) : members;
+  const el = document.getElementById('quick-tap-list');
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum membro encontrado.</div>'; return; }
+  el.innerHTML = filtered.map(m => `
+    <div class="quick-tap-item" id="qt-${m.id}" onclick="quickAdd(${m.id})">
+      <div class="qt-avatar">${m.emoji}</div>
+      <div class="qt-name">${m.name}</div>
+      <div class="qt-pts">${m.points}</div>
+      <div class="qt-plus">+</div>
+    </div>`).join('');
+}
+
+async function quickAdd(id) {
+  const val = parseInt(document.getElementById('quick-value').value) || 3;
+  const member = await addPointsToMember(id, val, 'Toque rápido');
+  if (!member) return;
+
+  const itemEl = document.getElementById('qt-'+id);
+  if (itemEl) {
+    itemEl.classList.add('flash');
+    itemEl.querySelector('.qt-pts').textContent = member.points;
+    setTimeout(()=>itemEl.classList.remove('flash'), 500);
+  }
+  await loadMembers();
+  renderRanking();
+  toast(`✅ +${val} pts para ${member.name}!`);
+}
+
+document.addEventListener('input', e => {
+  if (e.target && e.target.id === 'quick-search') renderQuickTap();
+});
+
+// ── PONTOS ──
+function renderAdminSelect() {
+  const members = MEMBERS.slice().sort((a,b)=>b.points-a.points);
+  document.getElementById('a-member').innerHTML =
+    '<option value="">Selecionar membro...</option>'+
+    members.map(m=>`<option value="${m.id}">${m.emoji} ${m.name} — ${m.points} pts</option>`).join('');
+}
+
+async function addPoints() {
+  const id   = parseInt(document.getElementById('a-member').value);
+  const pts  = parseInt(document.getElementById('a-points').value);
+  const reason = document.getElementById('a-reason').value.trim()||'Sem motivo';
+  const category = document.getElementById('a-category').value || 'treino';
+  if(!id) return toast('⚠️ Selecione um membro!');
+  if(isNaN(pts)||pts===0) return toast('⚠️ Informe os pontos!');
+
+  const member = await addPointsToMember(id, pts, reason, category);
+  if (!member) return;
+
+  document.getElementById('a-points').value='';
+  document.getElementById('a-reason').value='';
+  document.getElementById('a-category').value='treino';
+  await loadHistory();
+  await loadMembers();
+  renderAdminSelect(); renderRecentHistory(); renderRanking();
+  toast(`✅ ${pts>0?'+':''}${pts} pts para ${member.name}!`);
+}
+
+function renderRecentHistory() {
+  const history = HISTORY.slice(0,8);
+  const el = document.getElementById('recent-history');
+  if(!history.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum registro ainda.</div>';return;}
+  el.innerHTML = history.map((h)=>{
+    const d = new Date(h.created_at);
+    const dateStr = d.toLocaleDateString('pt-BR');
+    const timeStr = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${h.member_name}</div>
+        <div style="font-size:11px;color:var(--muted)">${h.reason} · ${dateStr} ${timeStr}${h.balance_after!=null ? ` · ficou com <strong style="color:var(--text)">${h.balance_after}</strong>` : ''}</div>
+      </div>
+      <span class="pts-tag ${h.points>=0?'pts-pos':'pts-neg'}">${h.points>0?'+':''}${h.points}</span>
+      <button class="btn-sm-danger" onclick="deleteEntry(${h.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteEntry(historyId) {
+  const entry = HISTORY.find(h=>h.id===historyId);
+  if(!entry) return;
+  const member = MEMBERS.find(m=>m.id===entry.member_id);
+  if(member){
+    const newPts = Math.max(0, member.points - entry.points);
+    await sb.from('members').update({ points:newPts }).eq('id', member.id);
+    member.points = newPts;
+  }
+  await sb.from('history').delete().eq('id', historyId);
+  await loadHistory();
+  renderRecentHistory(); renderAdminSelect(); renderRanking();
+  toast('🗑️ Removido!');
+}
+
+// ── MEMBROS ──
+async function addMember() {
+  const name  = document.getElementById('n-name').value.trim();
+  const emoji = document.getElementById('n-emoji').value.trim()||'😊';
+  const gender = document.getElementById('n-gender').value;
+  const birthday = document.getElementById('n-birthday').value || null;
+  if(!name) return toast('⚠️ Digite o nome!');
+  const { data, error } = await sb.from('members').insert({ name, emoji, points:0, gender, birthday }).select();
+  if (error) { toast('⚠️ Erro ao cadastrar'); console.error(error); return; }
+  MEMBERS.push(data[0]);
+  document.getElementById('n-name').value='';
+  document.getElementById('n-emoji').value='';
+  document.getElementById('n-gender').value='F';
+  document.getElementById('n-birthday').value='';
+  renderMembersList(); renderAdminSelect(); renderRanking();
+  toast(`✅ ${name} cadastrado!`);
+}
+
+let editingMemberId = null;
+function renderMembersList() {
+  const members = MEMBERS.slice().sort((a,b)=>b.points-a.points);
+  const el = document.getElementById('members-list');
+  if(!members.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">Nenhum membro.</div>';return;}
+  el.innerHTML = members.map(m => {
+    if (editingMemberId === m.id) {
+      return `
+      <div class="member-chip" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 0">
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Nome</label><input type="text" id="em-name-${m.id}" value="${m.name.replace(/"/g,'&quot;')}"></div>
+        <div class="field-group" style="margin-bottom:0"><label class="field-label">Emoji (avatar)</label><input type="text" id="em-emoji-${m.id}" value="${m.emoji}" maxlength="2"></div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label">Gênero (categoria do ranking)</label>
+          <select id="em-gender-${m.id}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+            <option value="F" ${m.gender==='F'?'selected':''}>👩 Feminino</option>
+            <option value="M" ${m.gender==='M'?'selected':''}>👨 Masculino</option>
+          </select>
+        </div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label">Aniversário (opcional)</label>
+          <input type="date" id="em-birthday-${m.id}" value="${m.birthday||''}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-blue" style="flex:1;padding:10px" onclick="saveEditMember(${m.id})">💾 Salvar</button>
+          <button class="btn" style="flex:1;padding:10px;background:var(--s2);color:var(--text)" onclick="cancelEditMember()">Cancelar</button>
+        </div>
+      </div>`;
+    }
+    return `
+    <div class="member-chip">
+      <div class="chip-avatar">${m.emoji}</div>
+      <div class="chip-info">
+        <div class="chip-name">${m.name}</div>
+        <div class="chip-id">${m.points} pontos · ${m.gender==='M' ? '👨 Masculino' : '👩 Feminino'}</div>
+      </div>
+      <div class="chip-pts">${m.points}</div>
+      <button class="btn-sm-danger" style="background:none;color:var(--muted);border:1px solid var(--border)" onclick="startEditMember(${m.id})">✏️</button>
+      <button class="btn-sm-danger" onclick="deleteMember(${m.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function startEditMember(id) { editingMemberId = id; renderMembersList(); }
+function cancelEditMember() { editingMemberId = null; renderMembersList(); }
+async function saveEditMember(id) {
+  const name = document.getElementById(`em-name-${id}`).value.trim();
+  const emoji = document.getElementById(`em-emoji-${id}`).value.trim()||'😊';
+  const gender = document.getElementById(`em-gender-${id}`).value;
+  const birthday = document.getElementById(`em-birthday-${id}`).value || null;
+  if (!name) return toast('⚠️ Digite o nome!');
+  const { error } = await sb.from('members').update({ name, emoji, gender, birthday }).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar'); console.error(error); return; }
+  const m = MEMBERS.find(m=>m.id===id);
+  if (m) Object.assign(m, { name, emoji, gender, birthday });
+  editingMemberId = null;
+  renderMembersList(); renderAdminSelect(); renderRanking();
+  toast('✅ Membro atualizado!');
+}
+
+async function deleteMember(id) {
+  if(!confirm('Remover este membro e todo seu histórico?')) return;
+  await sb.from('members').delete().eq('id', id);
+  MEMBERS = MEMBERS.filter(m=>m.id!==id);
+  HISTORY = HISTORY.filter(h=>h.member_id!==id);
+  renderMembersList(); renderAdminSelect(); renderRanking();
+  toast('🗑️ Membro removido!');
+}
+
+// ── CONFIG ──
+function setManualDate() {
+  const txt = document.getElementById('manual-date').value.trim();
+  if (!txt) return toast('⚠️ Digite o texto da data!');
+  lset(LK.manualDate, txt);
+  document.getElementById('manual-date').value='';
+  renderRanking();
+  toast('📌 Data atualizada!');
+}
+
+async function changePass() {
+  const np = document.getElementById('new-pass').value.trim();
+  if(np.length<4) return toast('⚠️ Mínimo 4 caracteres!');
+  const ok = await setSetting('admin_pass', np);
+  if (!ok) return;
+  document.getElementById('new-pass').value='';
+  toast('🔑 Senha atualizada!');
+}
+
+async function resetPts() {
+  if(!confirm('Zerar TODOS os pontos?')) return;
+  for (const m of MEMBERS) {
+    await sb.from('members').update({ points:0 }).eq('id', m.id);
+    m.points = 0;
+  }
+  await sb.from('history').delete().neq('id', 0);
+  HISTORY = [];
+  renderMembersList(); renderAdminSelect(); renderRecentHistory(); renderRanking();
+  toast('🔄 Pontos zerados!');
+}
+
+// ── TOAST ──
+let toastT;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach((b,i)=>{
+    b.classList.toggle('active', ['all','F','M'][i]===f);
+  });
+  renderRanking();
+}
+
+// ══════════════════════════════════════════════
+//  START
+// ══════════════════════════════════════════════
+async function start() {
+  await loadMembers();
+  renderRanking();
+  const urlTab = new URLSearchParams(location.search).get('tab');
+  if (urlTab && ['ranking','desafios','evento','assinante'].includes(urlTab)) {
+    await setMainTab(urlTab);
+  }
+}
+start();
+
+setInterval(async () => {
+  await loadMembers();
+  renderRanking();
+}, 15000);
+</script>
+</body>
+</html>
