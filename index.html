@@ -674,6 +674,15 @@ textarea { resize:vertical;min-height:72px; }
                 <select id="result-select" onchange="onResultSelectChange()"></select>
               </div>
 
+              <div class="field-group" id="result-level-wrap" style="display:none;margin-bottom:14px">
+                <label class="field-label">Nível de condicionamento (pode ajustar no dia do evento)</label>
+                <select id="result-level-select" onchange="updateResultLevel()">
+                  <option value="Iniciante">🟢 Iniciante</option>
+                  <option value="Intermediário">🟡 Intermediário</option>
+                  <option value="Avançado">🟠 Avançado</option>
+                </select>
+              </div>
+
               <div id="result-tempo-helper" style="display:none">
                 <div class="result-timecap-note">TIME CAP deste evento: <strong id="result-timecap-display">—</strong></div>
                 <div class="field-group">
@@ -1673,10 +1682,27 @@ function onResultSelectChange() {
   document.getElementById('result-saved-tag').textContent = '';
   document.getElementById('result-remaining-input').value = '';
   const finalInput = document.getElementById('result-final-input');
-  if (!regId) { finalInput.value = ''; return; }
+  const levelWrap = document.getElementById('result-level-wrap');
+  if (!regId) { finalInput.value = ''; levelWrap.style.display = 'none'; return; }
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   finalInput.value = reg && reg.result_value ? reg.result_value : '';
   finalInput.placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
+  levelWrap.style.display = '';
+  document.getElementById('result-level-select').value = (reg && reg.fitness_level) || 'Iniciante';
+}
+
+async function updateResultLevel() {
+  const regId = parseInt(document.getElementById('result-select').value);
+  if (!regId) return;
+  const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
+  if (!reg) return;
+  const newLevel = document.getElementById('result-level-select').value;
+  const { error } = await sb.from('event_registrations').update({ fitness_level: newLevel }).eq('id', regId);
+  if (error) { toast('⚠️ Erro ao atualizar nível'); console.error(error); return; }
+  reg.fitness_level = newLevel;
+  populateResultSelect();
+  document.getElementById('result-select').value = regId;
+  toast(`✅ Nível de ${reg.name} atualizado!`);
 }
 
 function calcResultFromRemaining() {
