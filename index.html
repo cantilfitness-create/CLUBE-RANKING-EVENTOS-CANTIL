@@ -2423,13 +2423,12 @@ async function start() {
     await setMainTab(urlTab);
   }
   // Link direto para inscrição: ?tab=evento&inscrever=1
+  // Mostra o card completo do evento (nome, data, descrição, regras) em vez de pular direto pro formulário
   if (urlTab === 'evento' && params.get('inscrever') === '1') {
     setTimeout(() => {
-      const formWrap = document.getElementById('event-form-wrap');
-      if (formWrap && formWrap.style.display !== 'none') {
-        formWrap.scrollIntoView({ behavior:'smooth', block:'start' });
-        const nameInput = document.getElementById('ev-name');
-        if (nameInput) setTimeout(() => nameInput.focus(), 400);
+      const heroCard = document.getElementById('event-hero');
+      if (heroCard) {
+        heroCard.scrollIntoView({ behavior:'smooth', block:'start' });
       }
     }, 500);
   }
