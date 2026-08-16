@@ -1092,8 +1092,11 @@ function renderRanking() {
     banner.innerHTML='📋 Último lançamento &nbsp;·&nbsp; <strong>'+(lu.dayName ? lu.dayName+', ' : '')+lu.date+' &nbsp;·&nbsp; '+lu.time+'</strong>';
   }
 
-  renderChallengeBanner();
-  renderBirthdayBanner();
+  const isRankingActive = document.getElementById('view-ranking')?.classList.contains('active');
+  if (isRankingActive) {
+    renderChallengeBanner();
+    renderBirthdayBanner();
+  }
 }
 
 function renderBirthdayBanner() {
@@ -1126,6 +1129,14 @@ async function setMainTab(tab) {
   document.getElementById('mt-'+tab).classList.add('active');
   document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+tab).classList.add('active');
+
+  // Banner de desafios só aparece na aba Ranking
+  const challengeWrap = document.getElementById('challenge-wrap');
+  if (tab === 'ranking') {
+    await renderChallengeBanner();
+  } else if (challengeWrap) {
+    challengeWrap.style.display = 'none';
+  }
 
   if (tab==='desafios') {
     if (!challengesLoaded) await loadChallengeVideos();
