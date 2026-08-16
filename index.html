@@ -197,6 +197,7 @@ body::before {
 .results-board { max-width:680px;margin:0 auto 24px;padding:0 24px; }
 .results-group { margin-bottom:18px; }
 .results-group-title { font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px; }
+.results-group-desc { font-size:11px;color:var(--muted);margin:-4px 0 8px 30px;line-height:1.4; }
 .results-list { background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
 .results-item { display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px; }
 .results-item:last-child { border-bottom:none; }
@@ -689,6 +690,25 @@ textarea { resize:vertical;min-height:72px; }
               </div>
             </div>
 
+            <div class="field-group">
+              <label class="field-label">📝 Descrição de cada nível (aparece pequeno abaixo do nome do grupo)</label>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟢</span>
+                  <input type="text" id="level-desc-Iniciante" placeholder="ex: Iniciante · 1km · 40 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟡</span>
+                  <input type="text" id="level-desc-Intermediário" placeholder="ex: Intermediário · 1,6km · 50 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟠</span>
+                  <input type="text" id="level-desc-Avançado" placeholder="ex: Avançado · 2,2km · 60 push up x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+              </div>
+              <button class="btn btn-blue" style="margin-top:10px" onclick="saveLevelDescriptions()">💾 Salvar Descrições dos Níveis</button>
+            </div>
+
             <div class="result-panel">
               <div class="field-group" style="margin-bottom:14px">
                 <label class="field-label">Selecionar inscrito</label>
@@ -827,7 +847,7 @@ const SUPABASE_KEY = 'sb_publishable_KtIrookldRFSrxz5NJL0EQ_iBLow_I-';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Local-only settings (per-device, not synced) ──
-const LK = { prev:'rk_prev', manualDate:'rk_manualDate' };
+const LK = { prev:'rk_prev', manualDate:'rk_manualDate', adminSession:'rk_admin_session' };
 const lget = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const lset = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -1338,12 +1358,14 @@ function formatTimeCap(seconds) {
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-function renderResultsBoard(info) {
+async function renderResultsBoard(info) {
   const board = document.getElementById('results-board');
   if (!info.result_type) { board.style.display = 'none'; return; }
 
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r.result_value);
   if (!regs.length) { board.style.display = 'none'; return; }
+
+  const groupDescs = await getSetting('level_descriptions', {});
 
   const groupsOrder = [
     { key:'Iniciante', emoji:'🟢', name:'Verde' },
@@ -1367,9 +1389,11 @@ function renderResultsBoard(info) {
     const items = regs.filter(r => (r.fitness_level||'Iniciante') === g.key)
                        .slice().sort((a,b)=>a.name.localeCompare(b.name));
     if (!items.length) return;
+    const desc = groupDescs[g.key];
     html += `
       <div class="results-group">
         <div class="results-group-title">${g.emoji} Grupo ${g.name}</div>
+        ${desc ? `<div class="results-group-desc">${desc}</div>` : ''}
         <div class="results-list">
           <div class="results-header-row"><span>PARTICIPANTES</span><span>${colLabel}</span></div>
           ${items.map(r => `
@@ -1389,7 +1413,7 @@ async function renderEventPublicView() {
   const info = await getEventInfo();
   if (!eventRegLoaded) await loadEventRegistrations();
 
-  renderResultsBoard(info);
+  await renderResultsBoard(info);
 
   document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
   document.getElementById('event-meta').textContent = info.meta || '';
@@ -1572,6 +1596,7 @@ async function renderEventAdminView() {
   document.getElementById('result-timecap-display').textContent = capSec ? formatTime(capSec) : '—';
 
   populateResultSelect();
+  await loadLevelDescriptionsIntoForm();
 }
 
 let startingFreshEvent = false;
@@ -1643,7 +1668,7 @@ async function startNewEvent() {
   startingFreshEvent = true;
   renderRegistrationsList();
   renderNoShowList();
-  renderResultsBoard(defaultEventInfo());
+  await renderResultsBoard(defaultEventInfo());
   toast(`🆕 Evento limpo! ${toDelete.length} registro(s) apagado(s). Preencha os dados do novo evento e clique em Salvar`);
 }
 
@@ -1740,6 +1765,28 @@ async function saveTimeCap() {
   toast('✅ Time Cap salvo: ' + formatTime(seconds));
 }
 
+async function saveLevelDescriptions() {
+  const descs = {
+    'Iniciante': document.getElementById('level-desc-Iniciante').value.trim(),
+    'Intermediário': document.getElementById('level-desc-Intermediário').value.trim(),
+    'Avançado': document.getElementById('level-desc-Avançado').value.trim(),
+  };
+  const ok = await setSetting('level_descriptions', descs);
+  if (!ok) return;
+  await renderResultsBoard(EVENT_INFO || defaultEventInfo());
+  toast('✅ Descrições dos níveis salvas!');
+}
+
+async function loadLevelDescriptionsIntoForm() {
+  const descs = await getSetting('level_descriptions', {});
+  const iEl = document.getElementById('level-desc-Iniciante');
+  const mEl = document.getElementById('level-desc-Intermediário');
+  const aEl = document.getElementById('level-desc-Avançado');
+  if (iEl) iEl.value = descs['Iniciante'] || '';
+  if (mEl) mEl.value = descs['Intermediário'] || '';
+  if (aEl) aEl.value = descs['Avançado'] || '';
+}
+
 function populateResultSelect() {
   const info = EVENT_INFO || defaultEventInfo();
   const sel = document.getElementById('result-select');
@@ -1787,7 +1834,7 @@ async function deleteSelectedResult() {
   document.getElementById('delete-result-btn').style.display = 'none';
   document.getElementById('result-saved-tag').textContent = `🗑️ Resultado de ${reg.name} removido`;
   renderRegistrationsList();
-  renderResultsBoard(EVENT_INFO || defaultEventInfo());
+  await renderResultsBoard(EVENT_INFO || defaultEventInfo());
   toast(`🗑️ Resultado de ${reg.name} excluído!`);
 }
 
@@ -1848,7 +1895,7 @@ async function saveSelectedResult() {
   document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}`;
   renderRegistrationsList();
   renderNoShowList();
-  renderResultsBoard(EVENT_INFO || defaultEventInfo());
+  await renderResultsBoard(EVENT_INFO || defaultEventInfo());
   toast(`✅ Resultado de ${reg.name} salvo!`);
 }
 
@@ -2129,8 +2176,18 @@ async function hideChallenge() {
 // ══════════════════════════════════════════════
 let unlocked = false;
 
-function openAdminModal() {
+async function openAdminModal() {
   document.getElementById('modal-overlay').classList.add('open');
+  if (!unlocked && hasValidAdminSession()) {
+    // Sessão ainda válida (dentro dos 20 min) — pula a senha
+    unlocked = true;
+    document.getElementById('pass-gate').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    document.getElementById('modal-title').textContent='PAINEL ADMIN';
+    await loadHistory();
+    renderAdminSelect(); renderMembersList(); renderRecentHistory(); renderQuickTap();
+    return;
+  }
   if (!unlocked) {
     document.getElementById('pass-gate').style.display='block';
     document.getElementById('admin-panel').style.display='none';
@@ -2150,11 +2207,30 @@ function overlayClick(e) {
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 document.getElementById('pass-input').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPass(); });
 
+const SESSION_DURATION_MS = 20 * 60 * 1000; // 20 minutos
+
+function saveAdminSession() {
+  localStorage.setItem(LK.adminSession, String(Date.now()));
+}
+
+function hasValidAdminSession() {
+  const raw = localStorage.getItem(LK.adminSession);
+  if (!raw) return false;
+  const ts = parseInt(raw);
+  if (isNaN(ts)) return false;
+  return (Date.now() - ts) < SESSION_DURATION_MS;
+}
+
+function clearAdminSession() {
+  localStorage.removeItem(LK.adminSession);
+}
+
 async function checkPass() {
   const val = document.getElementById('pass-input').value;
   const storedPass = await getSetting('admin_pass', 'admin123');
   if (val===storedPass) {
     unlocked=true;
+    saveAdminSession();
     document.getElementById('pass-gate').style.display='none';
     document.getElementById('admin-panel').style.display='block';
     document.getElementById('modal-title').textContent='PAINEL ADMIN';
@@ -2162,6 +2238,11 @@ async function checkPass() {
     document.getElementById('pass-err').textContent='';
     await loadHistory();
     renderAdminSelect(); renderMembersList(); renderRecentHistory(); renderQuickTap();
+    if (window.__quicklaunchPending) {
+      window.__quicklaunchPending = false;
+      await admTab('evento');
+      setTimeout(() => { document.getElementById('result-select')?.focus(); }, 300);
+    }
   } else {
     document.getElementById('pass-err').textContent='✗ Senha incorreta';
     document.getElementById('pass-input').value='';
@@ -2447,6 +2528,33 @@ async function start() {
         heroCard.scrollIntoView({ behavior:'smooth', block:'start' });
       }
     }, 500);
+  }
+
+  // Link de atalho para lançar resultados rápido: ?quicklaunch=1
+  // Se a sessão admin ainda estiver válida (até 20 min), pula a senha e vai direto pro painel
+  // de lançamento de resultados. Se não, abre a tela de senha — depois de logar, o admin
+  // ainda precisa clicar em Evento uma vez, mas a sessão fica salva pros próximos 20 min.
+  if (params.get('quicklaunch') === '1') {
+    document.getElementById('modal-overlay').classList.add('open');
+    if (hasValidAdminSession()) {
+      unlocked = true;
+      document.getElementById('pass-gate').style.display='none';
+      document.getElementById('admin-panel').style.display='block';
+      document.getElementById('modal-title').textContent='PAINEL ADMIN';
+      await loadHistory();
+      renderAdminSelect(); renderMembersList(); renderRecentHistory(); renderQuickTap();
+      await admTab('evento');
+      setTimeout(() => {
+        document.getElementById('result-select')?.focus();
+      }, 300);
+    } else {
+      document.getElementById('pass-gate').style.display='block';
+      document.getElementById('admin-panel').style.display='none';
+      document.getElementById('modal-title').textContent='ACESSO';
+      setTimeout(()=>document.getElementById('pass-input').focus(),300);
+      // Marca que depois do login deve ir direto pra aba evento
+      window.__quicklaunchPending = true;
+    }
   }
 }
 start();
