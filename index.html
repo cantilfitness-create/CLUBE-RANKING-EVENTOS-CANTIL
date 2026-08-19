@@ -352,7 +352,7 @@ textarea { resize:vertical;min-height:72px; }
   </div>
 </div>
 
-<div class="header">
+<div class="header" id="ranking-header">
   <div class="header-eyebrow">🏆 Tabela Oficial</div>
   <div class="header-title">RANKING</div>
   <div class="header-sub">Acompanhe sua pontuação e posição no grupo</div>
@@ -1206,22 +1206,22 @@ function renderRanking() {
     });
   },120);
 
-  const now = new Date();
-  document.getElementById('last-update').textContent =
-    'Atualizado às '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  const lu = lget('rk_lastUpdate');
-  const manualDate = lget(LK.manualDate);
-  const banner = document.getElementById('last-launch-banner');
-  if (manualDate) {
-    banner.style.display='inline-block';
-    banner.innerHTML='📋 Última atualização &nbsp;·&nbsp; <strong>'+manualDate+'</strong>';
-  } else if (lu && banner) {
-    banner.style.display='inline-block';
-    banner.innerHTML='📋 Último lançamento &nbsp;·&nbsp; <strong>'+(lu.dayName ? lu.dayName+', ' : '')+lu.date+' &nbsp;·&nbsp; '+lu.time+'</strong>';
-  }
-
   const isRankingActive = document.getElementById('view-ranking')?.classList.contains('active');
+
   if (isRankingActive) {
+    const now = new Date();
+    document.getElementById('last-update').textContent =
+      'Atualizado às '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const lu = lget('rk_lastUpdate');
+    const manualDate = lget(LK.manualDate);
+    const banner = document.getElementById('last-launch-banner');
+    if (manualDate) {
+      banner.style.display='inline-block';
+      banner.innerHTML='📋 Última atualização &nbsp;·&nbsp; <strong>'+manualDate+'</strong>';
+    } else if (lu && banner) {
+      banner.style.display='inline-block';
+      banner.innerHTML='📋 Último lançamento &nbsp;·&nbsp; <strong>'+(lu.dayName ? lu.dayName+', ' : '')+lu.date+' &nbsp;·&nbsp; '+lu.time+'</strong>';
+    }
     renderChallengeBanner();
     renderBirthdayBanner();
   }
@@ -1258,12 +1258,19 @@ async function setMainTab(tab) {
   document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+tab).classList.add('active');
 
-  // Banner de desafios só aparece na aba Ranking
+  // Cabeçalho (Ranking/Atualizado/Último lançamento), banner de aniversário e
+  // banner de desafios só aparecem na aba Ranking — somem nas demais abas
   const challengeWrap = document.getElementById('challenge-wrap');
+  const rankingHeader = document.getElementById('ranking-header');
+  const birthdayWrap = document.getElementById('birthday-wrap');
   if (tab === 'ranking') {
+    if (rankingHeader) rankingHeader.style.display = '';
     await renderChallengeBanner();
-  } else if (challengeWrap) {
-    challengeWrap.style.display = 'none';
+    renderBirthdayBanner();
+  } else {
+    if (challengeWrap) challengeWrap.style.display = 'none';
+    if (rankingHeader) rankingHeader.style.display = 'none';
+    if (birthdayWrap) birthdayWrap.style.display = 'none';
   }
 
   if (tab==='desafios') {
