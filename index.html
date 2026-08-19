@@ -144,6 +144,29 @@ body::before {
 .video-desc { padding:0 12px 10px;font-size:11px;color:var(--muted);line-height:1.4; }
 /* EVENTO */
 .event-hero { background:linear-gradient(135deg,rgba(232,255,0,0.12),rgba(232,255,0,0.03));border:1px solid rgba(232,255,0,0.3);border-radius:20px;padding:22px 20px;margin-bottom:20px; }
+.birthday-card {
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(120deg, #0a1a3a 0%, #1552c9 40%, #2d7dff 70%, #10306e 100%);
+  background-size:200% 200%;
+  animation:birthdayShift 4s ease-in-out infinite;
+  border:1px solid rgba(45,125,255,0.6);
+  border-radius:18px;
+  padding:16px 20px;
+  text-align:center;
+  color:#fff;
+  box-shadow:0 6px 24px rgba(21,82,201,0.4);
+}
+@keyframes birthdayShift {
+  0%,100% { background-position:0% 50%; }
+  50% { background-position:100% 50%; }
+}
+.birthday-confetti { position:absolute;font-size:22px;top:-4px;left:12px;opacity:.5;animation:floatUp 3s ease-in-out infinite; }
+.birthday-confetti-2 { left:auto;right:12px;top:auto;bottom:-4px;animation-delay:1.2s; }
+@keyframes floatUp { 0%,100%{transform:translateY(0) rotate(0deg);} 50%{transform:translateY(-6px) rotate(8deg);} }
+.whatsapp-event-btn { width:100%;margin-top:8px;padding:14px;border:none;border-radius:12px;background:#25D366;color:#062e13;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;cursor:pointer;text-decoration:none;justify-content:center;gap:8px;transition:filter .2s; }
+.whatsapp-event-btn.show { display:flex !important;align-items:center; }
+.whatsapp-event-btn:hover { filter:brightness(1.08); }
 .event-name { font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;line-height:1; }
 .event-meta { font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5; }
 .event-desc { font-size:13px;color:var(--text);margin-top:10px;line-height:1.5;white-space:pre-line; }
@@ -313,8 +336,10 @@ textarea { resize:vertical;min-height:72px; }
 
 <!-- ANIVERSÁRIO (automático, sem precisar editar nada) -->
 <div style="max-width:680px;margin:0 auto 12px;padding:0 24px;display:none;" id="birthday-wrap">
-  <div style="background:linear-gradient(135deg,rgba(232,255,0,0.18),rgba(232,255,0,0.06));border:1px solid rgba(232,255,0,0.4);border-radius:16px;padding:14px 20px;text-align:center;">
-    <div style="font-size:20px" id="birthday-text"></div>
+  <div class="birthday-card">
+    <div class="birthday-confetti">🎈</div>
+    <div style="font-size:22px;font-weight:800;position:relative;z-index:1" id="birthday-text"></div>
+    <div class="birthday-confetti birthday-confetti-2">🎉</div>
   </div>
 </div>
 
@@ -381,6 +406,7 @@ textarea { resize:vertical;min-height:72px; }
   </div>
   <div class="video-wrap">
     <div class="event-hero" id="event-hero">
+      <img id="event-image-display" style="display:none;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;margin-bottom:14px;border:1px solid rgba(232,255,0,0.25);">
       <div class="event-name" id="event-name">Carregando...</div>
       <div class="event-meta" id="event-meta"></div>
       <div class="event-desc" id="event-desc"></div>
@@ -393,6 +419,9 @@ textarea { resize:vertical;min-height:72px; }
         <div class="capacity-bar"><div class="capacity-fill" id="capacity-fill" style="width:0%"></div></div>
       </div>
       <button id="jump-to-form-btn" onclick="document.getElementById('event-form-wrap').scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>document.getElementById('ev-name')?.focus(),400);" style="display:none;width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:var(--accent);color:#0a0a00;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">📝 Inscreva-se agora</button>
+      <a id="whatsapp-btn" href="#" target="_blank" class="whatsapp-event-btn" style="display:none">
+        <span style="font-size:18px">💬</span> Dúvidas? Fale no WhatsApp
+      </a>
     </div>
 
     <div id="event-form-wrap">
@@ -643,7 +672,16 @@ textarea { resize:vertical;min-height:72px; }
           </div>
           <div class="field-group">
             <label class="field-label">Descrição</label>
-            <textarea id="ev-cfg-desc" rows="4" placeholder="ex: Traga sua garrafinha e disposição!" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+            <textarea id="ev-cfg-desc" rows="4" placeholder="ex: Traga sua garrafinha e disposição! Cole aqui também links (ex: https://...) que viram clicáveis." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">🖼️ Imagem do evento (formato post Instagram, otimizada automaticamente)</label>
+            <input type="file" id="ev-cfg-image-input" accept="image/*" onchange="handleEventImageUpload(event)" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;">
+            <div id="event-image-preview-wrap" style="display:none;margin-top:10px;position:relative;">
+              <img id="event-image-preview" style="width:100%;border-radius:12px;border:1px solid var(--border);display:block;">
+              <button class="btn-sm-danger" onclick="removeEventImage()" style="position:absolute;top:8px;right:8px;">🗑️ Remover</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">A imagem é comprimida automaticamente (máx ~200KB) para não pesar o banco de dados.</div>
           </div>
           <div class="field-group">
             <label class="field-label">Vagas totais</label>
@@ -795,6 +833,17 @@ textarea { resize:vertical;min-height:72px; }
 
         <!-- CONFIG -->
         <div class="adm-panel" id="tab-settings">
+          <div class="section-label">💬 WhatsApp de Dúvidas (Evento)</div>
+          <div class="field-group">
+            <label class="field-label">Número com DDD (só números)</label>
+            <input type="text" id="whatsapp-number" placeholder="ex: 21999998888">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Mensagem padrão (opcional)</label>
+            <input type="text" id="whatsapp-msg" placeholder="ex: Olá! Tenho uma dúvida sobre o evento">
+          </div>
+          <button class="btn btn-blue" onclick="saveWhatsappConfig()" style="margin-bottom:20px">💾 Salvar WhatsApp</button>
+          <hr class="divider">
           <div class="section-label">🔥 Editar Banner de Desafios</div>
           <div class="field-group">
             <label class="field-label">Título</label>
@@ -874,6 +923,49 @@ async function setSetting(key, value) {
 }
 
 // ── YOUTUBE HELPERS ──
+// Transforma URLs em texto plano em hiperlinks clicáveis (abre em nova aba)
+function linkify(text) {
+  if (!text) return '';
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const urlPattern = /((https?:\/\/|www\.)[^\s<]+)/gi;
+  return escaped.replace(urlPattern, (match) => {
+    const href = match.startsWith('http') ? match : 'https://' + match;
+    return `<a href="${href}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all;">${match}</a>`;
+  });
+}
+
+// ── WHATSAPP ──
+async function renderWhatsappButton() {
+  const number = await getSetting('whatsapp_number', '');
+  const msg = await getSetting('whatsapp_msg', '');
+  const btn = document.getElementById('whatsapp-btn');
+  if (!btn) return;
+  if (!number) { btn.classList.remove('show'); btn.style.display='none'; return; }
+  const cleanNumber = number.replace(/\D/g,'');
+  const encodedMsg = encodeURIComponent(msg || 'Olá! Tenho uma dúvida sobre o evento.');
+  btn.href = `https://wa.me/${cleanNumber}?text=${encodedMsg}`;
+  btn.classList.add('show');
+  btn.style.display = 'flex';
+}
+
+async function saveWhatsappConfig() {
+  const number = document.getElementById('whatsapp-number').value.trim();
+  const msg = document.getElementById('whatsapp-msg').value.trim();
+  await setSetting('whatsapp_number', number);
+  await setSetting('whatsapp_msg', msg);
+  await renderWhatsappButton();
+  toast('✅ WhatsApp configurado!');
+}
+
+async function loadWhatsappConfigIntoForm() {
+  const number = await getSetting('whatsapp_number', '');
+  const msg = await getSetting('whatsapp_msg', '');
+  const numEl = document.getElementById('whatsapp-number');
+  const msgEl = document.getElementById('whatsapp-msg');
+  if (numEl) numEl.value = number;
+  if (msgEl) msgEl.value = msg;
+}
+
 function extractYouTubeId(url) {
   if (!url) return null;
   const patterns = [
@@ -1417,12 +1509,20 @@ async function renderEventPublicView() {
 
   document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
   document.getElementById('event-meta').textContent = info.meta || '';
-  document.getElementById('event-desc').textContent = info.desc || '';
+  document.getElementById('event-desc').innerHTML = linkify(info.desc || '');
+
+  const imgEl = document.getElementById('event-image-display');
+  if (imgEl) {
+    if (info.image) { imgEl.src = info.image; imgEl.style.display = 'block'; }
+    else { imgEl.style.display = 'none'; }
+  }
+
+  await renderWhatsappButton();
 
   const rules = await getEventRules();
   const rulesWrap = document.getElementById('event-rules-wrap');
   if (rules) {
-    document.getElementById('event-rules-text').textContent = rules;
+    document.getElementById('event-rules-text').innerHTML = linkify(rules);
     rulesWrap.style.display = '';
   } else {
     rulesWrap.style.display = 'none';
@@ -1576,6 +1676,14 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
   document.getElementById('ev-cfg-rules').value = await getEventRules();
 
+  const imgPreviewWrap = document.getElementById('event-image-preview-wrap');
+  if (info.image) {
+    document.getElementById('event-image-preview').src = info.image;
+    imgPreviewWrap.style.display = 'block';
+  } else {
+    imgPreviewWrap.style.display = 'none';
+  }
+
   if (!eventRegLoaded) await loadEventRegistrations();
   renderRegistrationsList();
   renderNoShowList();
@@ -1601,6 +1709,73 @@ async function renderEventAdminView() {
 
 let startingFreshEvent = false;
 
+// ── IMAGEM DO EVENTO (comprimida em quadrado, formato post Instagram) ──
+function compressImageToSquare(file, maxSize = 800, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = maxSize;
+        canvas.height = maxSize;
+        const ctx = canvas.getContext('2d');
+        // Corta em quadrado (crop central) e redimensiona — formato post Instagram
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, maxSize, maxSize);
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Reduz qualidade progressivamente se ainda estiver grande (limite ~200KB)
+        let q = quality;
+        while (dataUrl.length > 270000 && q > 0.3) {
+          q -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', q);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleEventImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('⚠️ Selecione um arquivo de imagem!'); return; }
+  toast('⏳ Otimizando imagem...');
+  try {
+    const compressed = await compressImageToSquare(file);
+    const info = await getEventInfo();
+    const newInfo = { ...info, image: compressed };
+    const ok = await setSetting('event_info', newInfo);
+    if (!ok) return;
+    EVENT_INFO = newInfo;
+    document.getElementById('event-image-preview').src = compressed;
+    document.getElementById('event-image-preview-wrap').style.display = 'block';
+    const sizeKb = Math.round(compressed.length / 1024);
+    toast(`✅ Imagem salva! (~${sizeKb}KB)`);
+  } catch (err) {
+    console.error(err);
+    toast('⚠️ Erro ao processar imagem');
+  }
+}
+
+async function removeEventImage() {
+  if (!confirm('Remover a imagem deste evento?')) return;
+  const info = await getEventInfo();
+  const newInfo = { ...info, image: null };
+  const ok = await setSetting('event_info', newInfo);
+  if (!ok) return;
+  EVENT_INFO = newInfo;
+  document.getElementById('event-image-preview-wrap').style.display = 'none';
+  document.getElementById('ev-cfg-image-input').value = '';
+  toast('🗑️ Imagem removida!');
+}
+
 async function updateEventConfig() {
   const name = document.getElementById('ev-cfg-name').value.trim();
   const meta = document.getElementById('ev-cfg-meta').value.trim();
@@ -1623,7 +1798,7 @@ async function updateEventConfig() {
     await loadEventRegistrations();
   }
   const result_type = document.getElementById('ev-cfg-result-type').value || null;
-  const newInfo = { id, name, meta, desc, max, points, active, result_type, time_cap_seconds: prevInfo.time_cap_seconds || 0 };
+  const newInfo = { id, name, meta, desc, max, points, active, result_type, time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null };
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -2272,6 +2447,7 @@ async function admTab(name) {
     document.getElementById('ch-title').value = ch.title || '';
     document.getElementById('ch-body').value = ch.body || '';
     document.getElementById('ch-sub').value = ch.sub || '';
+    await loadWhatsappConfigIntoForm();
   }
 }
 
