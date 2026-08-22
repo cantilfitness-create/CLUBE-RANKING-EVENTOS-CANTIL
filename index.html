@@ -1586,7 +1586,6 @@ function setEventPersonType(isInternal) {
   document.getElementById('mt-not-member').classList.toggle('active', !isInternal);
   document.getElementById('ev-internal-checks-wrap').style.display = isInternal ? '' : 'none';
   document.getElementById('ev-age-wrap').style.display = isInternal ? 'none' : '';
-  document.getElementById('ev-phone-wrap').style.display = isInternal ? 'none' : '';
   document.getElementById('ev-source-wrap').style.display = isInternal ? 'none' : '';
   document.getElementById('ev-referral-wrap').style.display = 'none';
   if (isInternal) {
@@ -1601,9 +1600,13 @@ function setEventPersonType(isInternal) {
 function toggleInternalFields() {
   const isInternal = eventIsMember;
   const isClube = isInternal && document.getElementById('ev-is-clube').checked;
+  const isCTOnly = isInternal && document.getElementById('ev-is-ct').checked && !isClube;
   // Se for membro do clube, seleciona o nome na lista; senão, digita o nome (visitante ou aluno do CT sem ser membro)
   document.getElementById('ev-member-select-wrap').style.display = isClube ? '' : 'none';
   document.getElementById('ev-name-wrap').style.display = isClube ? 'none' : '';
+  // Aluno do CT (sem ser membro do clube com ranking) precisa confirmar telefone,
+  // pra podermos comparar corretamente com a lista de bloqueados por falta
+  document.getElementById('ev-phone-wrap').style.display = (isCTOnly || !isInternal) ? '' : 'none';
 }
 
 function toggleReferralField() {
@@ -1641,12 +1644,22 @@ async function submitEventRegistration() {
   if (isReferral && !referredBy) return toast('⚠️ Digite o nome de quem indicou!');
   if (!document.getElementById('ev-consent').checked) return toast('⚠️ Você precisa concordar com os termos pra continuar!');
 
-  // checa lista de faltantes de eventos anteriores (por telefone, ou por membro caso não tenha telefone)
-  let blockedQuery = sb.from('event_registrations').select('id').eq('attended', false);
-  blockedQuery = isClube && memberId
-    ? blockedQuery.eq('member_id', memberId)
-    : blockedQuery.eq('phone', phone);
-  const { data: blocked } = await blockedQuery.limit(1);
+  // Checa lista de faltantes de eventos anteriores.
+  // Regra: só bloqueia quem realmente está na lista de "faltou" (attended === false),
+  // comparando pelo critério certo conforme o tipo de inscrição:
+  //  - Membro do Clube (tem member_id cadastrado no ranking) → compara por member_id
+  //  - Aluno do CT (sem ranking) ou Visitante → compara por telefone, e SÓ se o telefone
+  //    foi realmente informado (nunca compara telefone vazio com telefone vazio)
+  let blocked = null;
+  if (isClube && memberId) {
+    const { data } = await sb.from('event_registrations')
+      .select('id').eq('attended', false).eq('member_id', memberId).limit(1);
+    blocked = data;
+  } else if (phone) {
+    const { data } = await sb.from('event_registrations')
+      .select('id').eq('attended', false).eq('phone', phone).limit(1);
+    blocked = data;
+  }
   if (blocked && blocked.length) {
     document.getElementById('ev-blocked').style.display = 'block';
     return;
