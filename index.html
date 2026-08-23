@@ -493,6 +493,19 @@ textarea { resize:vertical;min-height:72px; }
         <label class="field-label">Nome de quem indicou</label>
         <input type="text" id="ev-referral" placeholder="Nome do amigo(a) que indicou">
       </div>
+      <div class="field-group" id="ev-dual-select-wrap" style="display:none">
+        <label class="field-label">🎯 Em qual(is) você quer se inscrever?</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="ev-sub1-check" style="width:18px;height:18px;flex-shrink:0">
+            <span id="ev-sub1-label">Evento 1</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="ev-sub2-check" style="width:18px;height:18px;flex-shrink:0">
+            <span id="ev-sub2-label">Evento 2</span>
+          </label>
+        </div>
+      </div>
       <div class="field-group" style="display:flex;gap:10px;align-items:flex-start;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;">
         <input type="checkbox" id="ev-consent" style="margin-top:3px;flex-shrink:0;width:18px;height:18px;">
         <label for="ev-consent" style="font-size:11.5px;color:var(--muted);line-height:1.5;cursor:pointer">
@@ -671,6 +684,23 @@ textarea { resize:vertical;min-height:72px; }
           <div class="field-group">
             <label class="field-label">Nome do evento</label>
             <input type="text" id="ev-cfg-name" placeholder="ex: Desafio de Verão Cantil">
+          </div>
+          <div class="field-group">
+            <label class="field-label">🎯 Este evento tem 2 provas/atividades separadas?</label>
+            <div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+              <input type="checkbox" id="ev-cfg-dual" onchange="toggleDualEventFields()" style="width:18px;height:18px;flex-shrink:0">
+              <span style="font-size:13px">Sim, a pessoa pode se inscrever em 1 ou nas 2</span>
+            </div>
+          </div>
+          <div id="ev-dual-fields-wrap" style="display:none">
+            <div class="field-group">
+              <label class="field-label">Nome do Evento 1</label>
+              <input type="text" id="ev-cfg-sub1" placeholder="ex: Treinamento Funcional">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Nome do Evento 2</label>
+              <input type="text" id="ev-cfg-sub2" placeholder="ex: Corrida 5km">
+            </div>
           </div>
           <div class="field-group">
             <label class="field-label">Data e local</label>
@@ -1530,6 +1560,17 @@ async function renderEventPublicView() {
     else { imgEl.style.display = 'none'; }
   }
 
+  const dualWrap = document.getElementById('ev-dual-select-wrap');
+  if (info.is_dual) {
+    document.getElementById('ev-sub1-label').textContent = info.sub1_name || 'Evento 1';
+    document.getElementById('ev-sub2-label').textContent = info.sub2_name || 'Evento 2';
+    dualWrap.style.display = '';
+  } else {
+    dualWrap.style.display = 'none';
+    document.getElementById('ev-sub1-check').checked = false;
+    document.getElementById('ev-sub2-check').checked = false;
+  }
+
   await renderWhatsappButton();
 
   const rules = await getEventRules();
@@ -1614,6 +1655,15 @@ function toggleInternalFields() {
   // Aluno do CT (sem ser membro do clube com ranking) precisa confirmar telefone,
   // pra podermos comparar corretamente com a lista de bloqueados por falta
   document.getElementById('ev-phone-wrap').style.display = (isCTOnly || !isInternal) ? '' : 'none';
+  // Repopula a lista de nomes toda vez que "Membro do Clube" é marcado — corrige o
+  // bug de aparecer vazio quando MEMBERS ainda não tinha sido carregado antes
+  if (isClube) {
+    const sel = document.getElementById('ev-member-select');
+    if (sel) {
+      sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name))
+        .map(m=>`<option value="${m.id}">${m.emoji||''} ${m.name}</option>`).join('');
+    }
+  }
 }
 
 function toggleReferralField() {
@@ -1652,6 +1702,18 @@ async function submitEventRegistration() {
   if (isReferral && !referredBy) return toast('⚠️ Digite o nome de quem indicou!');
   if (!document.getElementById('ev-consent').checked) return toast('⚠️ Você precisa concordar com os termos pra continuar!');
 
+  // Se o evento tem 2 sub-eventos, a pessoa precisa marcar pelo menos 1
+  let subEvents = null;
+  if (info.is_dual) {
+    const sub1 = document.getElementById('ev-sub1-check').checked;
+    const sub2 = document.getElementById('ev-sub2-check').checked;
+    if (!sub1 && !sub2) return toast('⚠️ Marque em qual(is) evento(s) você quer se inscrever!');
+    const parts = [];
+    if (sub1) parts.push(info.sub1_name || 'Evento 1');
+    if (sub2) parts.push(info.sub2_name || 'Evento 2');
+    subEvents = parts.join(' + ');
+  }
+
   // Checa lista de faltantes de eventos anteriores.
   // Regra: só bloqueia quem realmente está na lista de "faltou" (attended === false),
   // comparando pelo critério certo conforme o tipo de inscrição:
@@ -1675,7 +1737,8 @@ async function submitEventRegistration() {
 
   const { error } = await sb.from('event_registrations').insert({
     event_name: info.name, event_id: info.id, name, age, fitness_level: level, phone, heard_from: heardFrom, referred_by: referredBy,
-    is_member: isClube, is_ct_student: isCT, member_id: isClube ? memberId : null
+    is_member: isClube, is_ct_student: isCT, member_id: isClube ? memberId : null,
+    sub_events: subEvents
   });
   if (error) { console.error(error); toast('⚠️ Erro ao inscrever'); return; }
 
@@ -1686,6 +1749,8 @@ async function submitEventRegistration() {
   document.getElementById('ev-consent').checked = false;
   document.getElementById('ev-is-clube').checked = false;
   document.getElementById('ev-is-ct').checked = false;
+  document.getElementById('ev-sub1-check').checked = false;
+  document.getElementById('ev-sub2-check').checked = false;
   document.getElementById('mt-is-member').classList.remove('active');
   document.getElementById('mt-not-member').classList.remove('active');
   document.getElementById('event-fields-wrap').style.display = 'none';
@@ -1706,6 +1771,10 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-result-type').value = info.result_type || '';
   document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
   document.getElementById('ev-cfg-rules').value = await getEventRules();
+  document.getElementById('ev-cfg-dual').checked = !!info.is_dual;
+  document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
+  document.getElementById('ev-cfg-sub2').value = info.sub2_name || '';
+  toggleDualEventFields();
 
   const imgPreviewWrap = document.getElementById('event-image-preview-wrap');
   if (info.image) {
@@ -1814,6 +1883,9 @@ async function updateEventConfig() {
   const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
   const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
   const active = document.getElementById('ev-cfg-active').value === 'true';
+  const isDual = document.getElementById('ev-cfg-dual').checked;
+  const sub1Name = document.getElementById('ev-cfg-sub1').value.trim() || 'Evento 1';
+  const sub2Name = document.getElementById('ev-cfg-sub2').value.trim() || 'Evento 2';
   if (!name) return toast('⚠️ Digite o nome do evento!');
   const prevInfo = await getEventInfo();
   // O ID só muda se ainda não existir um, ou se "Começar evento novo" foi clicado antes de salvar.
@@ -1829,13 +1901,22 @@ async function updateEventConfig() {
     await loadEventRegistrations();
   }
   const result_type = document.getElementById('ev-cfg-result-type').value || null;
-  const newInfo = { id, name, meta, desc, max, points, active, result_type, time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null };
+  const newInfo = {
+    id, name, meta, desc, max, points, active, result_type,
+    time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null,
+    is_dual: isDual, sub1_name: sub1Name, sub2_name: sub2Name
+  };
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
   renderRegistrationsList();
   renderEventAdminView();
   toast('✅ Evento salvo!');
+}
+
+function toggleDualEventFields() {
+  const isDual = document.getElementById('ev-cfg-dual').checked;
+  document.getElementById('ev-dual-fields-wrap').style.display = isDual ? '' : 'none';
 }
 
 // Regras do evento — fixas, valem para todos os eventos, editáveis a qualquer momento
@@ -1887,7 +1968,7 @@ function renderRegistrationsList() {
   el.innerHTML = regs.map(r => `
     <div class="reg-chip">
       <div class="reg-chip-info">
-        <div class="reg-chip-name">${r.name} ${r.is_member ? '<span class="reg-member-badge">CLUBE</span>' : ''} ${r.is_ct_student ? '<span class="reg-member-badge">CT</span>' : ''} ${(!r.is_member && !r.is_ct_student) ? '<span class="reg-guest-badge">VISITANTE</span>' : ''}</div>
+        <div class="reg-chip-name">${r.name} ${r.is_member ? '<span class="reg-member-badge">CLUBE</span>' : ''} ${r.is_ct_student ? '<span class="reg-member-badge">CT</span>' : ''} ${(!r.is_member && !r.is_ct_student) ? '<span class="reg-guest-badge">VISITANTE</span>' : ''} ${r.sub_events ? `<span class="reg-member-badge" style="background:rgba(45,125,255,0.15);color:#5b9dff;border-color:rgba(45,125,255,0.35)">${r.sub_events}</span>` : ''}</div>
         <div class="reg-chip-meta">${r.age?r.age+' anos · ':''}${r.fitness_level||''} · ${r.phone}</div>
       </div>
       <div class="attend-btns">
@@ -2135,6 +2216,20 @@ function openEditRegistration(id) {
     .map(m => `<option value="${m.id}">${m.emoji||''} ${m.name}</option>`).join('');
   if (reg.member_id) sel.value = reg.member_id;
 
+  // Sub-eventos (se o evento atual tiver 2 provas)
+  const info = EVENT_INFO || defaultEventInfo();
+  const dualWrap = document.getElementById('er-dual-wrap');
+  if (info.is_dual) {
+    document.getElementById('er-sub1-label').textContent = info.sub1_name || 'Evento 1';
+    document.getElementById('er-sub2-label').textContent = info.sub2_name || 'Evento 2';
+    const subEvents = reg.sub_events || '';
+    document.getElementById('er-sub1-check').checked = subEvents.includes(info.sub1_name || 'Evento 1');
+    document.getElementById('er-sub2-check').checked = subEvents.includes(info.sub2_name || 'Evento 2');
+    dualWrap.style.display = '';
+  } else {
+    dualWrap.style.display = 'none';
+  }
+
   toggleEditMemberSelect();
   document.getElementById('edit-reg-overlay').classList.add('open');
 }
@@ -2160,9 +2255,21 @@ async function saveEditRegistration() {
   const isCT = document.getElementById('er-is-ct').checked;
   const memberId = isClube ? parseInt(document.getElementById('er-member-select').value) || null : null;
 
+  const info = EVENT_INFO || defaultEventInfo();
+  let subEvents = null;
+  if (info.is_dual) {
+    const sub1 = document.getElementById('er-sub1-check').checked;
+    const sub2 = document.getElementById('er-sub2-check').checked;
+    const parts = [];
+    if (sub1) parts.push(info.sub1_name || 'Evento 1');
+    if (sub2) parts.push(info.sub2_name || 'Evento 2');
+    subEvents = parts.length ? parts.join(' + ') : null;
+  }
+
   const updateData = {
     name, age, phone, fitness_level: level,
-    is_member: isClube, is_ct_student: isCT, member_id: memberId
+    is_member: isClube, is_ct_student: isCT, member_id: memberId,
+    sub_events: subEvents
   };
 
   const { error } = await sb.from('event_registrations').update(updateData).eq('id', editingRegId);
@@ -2199,6 +2306,7 @@ function printEventReport() {
       <td>${i+1}</td>
       <td>${r.name}</td>
       <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
+      <td>${r.sub_events||'—'}</td>
       <td>${r.age||'—'}</td>
       <td>${r.fitness_level||'—'}</td>
       <td>${r.phone||'—'}</td>
@@ -2229,7 +2337,7 @@ function printEventReport() {
         <div><b>${pendingCount}</b>Sem marcação</div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th></tr></thead>
+        <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button>
@@ -2887,6 +2995,19 @@ setInterval(async () => {
       <div class="field-group" id="er-member-select-wrap" style="display:none">
         <label class="field-label">Nome no ranking (se Membro do Clube)</label>
         <select id="er-member-select"></select>
+      </div>
+      <div class="field-group" id="er-dual-wrap" style="display:none">
+        <label class="field-label">🎯 Inscrito em</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="er-sub1-check" style="width:18px;height:18px;flex-shrink:0">
+            <span id="er-sub1-label">Evento 1</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+            <input type="checkbox" id="er-sub2-check" style="width:18px;height:18px;flex-shrink:0">
+            <span id="er-sub2-label">Evento 2</span>
+          </label>
+        </div>
       </div>
       <button class="btn btn-blue" onclick="saveEditRegistration()">💾 Salvar Alterações</button>
       <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="closeEditRegistration()">Cancelar</button>
