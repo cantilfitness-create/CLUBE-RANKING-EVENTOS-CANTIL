@@ -191,7 +191,7 @@ body::before {
 .mt-member-logos { display:flex;align-items:center;gap:4px;flex-shrink:0; }
 .mt-member-logos img { height:22px;width:auto;object-fit:contain;border-radius:4px; }
 @media(max-width:420px){ .mt-member-logos img{ height:18px; } .member-toggle button#mt-is-member{ font-size:11px;gap:5px; } }
-.reg-chip { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
+.reg-chip { display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
 .reg-chip:last-child { border-bottom:none; }
 .reg-chip-info { flex:1;min-width:0; }
 .reg-chip-name { font-size:13px;font-weight:700; }
@@ -199,6 +199,10 @@ body::before {
 .reg-member-badge { font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;background:rgba(232,255,0,0.12);color:var(--accent);border:1px solid rgba(232,255,0,0.3); }
 .reg-guest-badge { font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border); }
 .attend-btns { display:flex;gap:4px; }
+.attend-btns-wrap { display:flex;align-items:center;gap:8px;flex-shrink:0; }
+.attend-dual-wrap { display:flex;flex-direction:column;gap:6px;margin-top:8px; }
+.attend-dual-row { display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s2);border-radius:10px;padding:6px 10px; }
+.attend-dual-label { font-size:11px;font-weight:700;color:var(--muted);flex:1; }
 .attend-btn { padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--muted); }
 .attend-btn.yes.active { background:rgba(61,232,154,.15);color:var(--green);border-color:rgba(61,232,154,.4); }
 .attend-btn.no.active { background:rgba(255,95,109,.15);color:var(--red);border-color:rgba(255,95,109,.4); }
@@ -223,6 +227,8 @@ body::before {
 .results-group { margin-bottom:18px; }
 .results-group-title { font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px; }
 .results-group-desc { font-size:11px;color:var(--muted);margin:-4px 0 8px 30px;line-height:1.4; }
+.results-subevent-header { font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;margin:18px 0 10px;padding-bottom:8px;border-bottom:2px solid rgba(45,125,255,0.3);color:#fff; }
+.results-subevent-header:first-child { margin-top:0; }
 .results-list { background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden; }
 .results-item { display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px; }
 .results-item:last-child { border-bottom:none; }
@@ -719,22 +725,61 @@ textarea { resize:vertical;min-height:72px; }
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:6px">A imagem é comprimida automaticamente (máx ~200KB) para não pesar o banco de dados.</div>
           </div>
-          <div class="field-group">
+          <div class="field-group" id="ev-cfg-max-wrap">
             <label class="field-label">Vagas totais</label>
             <input type="number" id="ev-cfg-max" placeholder="ex: 40">
           </div>
-          <div class="field-group">
-            <label class="field-label">Pontos por presença confirmada (membros)</label>
-            <input type="number" id="ev-cfg-points" placeholder="ex: 10">
+
+          <!-- Campos ÚNICOS (evento simples, sem dual) -->
+          <div id="ev-single-fields-wrap">
+            <div class="field-group">
+              <label class="field-label">Pontos por presença confirmada (membros)</label>
+              <input type="number" id="ev-cfg-points" placeholder="ex: 10">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Tipo de resultado deste evento</label>
+              <select id="ev-cfg-result-type" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                <option value="">— Sem resultado (só presença)</option>
+                <option value="tempo">⏱️ Tempo (For Time)</option>
+                <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+              </select>
+            </div>
           </div>
-          <div class="field-group">
-            <label class="field-label">Tipo de resultado deste evento</label>
-            <select id="ev-cfg-result-type" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-              <option value="">— Sem resultado (só presença)</option>
-              <option value="tempo">⏱️ Tempo (For Time)</option>
-              <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
-            </select>
+
+          <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
+          <div id="ev-dual-config-wrap" style="display:none">
+            <div style="background:rgba(45,125,255,0.06);border:1px solid rgba(45,125,255,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
+              <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px" id="ev-cfg-sub1-header">🥇 Evento 1</div>
+              <div class="field-group">
+                <label class="field-label">Pontos por presença (Evento 1)</label>
+                <input type="number" id="ev-cfg-points-1" placeholder="ex: 10">
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Tipo de resultado (Evento 1)</label>
+                <select id="ev-cfg-result-type-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="">— Sem resultado (só presença)</option>
+                  <option value="tempo">⏱️ Tempo (For Time)</option>
+                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+                </select>
+              </div>
+            </div>
+            <div style="background:rgba(255,208,96,0.06);border:1px solid rgba(255,208,96,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
+              <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px" id="ev-cfg-sub2-header">🥈 Evento 2</div>
+              <div class="field-group">
+                <label class="field-label">Pontos por presença (Evento 2)</label>
+                <input type="number" id="ev-cfg-points-2" placeholder="ex: 10">
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Tipo de resultado (Evento 2)</label>
+                <select id="ev-cfg-result-type-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="">— Sem resultado (só presença)</option>
+                  <option value="tempo">⏱️ Tempo (For Time)</option>
+                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+                </select>
+              </div>
+            </div>
           </div>
+
           <div class="field-group">
             <label class="field-label">Status</label>
             <select id="ev-cfg-active" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
@@ -753,8 +798,16 @@ textarea { resize:vertical;min-height:72px; }
           <hr class="divider">
           <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
           <div id="result-panel-wrap" style="display:none">
+            <div class="field-group" id="result-subevent-selector-wrap" style="display:none">
+              <label class="field-label">🎯 Lançando resultado de qual evento?</label>
+              <select id="result-subevent-select" onchange="onSubEventContextChange()">
+                <option value="1">Evento 1</option>
+                <option value="2">Evento 2</option>
+              </select>
+            </div>
+
             <div class="field-group">
-              <label class="field-label">Time Cap deste evento (para resultados de tempo)</label>
+              <label class="field-label">Time Cap (para resultados de tempo)</label>
               <div style="display:flex;gap:8px;align-items:center">
                 <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
                 <span>min</span>
@@ -1495,20 +1548,18 @@ function formatTimeCap(seconds) {
 
 async function renderResultsBoard(info) {
   const board = document.getElementById('results-board');
+
+  if (info.is_dual) {
+    await renderDualResultsBoard(info);
+    return;
+  }
+
   if (!info.result_type) { board.style.display = 'none'; return; }
 
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r.result_value);
   if (!regs.length) { board.style.display = 'none'; return; }
 
   const groupDescs = await getSetting('level_descriptions', {});
-
-  const groupsOrder = [
-    { key:'Iniciante', emoji:'🟢', name:'Verde' },
-    { key:'Intermediário', emoji:'🟡', name:'Amarelo' },
-    { key:'Avançado', emoji:'🟠', name:'Laranja' }
-  ];
-
-  // Title with TIME CAP info
   const capLabel = formatTimeCap(info.time_cap_seconds);
   const titleEl = document.getElementById('results-title');
   if (titleEl) {
@@ -1517,8 +1568,20 @@ async function renderResultsBoard(info) {
       : '🏁 Resultados';
   }
 
-  const colLabel = info.result_type === 'tempo' ? 'TEMPO DE PROVA' : 'RESULTADO';
+  const html = renderResultsGroupsHtml(regs, info.result_type, groupDescs);
+  document.getElementById('results-groups').innerHTML = html;
+  board.style.display = html ? '' : 'none';
+}
 
+// Gera o HTML dos grupos (Verde/Amarelo/Laranja) para uma lista de inscrições e um tipo de resultado
+function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField) {
+  resultField = resultField || 'result_value';
+  const groupsOrder = [
+    { key:'Iniciante', emoji:'🟢', name:'Verde' },
+    { key:'Intermediário', emoji:'🟡', name:'Amarelo' },
+    { key:'Avançado', emoji:'🟠', name:'Laranja' }
+  ];
+  const colLabel = resultType === 'tempo' ? 'TEMPO DE PROVA' : 'RESULTADO';
   let html = '';
   groupsOrder.forEach(g => {
     const items = regs.filter(r => (r.fitness_level||'Iniciante') === g.key)
@@ -1534,11 +1597,45 @@ async function renderResultsBoard(info) {
           ${items.map(r => `
             <div class="results-item">
               <span class="results-item-name">${r.name}</span>
-              <span class="results-item-value">${r.result_value}</span>
+              <span class="results-item-value">${r[resultField]}</span>
             </div>`).join('')}
         </div>
       </div>`;
   });
+  return html;
+}
+
+// Versão para eventos com 2 sub-eventos: renderiza 2 blocos de resultado separados,
+// cada um só com quem tem resultado lançado NAQUELE sub-evento específico
+async function renderDualResultsBoard(info) {
+  const board = document.getElementById('results-board');
+  const hasType1 = !!info.result_type_1;
+  const hasType2 = !!info.result_type_2;
+  if (!hasType1 && !hasType2) { board.style.display = 'none'; return; }
+
+  const groupDescs = await getSetting('level_descriptions', {});
+  const allRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+
+  const regs1 = hasType1 ? allRegs.filter(r => r.result_value_1) : [];
+  const regs2 = hasType2 ? allRegs.filter(r => r.result_value_2) : [];
+
+  if (!regs1.length && !regs2.length) { board.style.display = 'none'; return; }
+
+  const titleEl = document.getElementById('results-title');
+  if (titleEl) titleEl.innerHTML = '🏁 Resultados';
+
+  let html = '';
+
+  if (regs1.length) {
+    const cap1 = formatTimeCap(info.time_cap_seconds_1);
+    html += `<div class="results-subevent-header">🥇 ${info.sub1_name || 'Evento 1'}${cap1 ? ` <span style="color:var(--red);font-weight:800">— TIME CAP: ${cap1}</span>` : ''}</div>`;
+    html += renderResultsGroupsHtml(regs1, info.result_type_1, groupDescs, 'result_value_1');
+  }
+  if (regs2.length) {
+    const cap2 = formatTimeCap(info.time_cap_seconds_2);
+    html += `<div class="results-subevent-header">🥈 ${info.sub2_name || 'Evento 2'}${cap2 ? ` <span style="color:var(--red);font-weight:800">— TIME CAP: ${cap2}</span>` : ''}</div>`;
+    html += renderResultsGroupsHtml(regs2, info.result_type_2, groupDescs, 'result_value_2');
+  }
 
   document.getElementById('results-groups').innerHTML = html;
   board.style.display = html ? '' : 'none';
@@ -1715,7 +1812,8 @@ async function submitEventRegistration() {
   }
 
   // Checa lista de faltantes de eventos anteriores.
-  // Regra: só bloqueia quem realmente está na lista de "faltou" (attended === false),
+  // Regra: só bloqueia quem realmente está na lista de "faltou" (attended === false,
+  // ou attended_1/attended_2 === false em eventos com 2 sub-eventos),
   // comparando pelo critério certo conforme o tipo de inscrição:
   //  - Membro do Clube (tem member_id cadastrado no ranking) → compara por member_id
   //  - Aluno do CT (sem ranking) ou Visitante → compara por telefone, e SÓ se o telefone
@@ -1723,11 +1821,11 @@ async function submitEventRegistration() {
   let blocked = null;
   if (isClube && memberId) {
     const { data } = await sb.from('event_registrations')
-      .select('id').eq('attended', false).eq('member_id', memberId).limit(1);
+      .select('id').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('member_id', memberId).limit(1);
     blocked = data;
   } else if (phone) {
     const { data } = await sb.from('event_registrations')
-      .select('id').eq('attended', false).eq('phone', phone).limit(1);
+      .select('id').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('phone', phone).limit(1);
     blocked = data;
   }
   if (blocked && blocked.length) {
@@ -1761,19 +1859,32 @@ async function submitEventRegistration() {
 }
 
 // ── Admin ──
+let currentSubEventContext = '1'; // '1' ou '2' — qual sub-evento está sendo configurado/lançado no painel de resultados
+
 async function renderEventAdminView() {
   const info = await getEventInfo();
   document.getElementById('ev-cfg-name').value = info.name || '';
   document.getElementById('ev-cfg-meta').value = info.meta || '';
   document.getElementById('ev-cfg-desc').value = info.desc || '';
   document.getElementById('ev-cfg-max').value = info.max || '';
-  document.getElementById('ev-cfg-points').value = info.points ?? 10;
-  document.getElementById('ev-cfg-result-type').value = info.result_type || '';
   document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
   document.getElementById('ev-cfg-rules').value = await getEventRules();
   document.getElementById('ev-cfg-dual').checked = !!info.is_dual;
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
   document.getElementById('ev-cfg-sub2').value = info.sub2_name || '';
+
+  if (info.is_dual) {
+    // Campos duplicados por sub-evento
+    document.getElementById('ev-cfg-points-1').value = info.points_1 ?? 10;
+    document.getElementById('ev-cfg-points-2').value = info.points_2 ?? 10;
+    document.getElementById('ev-cfg-result-type-1').value = info.result_type_1 || '';
+    document.getElementById('ev-cfg-result-type-2').value = info.result_type_2 || '';
+    document.getElementById('ev-cfg-sub1-header').textContent = '🥇 ' + (info.sub1_name || 'Evento 1');
+    document.getElementById('ev-cfg-sub2-header').textContent = '🥈 ' + (info.sub2_name || 'Evento 2');
+  } else {
+    document.getElementById('ev-cfg-points').value = info.points ?? 10;
+    document.getElementById('ev-cfg-result-type').value = info.result_type || '';
+  }
   toggleDualEventFields();
 
   const imgPreviewWrap = document.getElementById('event-image-preview-wrap');
@@ -1788,23 +1899,56 @@ async function renderEventAdminView() {
   renderRegistrationsList();
   renderNoShowList();
 
-  const hasResultType = !!info.result_type;
+  // Seletor de contexto (qual sub-evento estamos lançando resultado agora)
+  const subSelWrap = document.getElementById('result-subevent-selector-wrap');
+  if (info.is_dual) {
+    subSelWrap.style.display = '';
+    const subSel = document.getElementById('result-subevent-select');
+    subSel.innerHTML = `
+      <option value="1">${info.sub1_name || 'Evento 1'}</option>
+      <option value="2">${info.sub2_name || 'Evento 2'}</option>`;
+    subSel.value = currentSubEventContext;
+  } else {
+    subSelWrap.style.display = 'none';
+    currentSubEventContext = '1';
+  }
+
+  refreshResultPanelForContext(info);
+  populateResultSelect();
+  await loadLevelDescriptionsIntoForm();
+}
+
+// Ajusta o painel de "Lançar Resultados" (time cap, tipo de resultado, rótulos)
+// conforme qual sub-evento está selecionado no contexto atual
+function refreshResultPanelForContext(info) {
+  const isDual = info.is_dual;
+  const resultType = isDual
+    ? (currentSubEventContext === '2' ? info.result_type_2 : info.result_type_1)
+    : info.result_type;
+  const capSec = isDual
+    ? (currentSubEventContext === '2' ? (info.time_cap_seconds_2||0) : (info.time_cap_seconds_1||0))
+    : (info.time_cap_seconds || 0);
+
+  const hasResultType = !!resultType;
   document.getElementById('result-entry-label').style.display = hasResultType ? '' : 'none';
   document.getElementById('result-panel-wrap').style.display = hasResultType ? '' : 'none';
 
-  const isTempo = info.result_type === 'tempo';
+  const isTempo = resultType === 'tempo';
   document.getElementById('result-tempo-helper').style.display = isTempo ? '' : 'none';
   document.getElementById('result-final-label').textContent = isTempo
     ? 'Resultado final (editável — corrige se estiver errado)'
     : 'Resultado (rounds/reps)';
 
-  const capSec = info.time_cap_seconds || 0;
   document.getElementById('ev-cfg-timecap-min').value = capSec ? Math.floor(capSec/60) : '';
   document.getElementById('ev-cfg-timecap-sec').value = capSec ? capSec%60 : '';
   document.getElementById('result-timecap-display').textContent = capSec ? formatTime(capSec) : '—';
+}
 
+function onSubEventContextChange() {
+  currentSubEventContext = document.getElementById('result-subevent-select').value;
+  const info = EVENT_INFO || defaultEventInfo();
+  refreshResultPanelForContext(info);
   populateResultSelect();
-  await loadLevelDescriptionsIntoForm();
 }
 
 let startingFreshEvent = false;
@@ -1881,7 +2025,6 @@ async function updateEventConfig() {
   const meta = document.getElementById('ev-cfg-meta').value.trim();
   const desc = document.getElementById('ev-cfg-desc').value.trim();
   const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
-  const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
   const active = document.getElementById('ev-cfg-active').value === 'true';
   const isDual = document.getElementById('ev-cfg-dual').checked;
   const sub1Name = document.getElementById('ev-cfg-sub1').value.trim() || 'Evento 1';
@@ -1900,12 +2043,35 @@ async function updateEventConfig() {
     eventRegLoaded = false;
     await loadEventRegistrations();
   }
-  const result_type = document.getElementById('ev-cfg-result-type').value || null;
-  const newInfo = {
-    id, name, meta, desc, max, points, active, result_type,
-    time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null,
-    is_dual: isDual, sub1_name: sub1Name, sub2_name: sub2Name
-  };
+
+  let newInfo;
+  if (isDual) {
+    // Cada sub-evento tem seus próprios pontos e tipo de resultado
+    const points1 = parseInt(document.getElementById('ev-cfg-points-1').value) || 0;
+    const points2 = parseInt(document.getElementById('ev-cfg-points-2').value) || 0;
+    const resultType1 = document.getElementById('ev-cfg-result-type-1').value || null;
+    const resultType2 = document.getElementById('ev-cfg-result-type-2').value || null;
+    newInfo = {
+      id, name, meta, desc, max, active,
+      image: prevInfo.image || null,
+      is_dual: true, sub1_name: sub1Name, sub2_name: sub2Name,
+      points_1: points1, points_2: points2,
+      result_type_1: resultType1, result_type_2: resultType2,
+      time_cap_seconds_1: prevInfo.time_cap_seconds_1 || 0,
+      time_cap_seconds_2: prevInfo.time_cap_seconds_2 || 0,
+      // mantém campos únicos zerados/nulos pra não confundir eventos simples antigos
+      points: 0, result_type: null, time_cap_seconds: 0
+    };
+  } else {
+    const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
+    const result_type = document.getElementById('ev-cfg-result-type').value || null;
+    newInfo = {
+      id, name, meta, desc, max, points, active, result_type,
+      time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null,
+      is_dual: false, sub1_name: sub1Name, sub2_name: sub2Name
+    };
+  }
+
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -1917,6 +2083,8 @@ async function updateEventConfig() {
 function toggleDualEventFields() {
   const isDual = document.getElementById('ev-cfg-dual').checked;
   document.getElementById('ev-dual-fields-wrap').style.display = isDual ? '' : 'none';
+  document.getElementById('ev-single-fields-wrap').style.display = isDual ? 'none' : '';
+  document.getElementById('ev-dual-config-wrap').style.display = isDual ? '' : 'none';
 }
 
 // Regras do evento — fixas, valem para todos os eventos, editáveis a qualquer momento
@@ -1933,8 +2101,9 @@ async function updateEventRules() {
 async function startNewEvent() {
   const info = EVENT_INFO || defaultEventInfo();
   const currentRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
-  const toDelete = currentRegs.filter(r => r.attended !== false); // keep no-shows (attended===false)
-  const toKeep = currentRegs.filter(r => r.attended === false);
+  const isNoShow = r => r.attended === false || r.attended_1 === false || r.attended_2 === false;
+  const toDelete = currentRegs.filter(r => !isNoShow(r));
+  const toKeep = currentRegs.filter(isNoShow);
 
   const msg = toDelete.length
     ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) e resultado(s) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Essa ação não pode ser desfeita. Continuar?`
@@ -1952,6 +2121,10 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-meta').value = '';
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
+  document.getElementById('ev-cfg-dual').checked = false;
+  document.getElementById('ev-cfg-sub1').value = '';
+  document.getElementById('ev-cfg-sub2').value = '';
+  toggleDualEventFields();
   startingFreshEvent = true;
   renderRegistrationsList();
   renderNoShowList();
@@ -1965,33 +2138,80 @@ function renderRegistrationsList() {
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
   document.getElementById('ev-count').textContent = regs.length;
   if (!regs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhuma inscrição ainda.</div>'; return; }
-  el.innerHTML = regs.map(r => `
+
+  el.innerHTML = regs.map(r => {
+    const badges = `${r.is_member ? '<span class="reg-member-badge">CLUBE</span>' : ''} ${r.is_ct_student ? '<span class="reg-member-badge">CT</span>' : ''} ${(!r.is_member && !r.is_ct_student) ? '<span class="reg-guest-badge">VISITANTE</span>' : ''} ${r.sub_events ? `<span class="reg-member-badge" style="background:rgba(45,125,255,0.15);color:#5b9dff;border-color:rgba(45,125,255,0.35)">${r.sub_events}</span>` : ''}`;
+
+    let attendanceHtml;
+    if (info.is_dual) {
+      const sub1Name = info.sub1_name || 'Evento 1';
+      const sub2Name = info.sub2_name || 'Evento 2';
+      const inSub1 = (r.sub_events||'').includes(sub1Name);
+      const inSub2 = (r.sub_events||'').includes(sub2Name);
+      attendanceHtml = `
+        <div class="attend-dual-wrap">
+          ${inSub1 ? `
+          <div class="attend-dual-row">
+            <span class="attend-dual-label">${sub1Name}</span>
+            <div class="attend-btns">
+              <button class="attend-btn yes ${r.attended_1===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '1')">✓</button>
+              <button class="attend-btn no ${r.attended_1===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '1')">✕</button>
+              ${r.attended_1!==null && r.attended_1!==undefined ? `<button class="attend-btn reset" onclick="toggleAttendance(${r.id}, null, '1')" title="Voltar para sem presença">↺</button>` : ''}
+            </div>
+          </div>` : ''}
+          ${inSub2 ? `
+          <div class="attend-dual-row">
+            <span class="attend-dual-label">${sub2Name}</span>
+            <div class="attend-btns">
+              <button class="attend-btn yes ${r.attended_2===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '2')">✓</button>
+              <button class="attend-btn no ${r.attended_2===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '2')">✕</button>
+              ${r.attended_2!==null && r.attended_2!==undefined ? `<button class="attend-btn reset" onclick="toggleAttendance(${r.id}, null, '2')" title="Voltar para sem presença">↺</button>` : ''}
+            </div>
+          </div>` : ''}
+        </div>`;
+    } else {
+      attendanceHtml = `
+        <div class="attend-btns">
+          <button class="attend-btn yes ${r.attended===true?'active':''}" onclick="toggleAttendance(${r.id}, true)">✓</button>
+          <button class="attend-btn no ${r.attended===false?'active':''}" onclick="toggleAttendance(${r.id}, false)">✕</button>
+          ${r.attended!==null ? `<button class="attend-btn reset" onclick="toggleAttendance(${r.id}, null)" title="Voltar para sem presença">↺</button>` : ''}
+        </div>`;
+    }
+
+    return `
     <div class="reg-chip">
       <div class="reg-chip-info">
-        <div class="reg-chip-name">${r.name} ${r.is_member ? '<span class="reg-member-badge">CLUBE</span>' : ''} ${r.is_ct_student ? '<span class="reg-member-badge">CT</span>' : ''} ${(!r.is_member && !r.is_ct_student) ? '<span class="reg-guest-badge">VISITANTE</span>' : ''} ${r.sub_events ? `<span class="reg-member-badge" style="background:rgba(45,125,255,0.15);color:#5b9dff;border-color:rgba(45,125,255,0.35)">${r.sub_events}</span>` : ''}</div>
+        <div class="reg-chip-name">${r.name} ${badges}</div>
         <div class="reg-chip-meta">${r.age?r.age+' anos · ':''}${r.fitness_level||''} · ${r.phone}</div>
+        ${info.is_dual ? attendanceHtml : ''}
       </div>
-      <div class="attend-btns">
-        <button class="attend-btn yes ${r.attended===true?'active':''}" onclick="toggleAttendance(${r.id}, true)">✓</button>
-        <button class="attend-btn no ${r.attended===false?'active':''}" onclick="toggleAttendance(${r.id}, false)">✕</button>
-        ${r.attended!==null ? `<button class="attend-btn reset" onclick="toggleAttendance(${r.id}, null)" title="Voltar para sem presença">↺</button>` : ''}
+      <div class="attend-btns-wrap">
+        ${!info.is_dual ? attendanceHtml : ''}
         <button class="btn-sm" onclick="openEditRegistration(${r.id})" title="Editar cadastro">✏️</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-async function toggleAttendance(id, attended) {
+async function toggleAttendance(id, attended, subCtx) {
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===id);
   if (!reg) return;
-  const { error } = await sb.from('event_registrations').update({ attended }).eq('id', id);
-  if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
-  reg.attended = attended;
+  const info = EVENT_INFO || defaultEventInfo();
+  const suffix = subCtx ? '_' + subCtx : '';
+  const attendedField = 'attended' + suffix;
+  const pointsAwardedField = 'points_awarded' + suffix;
 
-  if (attended === true && reg.is_member && reg.member_id && !reg.points_awarded) {
-    const info = await getEventInfo();
-    await addPointsToMember(reg.member_id, info.points || 0, info.name, 'evento');
-    await sb.from('event_registrations').update({ points_awarded: true }).eq('id', id);
-    reg.points_awarded = true;
+  const { error } = await sb.from('event_registrations').update({ [attendedField]: attended }).eq('id', id);
+  if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
+  reg[attendedField] = attended;
+
+  if (attended === true && reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
+    const pts = (info.is_dual && subCtx)
+      ? (subCtx === '2' ? (info.points_2||0) : (info.points_1||0))
+      : (info.points || 0);
+    await addPointsToMember(reg.member_id, pts, info.name, 'evento');
+    await sb.from('event_registrations').update({ [pointsAwardedField]: true }).eq('id', id);
+    reg[pointsAwardedField] = true;
     await loadMembers();
     renderRanking();
   }
@@ -2003,7 +2223,7 @@ async function toggleAttendance(id, attended) {
 
 function renderNoShowList() {
   const el = document.getElementById('event-noshow-list');
-  const noShows = EVENT_REGISTRATIONS.filter(r => r.attended === false);
+  const noShows = EVENT_REGISTRATIONS.filter(r => r.attended === false || r.attended_1 === false || r.attended_2 === false);
   if (!noShows.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Ninguém na lista de faltantes.</div>'; return; }
   el.innerHTML = noShows.map(r => `
     <div class="reg-chip">
@@ -2045,7 +2265,13 @@ async function saveTimeCap() {
   const sec = parseInt(document.getElementById('ev-cfg-timecap-sec').value) || 0;
   const seconds = min*60 + sec;
   const info = await getEventInfo();
-  const newInfo = { ...info, time_cap_seconds: seconds };
+  let newInfo;
+  if (info.is_dual) {
+    const field = currentSubEventContext === '2' ? 'time_cap_seconds_2' : 'time_cap_seconds_1';
+    newInfo = { ...info, [field]: seconds };
+  } else {
+    newInfo = { ...info, time_cap_seconds: seconds };
+  }
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -2078,17 +2304,28 @@ async function loadLevelDescriptionsIntoForm() {
 function populateResultSelect() {
   const info = EVENT_INFO || defaultEventInfo();
   const sel = document.getElementById('result-select');
-  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id)
-    .slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const suffix = info.is_dual ? '_' + currentSubEventContext : '';
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  // Se dual, só mostra quem se inscreveu nesse sub-evento específico
+  if (info.is_dual) {
+    const subName = currentSubEventContext === '2' ? (info.sub2_name||'Evento 2') : (info.sub1_name||'Evento 1');
+    regs = regs.filter(r => (r.sub_events||'').includes(subName));
+  }
+  regs = regs.slice().sort((a,b)=>a.name.localeCompare(b.name));
   sel.innerHTML = '<option value="">— Selecione —</option>' + regs.map(r => {
     const lvl = levelColor(r.fitness_level);
-    const done = r.result_value ? ' ✓' : '';
+    const resultField = 'result_value' + suffix;
+    const done = r[resultField] ? ' ✓' : '';
     return `<option value="${r.id}">${lvl.emoji} ${r.name}${done}</option>`;
   }).join('');
 }
 
 function onResultSelectChange() {
   const info = EVENT_INFO || defaultEventInfo();
+  const suffix = info.is_dual ? '_' + currentSubEventContext : '';
+  const resultType = info.is_dual
+    ? (currentSubEventContext === '2' ? info.result_type_2 : info.result_type_1)
+    : info.result_type;
   const regId = parseInt(document.getElementById('result-select').value);
   document.getElementById('result-saved-tag').textContent = '';
   document.getElementById('result-remaining-input').value = '';
@@ -2097,11 +2334,12 @@ function onResultSelectChange() {
   const deleteBtn = document.getElementById('delete-result-btn');
   if (!regId) { finalInput.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; return; }
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
-  finalInput.value = reg && reg.result_value ? reg.result_value : '';
-  finalInput.placeholder = info.result_type === 'tempo' ? 'MM:SS' : 'rounds';
+  const resultField = 'result_value' + suffix;
+  finalInput.value = reg && reg[resultField] ? reg[resultField] : '';
+  finalInput.placeholder = resultType === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
   document.getElementById('result-level-select').value = (reg && reg.fitness_level) || 'Iniciante';
-  deleteBtn.style.display = (reg && reg.result_value) ? 'block' : 'none';
+  deleteBtn.style.display = (reg && reg[resultField]) ? 'block' : 'none';
 }
 
 async function deleteSelectedResult() {
@@ -2111,9 +2349,11 @@ async function deleteSelectedResult() {
   if (!reg) return;
   if (!confirm(`Excluir o resultado de ${reg.name}? Isso não remove a inscrição, só apaga o tempo/resultado lançado.`)) return;
 
-  const { error } = await sb.from('event_registrations').update({ result_value: null }).eq('id', regId);
+  const info = EVENT_INFO || defaultEventInfo();
+  const resultField = info.is_dual ? 'result_value_' + currentSubEventContext : 'result_value';
+  const { error } = await sb.from('event_registrations').update({ [resultField]: null }).eq('id', regId);
   if (error) { toast('⚠️ Erro ao excluir resultado'); console.error(error); return; }
-  reg.result_value = null;
+  reg[resultField] = null;
 
   populateResultSelect();
   document.getElementById('result-select').value = '';
@@ -2142,8 +2382,10 @@ async function updateResultLevel() {
 
 function calcResultFromRemaining() {
   const info = EVENT_INFO || defaultEventInfo();
-  const cap = info.time_cap_seconds || 0;
-  if (!cap) return toast('⚠️ Salve o Time Cap do evento primeiro!');
+  const cap = info.is_dual
+    ? (currentSubEventContext === '2' ? (info.time_cap_seconds_2||0) : (info.time_cap_seconds_1||0))
+    : (info.time_cap_seconds || 0);
+  if (!cap) return toast('⚠️ Salve o Time Cap primeiro!');
   const remainingSec = parseTimeToSeconds(document.getElementById('result-remaining-input').value);
   if (remainingSec === null) return toast('⚠️ Digite o tempo restante no formato MM:SS!');
   const elapsed = Math.max(0, cap - remainingSec);
@@ -2162,16 +2404,25 @@ async function saveSelectedResult() {
   const value = document.getElementById('result-final-input').value.trim();
   if (!value) return toast('⚠️ Digite ou calcule o resultado antes de salvar!');
 
-  const { error } = await sb.from('event_registrations').update({ result_value: value, attended: true }).eq('id', regId);
-  if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
-  reg.result_value = value;
-  reg.attended = true;
+  const info = EVENT_INFO || defaultEventInfo();
+  const suffix = info.is_dual ? '_' + currentSubEventContext : '';
+  const resultField = 'result_value' + suffix;
+  const attendedField = 'attended' + suffix;
+  const pointsAwardedField = 'points_awarded' + suffix;
 
-  if (reg.is_member && reg.member_id && !reg.points_awarded) {
-    const info = await getEventInfo();
-    await addPointsToMember(reg.member_id, info.points || 0, info.name, 'evento');
-    await sb.from('event_registrations').update({ points_awarded: true }).eq('id', regId);
-    reg.points_awarded = true;
+  const updateData = { [resultField]: value, [attendedField]: true };
+  const { error } = await sb.from('event_registrations').update(updateData).eq('id', regId);
+  if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
+  reg[resultField] = value;
+  reg[attendedField] = true;
+
+  if (reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
+    const pts = info.is_dual
+      ? (currentSubEventContext === '2' ? (info.points_2||0) : (info.points_1||0))
+      : (info.points || 0);
+    await addPointsToMember(reg.member_id, pts, info.name, 'evento');
+    await sb.from('event_registrations').update({ [pointsAwardedField]: true }).eq('id', regId);
+    reg[pointsAwardedField] = true;
     await loadMembers();
     renderRanking();
   }
@@ -2297,22 +2548,47 @@ function printEventReport() {
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
   if (!regs.length) return toast('⚠️ Não há inscritos nesse evento ainda.');
 
-  const attendedCount = regs.filter(r=>r.attended===true).length;
-  const noShowCount = regs.filter(r=>r.attended===false).length;
-  const pendingCount = regs.filter(r=>r.attended==null).length;
+  let attendedCount, noShowCount, pendingCount, rows, headerCols;
 
-  const rows = regs.map((r,i) => `
-    <tr>
-      <td>${i+1}</td>
-      <td>${r.name}</td>
-      <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
-      <td>${r.sub_events||'—'}</td>
-      <td>${r.age||'—'}</td>
-      <td>${r.fitness_level||'—'}</td>
-      <td>${r.phone||'—'}</td>
-      <td>${r.heard_from||'—'}${r.referred_by?' ('+r.referred_by+')':''}</td>
-      <td>${r.attended===true?'✅ Presente':r.attended===false?'❌ Faltou':'—'}</td>
-    </tr>`).join('');
+  if (info.is_dual) {
+    const sub1 = info.sub1_name || 'Evento 1';
+    const sub2 = info.sub2_name || 'Evento 2';
+    attendedCount = regs.filter(r=>r.attended_1===true || r.attended_2===true).length;
+    noShowCount = regs.filter(r=>r.attended_1===false || r.attended_2===false).length;
+    pendingCount = regs.filter(r=>(r.attended_1==null)&&(r.attended_2==null)).length;
+
+    const presLabel = (v) => v===true?'✅ Presente':v===false?'❌ Faltou':'—';
+    rows = regs.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.name}</td>
+        <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
+        <td>${r.sub_events||'—'}</td>
+        <td>${r.age||'—'}</td>
+        <td>${r.fitness_level||'—'}</td>
+        <td>${r.phone||'—'}</td>
+        <td>${presLabel(r.attended_1)}${r.result_value_1?' ('+r.result_value_1+')':''}</td>
+        <td>${presLabel(r.attended_2)}${r.result_value_2?' ('+r.result_value_2+')':''}</td>
+      </tr>`).join('');
+    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>${sub1}</th><th>${sub2}</th>`;
+  } else {
+    attendedCount = regs.filter(r=>r.attended===true).length;
+    noShowCount = regs.filter(r=>r.attended===false).length;
+    pendingCount = regs.filter(r=>r.attended==null).length;
+
+    rows = regs.map((r,i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${r.name}</td>
+        <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
+        <td>${r.age||'—'}</td>
+        <td>${r.fitness_level||'—'}</td>
+        <td>${r.phone||'—'}</td>
+        <td>${r.heard_from||'—'}${r.referred_by?' ('+r.referred_by+')':''}</td>
+        <td>${r.attended===true?'✅ Presente':r.attended===false?'❌ Faltou':'—'}</td>
+      </tr>`).join('');
+    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th>`;
+  }
 
   const html = `
     <html><head><meta charset="utf-8"><title>Relatório — ${info.name}</title>
@@ -2337,7 +2613,7 @@ function printEventReport() {
         <div><b>${pendingCount}</b>Sem marcação</div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th></tr></thead>
+        <thead><tr>${headerCols}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button>
