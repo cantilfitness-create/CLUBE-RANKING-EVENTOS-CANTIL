@@ -391,6 +391,7 @@ textarea { resize:vertical;min-height:72px; }
       <button class="filter-tab active" onclick="setFilter('all')">🏆 Geral</button>
       <button class="filter-tab" onclick="setFilter('F')">👩 Feminino</button>
       <button class="filter-tab" onclick="setFilter('M')">👨 Masculino</button>
+      <button class="filter-tab" onclick="setFilter('kids')">🧒 Infantil</button>
     </div>
     <div class="stars-legend">🔥 = desafio feito &nbsp;·&nbsp; ⭐ = evento feito (escolhido ao lançar o ponto)</div>
     <div class="ranking-card" id="ranking-list"></div>
@@ -647,8 +648,9 @@ textarea { resize:vertical;min-height:72px; }
             </select>
           </div>
           <div class="field-group">
-            <label class="field-label">Aniversário (opcional)</label>
+            <label class="field-label">Aniversário (data de nascimento)</label>
             <input type="date" id="n-birthday" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">🧒 Membros de 6 a 14 anos entram automaticamente na categoria Infantil e não aparecem no ranking geral. Ao completar 15, voltam pro geral sozinhos.</div>
           </div>
           <button class="btn btn-blue" onclick="addMember()" style="margin-bottom:20px">✅ Cadastrar</button>
           <hr class="divider">
@@ -992,6 +994,28 @@ const lset = (k,v) => localStorage.setItem(k, JSON.stringify(v));
 let MEMBERS = [];
 let HISTORY = [];
 let currentFilter = 'all';
+
+// ── CATEGORIA INFANTIL (6 a 14 anos) ──
+// Calcula a idade atual a partir da data de nascimento (YYYY-MM-DD)
+function calcAge(birthday) {
+  if (!birthday) return null;
+  const parts = birthday.split('-');
+  if (parts.length !== 3) return null;
+  const [by, bm, bd] = parts.map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - by;
+  const hasHadBirthdayThisYear = (today.getMonth()+1 > bm) || (today.getMonth()+1 === bm && today.getDate() >= bd);
+  if (!hasHadBirthdayThisYear) age--;
+  return age;
+}
+
+// true se o membro tem entre 6 e 14 anos (inclusive) HOJE — assim que fizer 15, sai
+// automaticamente da categoria infantil e passa a contar no ranking geral
+function isKidsCategory(member) {
+  const age = calcAge(member.birthday);
+  if (age === null) return false;
+  return age >= 6 && age <= 14;
+}
 let CHALLENGE_VIDEOS = [];
 let SUBSCRIBER_VIDEOS = [];
 let ACCESS_CODES = [];
@@ -1189,7 +1213,17 @@ async function addPointsToMember(id, pts, reason, category='treino') {
 // ══════════════════════════════════════════════
 function renderRanking() {
   const all = MEMBERS.slice().sort((a,b)=>b.points-a.points);
-  const members = currentFilter === 'all' ? all : all.filter(m=>m.gender===currentFilter);
+  // Membros de 6 a 14 anos (categoria infantil) NÃO entram no ranking geral,
+  // feminino ou masculino — só aparecem quando a aba "Infantil" está selecionada.
+  // Ao completar 15 anos, calcAge() já reflete a nova idade automaticamente e
+  // o membro passa a contar no ranking geral na próxima renderização.
+  let members;
+  if (currentFilter === 'kids') {
+    members = all.filter(m => isKidsCategory(m));
+  } else {
+    const nonKids = all.filter(m => !isKidsCategory(m));
+    members = currentFilter === 'all' ? nonKids : nonKids.filter(m=>m.gender===currentFilter);
+  }
   const max = members[0]?.points || 1;
 
   const ranked = [];
@@ -3087,8 +3121,8 @@ function renderMembersList() {
     <div class="member-chip">
       <div class="chip-avatar">${m.emoji}</div>
       <div class="chip-info">
-        <div class="chip-name">${m.name}</div>
-        <div class="chip-id">${m.points} pontos · ${m.gender==='M' ? '👨 Masculino' : '👩 Feminino'}</div>
+        <div class="chip-name">${m.name} ${isKidsCategory(m) ? '<span class="reg-member-badge" style="background:rgba(61,232,154,0.15);color:var(--green);border-color:rgba(61,232,154,0.35)">🧒 INFANTIL</span>' : ''}</div>
+        <div class="chip-id">${m.points} pontos · ${m.gender==='M' ? '👨 Masculino' : '👩 Feminino'}${m.birthday ? ' · ' + calcAge(m.birthday) + ' anos' : ''}</div>
       </div>
       <div class="chip-pts">${m.points}</div>
       <button class="btn-sm-danger" style="background:none;color:var(--muted);border:1px solid var(--border)" onclick="startEditMember(${m.id})">✏️</button>
@@ -3166,7 +3200,7 @@ function toast(msg) {
 function setFilter(f) {
   currentFilter = f;
   document.querySelectorAll('.filter-tab').forEach((b,i)=>{
-    b.classList.toggle('active', ['all','F','M'][i]===f);
+    b.classList.toggle('active', ['all','F','M','kids'][i]===f);
   });
   renderRanking();
 }
