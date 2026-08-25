@@ -503,13 +503,19 @@ textarea { resize:vertical;min-height:72px; }
       <div class="field-group" id="ev-dual-select-wrap" style="display:none">
         <label class="field-label">🎯 Em qual(is) você quer se inscrever?</label>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+          <label id="ev-sub1-wrap" style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
             <input type="checkbox" id="ev-sub1-check" style="width:18px;height:18px;flex-shrink:0">
-            <span id="ev-sub1-label">Evento 1</span>
+            <span style="flex:1">
+              <span id="ev-sub1-label">Evento 1</span>
+              <span id="ev-sub1-capacity" style="display:block;font-size:11px;color:var(--muted);margin-top:2px"></span>
+            </span>
           </label>
-          <label style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
+          <label id="ev-sub2-wrap" style="display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer">
             <input type="checkbox" id="ev-sub2-check" style="width:18px;height:18px;flex-shrink:0">
-            <span id="ev-sub2-label">Evento 2</span>
+            <span style="flex:1">
+              <span id="ev-sub2-label">Evento 2</span>
+              <span id="ev-sub2-capacity" style="display:block;font-size:11px;color:var(--muted);margin-top:2px"></span>
+            </span>
           </label>
         </div>
       </div>
@@ -746,6 +752,13 @@ textarea { resize:vertical;min-height:72px; }
                 <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
               </select>
             </div>
+            <div class="field-group">
+              <label class="field-label">Status</label>
+              <select id="ev-cfg-active" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                <option value="true">✅ Inscrições abertas</option>
+                <option value="false">🚫 Inscrições fechadas</option>
+              </select>
+            </div>
           </div>
 
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
@@ -753,10 +766,14 @@ textarea { resize:vertical;min-height:72px; }
             <div style="background:rgba(45,125,255,0.06);border:1px solid rgba(45,125,255,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
               <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px" id="ev-cfg-sub1-header">🥇 Evento 1</div>
               <div class="field-group">
+                <label class="field-label">Vagas (Evento 1)</label>
+                <input type="number" id="ev-cfg-max-1" placeholder="ex: 40">
+              </div>
+              <div class="field-group">
                 <label class="field-label">Pontos por presença (Evento 1)</label>
                 <input type="number" id="ev-cfg-points-1" placeholder="ex: 10">
               </div>
-              <div class="field-group" style="margin-bottom:0">
+              <div class="field-group">
                 <label class="field-label">Tipo de resultado (Evento 1)</label>
                 <select id="ev-cfg-result-type-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
                   <option value="">— Sem resultado (só presença)</option>
@@ -764,14 +781,25 @@ textarea { resize:vertical;min-height:72px; }
                   <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
                 </select>
               </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Status (Evento 1)</label>
+                <select id="ev-cfg-active-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="true">✅ Inscrições abertas</option>
+                  <option value="false">🚫 Inscrições fechadas</option>
+                </select>
+              </div>
             </div>
             <div style="background:rgba(255,208,96,0.06);border:1px solid rgba(255,208,96,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
               <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px" id="ev-cfg-sub2-header">🥈 Evento 2</div>
               <div class="field-group">
+                <label class="field-label">Vagas (Evento 2)</label>
+                <input type="number" id="ev-cfg-max-2" placeholder="ex: 40">
+              </div>
+              <div class="field-group">
                 <label class="field-label">Pontos por presença (Evento 2)</label>
                 <input type="number" id="ev-cfg-points-2" placeholder="ex: 10">
               </div>
-              <div class="field-group" style="margin-bottom:0">
+              <div class="field-group">
                 <label class="field-label">Tipo de resultado (Evento 2)</label>
                 <select id="ev-cfg-result-type-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
                   <option value="">— Sem resultado (só presença)</option>
@@ -779,16 +807,16 @@ textarea { resize:vertical;min-height:72px; }
                   <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
                 </select>
               </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Status (Evento 2)</label>
+                <select id="ev-cfg-active-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="true">✅ Inscrições abertas</option>
+                  <option value="false">🚫 Inscrições fechadas</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div class="field-group">
-            <label class="field-label">Status</label>
-            <select id="ev-cfg-active" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-              <option value="true">✅ Inscrições abertas</option>
-              <option value="false">🚫 Inscrições fechadas</option>
-            </select>
-          </div>
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
           <hr class="divider">
@@ -1714,37 +1742,92 @@ async function renderEventPublicView() {
   }
 
   const currentRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
-  const count = currentRegs.length;
-  const max = info.max || 0;
   const capWrap = document.getElementById('event-capacity-wrap');
   const formWrap = document.getElementById('event-form-wrap');
+  const jumpBtn = document.getElementById('jump-to-form-btn');
 
-  if (max > 0) {
-    capWrap.style.display = '';
-    const pctFilled = Math.min(100, Math.round((count/max)*100));
-    const pctAvailable = Math.max(0, 100 - pctFilled);
-    const fill = document.getElementById('capacity-fill');
-    fill.style.width = pctFilled+'%';
-    fill.classList.toggle('full', count >= max);
-    const text = document.getElementById('capacity-text');
-    if (count >= max) {
-      text.textContent = '🎟️ Vagas esgotadas';
-    } else if (pctAvailable <= 20) {
-      text.textContent = `🔥 Últimas vagas — ${pctAvailable}% disponíveis, corre!`;
-    } else {
-      text.textContent = `🎟️ ${pctAvailable}% das vagas ainda disponíveis`;
-    }
-  } else {
+  let isFull, isClosed;
+
+  if (info.is_dual) {
+    const sub1Name = info.sub1_name || 'Evento 1';
+    const sub2Name = info.sub2_name || 'Evento 2';
+    const count1 = currentRegs.filter(r => (r.sub_events||'').includes(sub1Name)).length;
+    const count2 = currentRegs.filter(r => (r.sub_events||'').includes(sub2Name)).length;
+    const max1 = info.max_1 || 0;
+    const max2 = info.max_2 || 0;
+    const active1 = info.active_1 !== false;
+    const active2 = info.active_2 !== false;
+    const full1 = max1 > 0 && count1 >= max1;
+    const full2 = max2 > 0 && count2 >= max2;
+    const closed1 = !active1 || full1;
+    const closed2 = !active2 || full2;
+
+    // Esconde a capacidade genérica única — cada sub-evento mostra a sua própria dentro do checkbox
     capWrap.style.display = 'none';
+
+    const cap1El = document.getElementById('ev-sub1-capacity');
+    const cap2El = document.getElementById('ev-sub2-capacity');
+    const sub1CheckWrap = document.getElementById('ev-sub1-wrap');
+    const sub2CheckWrap = document.getElementById('ev-sub2-wrap');
+    const sub1Check = document.getElementById('ev-sub1-check');
+    const sub2Check = document.getElementById('ev-sub2-check');
+
+    if (closed1) {
+      cap1El.textContent = !active1 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas';
+      sub1CheckWrap.style.opacity = '0.45';
+      sub1Check.disabled = true;
+      sub1Check.checked = false;
+    } else {
+      const pctAvail1 = max1 > 0 ? Math.max(0, 100 - Math.round((count1/max1)*100)) : null;
+      cap1El.textContent = max1 > 0 ? `🎟️ ${pctAvail1}% das vagas disponíveis` : '✅ Inscrições abertas';
+      sub1CheckWrap.style.opacity = '1';
+      sub1Check.disabled = false;
+    }
+
+    if (closed2) {
+      cap2El.textContent = !active2 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas';
+      sub2CheckWrap.style.opacity = '0.45';
+      sub2Check.disabled = true;
+      sub2Check.checked = false;
+    } else {
+      const pctAvail2 = max2 > 0 ? Math.max(0, 100 - Math.round((count2/max2)*100)) : null;
+      cap2El.textContent = max2 > 0 ? `🎟️ ${pctAvail2}% das vagas disponíveis` : '✅ Inscrições abertas';
+      sub2CheckWrap.style.opacity = '1';
+      sub2Check.disabled = false;
+    }
+
+    // O formulário inteiro só some se os DOIS sub-eventos estiverem fechados/lotados
+    isClosed = !info.name;
+    isFull = closed1 && closed2;
+  } else {
+    const count = currentRegs.length;
+    const max = info.max || 0;
+    if (max > 0) {
+      capWrap.style.display = '';
+      const pctFilled = Math.min(100, Math.round((count/max)*100));
+      const pctAvailable = Math.max(0, 100 - pctFilled);
+      const fill = document.getElementById('capacity-fill');
+      fill.style.width = pctFilled+'%';
+      fill.classList.toggle('full', count >= max);
+      const text = document.getElementById('capacity-text');
+      if (count >= max) {
+        text.textContent = '🎟️ Vagas esgotadas';
+      } else if (pctAvailable <= 20) {
+        text.textContent = `🔥 Últimas vagas — ${pctAvailable}% disponíveis, corre!`;
+      } else {
+        text.textContent = `🎟️ ${pctAvailable}% das vagas ainda disponíveis`;
+      }
+    } else {
+      capWrap.style.display = 'none';
+    }
+    isFull = max > 0 && count >= max;
+    isClosed = !info.name || info.active === false;
   }
 
   // populate member select
   const sel = document.getElementById('ev-member-select');
   sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join('');
 
-  const isFull = max > 0 && count >= max;
-  const isClosed = !info.name || info.active === false;
-  const jumpBtn = document.getElementById('jump-to-form-btn');
   if (isClosed || isFull) {
     formWrap.style.display = 'none';
     if (jumpBtn) jumpBtn.style.display = 'none';
@@ -1900,8 +1983,6 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-name').value = info.name || '';
   document.getElementById('ev-cfg-meta').value = info.meta || '';
   document.getElementById('ev-cfg-desc').value = info.desc || '';
-  document.getElementById('ev-cfg-max').value = info.max || '';
-  document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
   document.getElementById('ev-cfg-rules').value = await getEventRules();
   document.getElementById('ev-cfg-dual').checked = !!info.is_dual;
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
@@ -1913,9 +1994,15 @@ async function renderEventAdminView() {
     document.getElementById('ev-cfg-points-2').value = info.points_2 ?? 10;
     document.getElementById('ev-cfg-result-type-1').value = info.result_type_1 || '';
     document.getElementById('ev-cfg-result-type-2').value = info.result_type_2 || '';
+    document.getElementById('ev-cfg-max-1').value = info.max_1 || '';
+    document.getElementById('ev-cfg-max-2').value = info.max_2 || '';
+    document.getElementById('ev-cfg-active-1').value = info.active_1 === false ? 'false' : 'true';
+    document.getElementById('ev-cfg-active-2').value = info.active_2 === false ? 'false' : 'true';
     document.getElementById('ev-cfg-sub1-header').textContent = '🥇 ' + (info.sub1_name || 'Evento 1');
     document.getElementById('ev-cfg-sub2-header').textContent = '🥈 ' + (info.sub2_name || 'Evento 2');
   } else {
+    document.getElementById('ev-cfg-max').value = info.max || '';
+    document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
     document.getElementById('ev-cfg-points').value = info.points ?? 10;
     document.getElementById('ev-cfg-result-type').value = info.result_type || '';
   }
@@ -2058,8 +2145,6 @@ async function updateEventConfig() {
   const name = document.getElementById('ev-cfg-name').value.trim();
   const meta = document.getElementById('ev-cfg-meta').value.trim();
   const desc = document.getElementById('ev-cfg-desc').value.trim();
-  const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
-  const active = document.getElementById('ev-cfg-active').value === 'true';
   const isDual = document.getElementById('ev-cfg-dual').checked;
   const sub1Name = document.getElementById('ev-cfg-sub1').value.trim() || 'Evento 1';
   const sub2Name = document.getElementById('ev-cfg-sub2').value.trim() || 'Evento 2';
@@ -2080,23 +2165,31 @@ async function updateEventConfig() {
 
   let newInfo;
   if (isDual) {
-    // Cada sub-evento tem seus próprios pontos e tipo de resultado
+    // Cada sub-evento tem seus próprios pontos, tipo de resultado, vagas e status
     const points1 = parseInt(document.getElementById('ev-cfg-points-1').value) || 0;
     const points2 = parseInt(document.getElementById('ev-cfg-points-2').value) || 0;
     const resultType1 = document.getElementById('ev-cfg-result-type-1').value || null;
     const resultType2 = document.getElementById('ev-cfg-result-type-2').value || null;
+    const max1 = parseInt(document.getElementById('ev-cfg-max-1').value) || 0;
+    const max2 = parseInt(document.getElementById('ev-cfg-max-2').value) || 0;
+    const active1 = document.getElementById('ev-cfg-active-1').value === 'true';
+    const active2 = document.getElementById('ev-cfg-active-2').value === 'true';
     newInfo = {
-      id, name, meta, desc, max, active,
+      id, name, meta, desc,
       image: prevInfo.image || null,
       is_dual: true, sub1_name: sub1Name, sub2_name: sub2Name,
       points_1: points1, points_2: points2,
       result_type_1: resultType1, result_type_2: resultType2,
+      max_1: max1, max_2: max2,
+      active_1: active1, active_2: active2,
       time_cap_seconds_1: prevInfo.time_cap_seconds_1 || 0,
       time_cap_seconds_2: prevInfo.time_cap_seconds_2 || 0,
       // mantém campos únicos zerados/nulos pra não confundir eventos simples antigos
-      points: 0, result_type: null, time_cap_seconds: 0
+      points: 0, result_type: null, time_cap_seconds: 0, max: 0, active: active1 || active2
     };
   } else {
+    const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
+    const active = document.getElementById('ev-cfg-active').value === 'true';
     const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
     const result_type = document.getElementById('ev-cfg-result-type').value || null;
     newInfo = {
@@ -2119,6 +2212,7 @@ function toggleDualEventFields() {
   document.getElementById('ev-dual-fields-wrap').style.display = isDual ? '' : 'none';
   document.getElementById('ev-single-fields-wrap').style.display = isDual ? 'none' : '';
   document.getElementById('ev-dual-config-wrap').style.display = isDual ? '' : 'none';
+  document.getElementById('ev-cfg-max-wrap').style.display = isDual ? 'none' : '';
 }
 
 // Regras do evento — fixas, valem para todos os eventos, editáveis a qualquer momento
