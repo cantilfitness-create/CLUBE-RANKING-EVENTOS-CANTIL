@@ -170,6 +170,15 @@ body::before {
 .event-name { font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;line-height:1; }
 .event-meta { font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5; }
 .event-desc { font-size:13px;color:var(--text);margin-top:10px;line-height:1.5;white-space:pre-line; }
+.dual-info-card { border-radius:14px;padding:14px 16px; }
+.dual-info-card-1 { background:rgba(45,125,255,0.08);border:1px solid rgba(45,125,255,0.3); }
+.dual-info-card-2 { background:rgba(255,208,96,0.08);border:1px solid rgba(255,208,96,0.3); }
+.dual-info-title { font-weight:800;font-size:14px;margin-bottom:4px; }
+.dual-info-meta { font-size:12px;color:var(--muted);margin-bottom:6px; }
+.dual-info-desc { font-size:12.5px;color:var(--text);line-height:1.5;margin-bottom:8px;white-space:pre-line; }
+.dual-info-capacity { font-size:11.5px;font-weight:700; }
+.dual-info-capacity.full { color:var(--red); }
+.dual-info-capacity.ok { color:var(--green); }
 .capacity-wrap { margin-top:16px; }
 .capacity-label { font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px; }
 .capacity-bar { height:10px;background:var(--s2);border-radius:6px;overflow:hidden; }
@@ -287,6 +296,11 @@ body::before {
 .modal-body { padding:20px 28px 28px; }
 .pass-label { font-size:13px;color:var(--muted);margin-bottom:20px; }
 .field-group { margin-bottom:14px; }
+.emoji-picker-grid { margin-top:8px;max-height:220px;overflow-y:auto;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px; }
+.emoji-picker-grid button { background:none;border:none;font-size:20px;padding:6px;border-radius:8px;cursor:pointer;transition:background .15s;line-height:1; }
+.emoji-picker-grid button:hover { background:rgba(255,255,255,0.1); }
+.emoji-picker-cat-label { grid-column:1/-1;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:6px 0 2px;padding-top:4px;border-top:1px solid var(--border); }
+.emoji-picker-cat-label:first-child { border-top:none;margin-top:0; }
 .field-label { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;display:block; }
 input[type="password"],input[type="text"],input[type="number"],select,textarea { width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s; }
 input:focus,select:focus,textarea:focus { border-color:var(--accent); }
@@ -421,6 +435,7 @@ textarea { resize:vertical;min-height:72px; }
       <div class="event-name" id="event-name">Carregando...</div>
       <div class="event-meta" id="event-meta"></div>
       <div class="event-desc" id="event-desc"></div>
+      <div id="event-dual-info-blocks" style="display:none;margin-top:14px;display:flex;flex-direction:column;gap:10px;"></div>
       <div id="event-rules-wrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(232,255,0,0.2)">
         <div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:4px">📌 REGRAS DO EVENTO</div>
         <div id="event-rules-text" style="font-size:12px;color:var(--muted);line-height:1.6;white-space:pre-line"></div>
@@ -529,6 +544,11 @@ textarea { resize:vertical;min-height:72px; }
       <div class="err" id="ev-error"></div>
       <div id="ev-blocked" class="blocked-msg" style="display:none">🚫 No último evento não identificamos sua presença. Entre em contato com a administração da Cantil para validar seu cadastro.</div>
       </div>
+    </div>
+    <div id="ev-success-card" style="display:none;margin-top:16px;background:rgba(61,232,154,0.1);border:1px solid rgba(61,232,154,0.35);border-radius:16px;padding:18px 20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:6px">🎉</div>
+      <div style="font-weight:800;font-size:15px;margin-bottom:4px">Inscrição confirmada!</div>
+      <div id="ev-success-detail" style="font-size:13px;color:var(--muted)"></div>
     </div>
   </div>
 </div>
@@ -644,7 +664,8 @@ textarea { resize:vertical;min-height:72px; }
           </div>
           <div class="field-group">
             <label class="field-label">Emoji (avatar)</label>
-            <input type="text" id="n-emoji" placeholder="😊" maxlength="2">
+            <input type="text" id="n-emoji" placeholder="😊" maxlength="4" readonly style="cursor:pointer" onclick="toggleEmojiPicker('n-emoji')">
+            <div id="emoji-picker-n-emoji" class="emoji-picker-grid" style="display:none"></div>
           </div>
           <div class="field-group">
             <label class="field-label">Gênero (categoria do ranking)</label>
@@ -707,22 +728,48 @@ textarea { resize:vertical;min-height:72px; }
             </div>
           </div>
           <div id="ev-dual-fields-wrap" style="display:none">
-            <div class="field-group">
-              <label class="field-label">Nome do Evento 1</label>
-              <input type="text" id="ev-cfg-sub1" placeholder="ex: Treinamento Funcional">
+            <div style="background:rgba(45,125,255,0.06);border:1px solid rgba(45,125,255,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
+              <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px">🥇 Evento 1 — Dados</div>
+              <div class="field-group">
+                <label class="field-label">Nome do Evento 1</label>
+                <input type="text" id="ev-cfg-sub1" placeholder="ex: Treinamento Funcional">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Data e local (Evento 1)</label>
+                <input type="text" id="ev-cfg-meta-1" placeholder="ex: 20/08 às 9h · CT Cantil Fitness">
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Descrição (Evento 1)</label>
+                <textarea id="ev-cfg-desc-1" rows="3" placeholder="ex: Traga sua garrafinha e disposição!" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+              </div>
             </div>
-            <div class="field-group">
-              <label class="field-label">Nome do Evento 2</label>
-              <input type="text" id="ev-cfg-sub2" placeholder="ex: Corrida 5km">
+            <div style="background:rgba(255,208,96,0.06);border:1px solid rgba(255,208,96,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
+              <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px">🥈 Evento 2 — Dados</div>
+              <div class="field-group">
+                <label class="field-label">Nome do Evento 2</label>
+                <input type="text" id="ev-cfg-sub2" placeholder="ex: Corrida 5km">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Data e local (Evento 2)</label>
+                <input type="text" id="ev-cfg-meta-2" placeholder="ex: 20/08 às 11h · Parque da Cidade">
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Descrição (Evento 2)</label>
+                <textarea id="ev-cfg-desc-2" rows="3" placeholder="ex: Nível intermediário/avançado, traga tênis de corrida." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+              </div>
             </div>
           </div>
-          <div class="field-group">
-            <label class="field-label">Data e local</label>
-            <input type="text" id="ev-cfg-meta" placeholder="ex: 20/08 às 9h · CT Cantil Fitness">
-          </div>
-          <div class="field-group">
-            <label class="field-label">Descrição</label>
-            <textarea id="ev-cfg-desc" rows="4" placeholder="ex: Traga sua garrafinha e disposição! Cole aqui também links (ex: https://...) que viram clicáveis." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+
+          <!-- Campos ÚNICOS de data/local/descrição (só para evento simples, sem dual) -->
+          <div id="ev-single-meta-desc-wrap">
+            <div class="field-group">
+              <label class="field-label">Data e local</label>
+              <input type="text" id="ev-cfg-meta" placeholder="ex: 20/08 às 9h · CT Cantil Fitness">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Descrição</label>
+              <textarea id="ev-cfg-desc" rows="4" placeholder="ex: Traga sua garrafinha e disposição! Cole aqui também links (ex: https://...) que viram clicáveis." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+            </div>
           </div>
           <div class="field-group">
             <label class="field-label">🖼️ Imagem do evento (formato post Instagram, otimizada automaticamente)</label>
@@ -1710,8 +1757,16 @@ async function renderEventPublicView() {
   await renderResultsBoard(info);
 
   document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
-  document.getElementById('event-meta').textContent = info.meta || '';
-  document.getElementById('event-desc').innerHTML = linkify(info.desc || '');
+
+  if (info.is_dual) {
+    // Em evento duplo, o cabeçalho principal fica só com o nome do evento;
+    // data/local e descrição de cada prova aparecem nos cards separados abaixo
+    document.getElementById('event-meta').textContent = '';
+    document.getElementById('event-desc').innerHTML = '';
+  } else {
+    document.getElementById('event-meta').textContent = info.meta || '';
+    document.getElementById('event-desc').innerHTML = linkify(info.desc || '');
+  }
 
   const imgEl = document.getElementById('event-image-display');
   if (imgEl) {
@@ -1765,6 +1820,32 @@ async function renderEventPublicView() {
     // Esconde a capacidade genérica única — cada sub-evento mostra a sua própria dentro do checkbox
     capWrap.style.display = 'none';
 
+    // Monta os 2 cards de informação (nome, data/local, descrição e % de vagas) de cada sub-evento
+    const infoBlocksEl = document.getElementById('event-dual-info-blocks');
+    if (infoBlocksEl) {
+      const pctText1 = closed1
+        ? (!active1 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas')
+        : (max1 > 0 ? `🎟️ ${Math.max(0, 100 - Math.round((count1/max1)*100))}% das vagas disponíveis` : '✅ Inscrições abertas');
+      const pctText2 = closed2
+        ? (!active2 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas')
+        : (max2 > 0 ? `🎟️ ${Math.max(0, 100 - Math.round((count2/max2)*100))}% das vagas disponíveis` : '✅ Inscrições abertas');
+
+      infoBlocksEl.innerHTML = `
+        <div class="dual-info-card dual-info-card-1">
+          <div class="dual-info-title">🥇 ${sub1Name}</div>
+          ${info.meta_1 ? `<div class="dual-info-meta">${info.meta_1}</div>` : ''}
+          ${info.desc_1 ? `<div class="dual-info-desc">${linkify(info.desc_1)}</div>` : ''}
+          <div class="dual-info-capacity ${closed1 ? 'full' : 'ok'}">${pctText1}</div>
+        </div>
+        <div class="dual-info-card dual-info-card-2">
+          <div class="dual-info-title">🥈 ${sub2Name}</div>
+          ${info.meta_2 ? `<div class="dual-info-meta">${info.meta_2}</div>` : ''}
+          ${info.desc_2 ? `<div class="dual-info-desc">${linkify(info.desc_2)}</div>` : ''}
+          <div class="dual-info-capacity ${closed2 ? 'full' : 'ok'}">${pctText2}</div>
+        </div>`;
+      infoBlocksEl.style.display = 'flex';
+    }
+
     const cap1El = document.getElementById('ev-sub1-capacity');
     const cap2El = document.getElementById('ev-sub2-capacity');
     const sub1CheckWrap = document.getElementById('ev-sub1-wrap');
@@ -1800,6 +1881,9 @@ async function renderEventPublicView() {
     isClosed = !info.name;
     isFull = closed1 && closed2;
   } else {
+    const infoBlocksEl = document.getElementById('event-dual-info-blocks');
+    if (infoBlocksEl) infoBlocksEl.style.display = 'none';
+
     const count = currentRegs.length;
     const max = info.max || 0;
     if (max > 0) {
@@ -1972,7 +2056,21 @@ async function submitEventRegistration() {
   eventRegLoaded = false;
   await loadEventRegistrations();
   await renderEventPublicView();
-  toast('✅ Inscrição confirmada! Nos vemos lá 🎉');
+
+  const successCard = document.getElementById('ev-success-card');
+  const successDetail = document.getElementById('ev-success-detail');
+  if (successCard && successDetail) {
+    successDetail.textContent = subEvents
+      ? `Você está inscrito(a) em: ${subEvents}`
+      : `${name}, sua vaga em ${info.name} está garantida!`;
+    successCard.style.display = 'block';
+    successCard.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
+  const confirmMsg = subEvents
+    ? `✅ Inscrição confirmada em: ${subEvents}! Nos vemos lá 🎉`
+    : '✅ Inscrição confirmada! Nos vemos lá 🎉';
+  toast(confirmMsg);
 }
 
 // ── Admin ──
@@ -1981,8 +2079,6 @@ let currentSubEventContext = '1'; // '1' ou '2' — qual sub-evento está sendo 
 async function renderEventAdminView() {
   const info = await getEventInfo();
   document.getElementById('ev-cfg-name').value = info.name || '';
-  document.getElementById('ev-cfg-meta').value = info.meta || '';
-  document.getElementById('ev-cfg-desc').value = info.desc || '';
   document.getElementById('ev-cfg-rules').value = await getEventRules();
   document.getElementById('ev-cfg-dual').checked = !!info.is_dual;
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
@@ -1990,6 +2086,10 @@ async function renderEventAdminView() {
 
   if (info.is_dual) {
     // Campos duplicados por sub-evento
+    document.getElementById('ev-cfg-meta-1').value = info.meta_1 || '';
+    document.getElementById('ev-cfg-meta-2').value = info.meta_2 || '';
+    document.getElementById('ev-cfg-desc-1').value = info.desc_1 || '';
+    document.getElementById('ev-cfg-desc-2').value = info.desc_2 || '';
     document.getElementById('ev-cfg-points-1').value = info.points_1 ?? 10;
     document.getElementById('ev-cfg-points-2').value = info.points_2 ?? 10;
     document.getElementById('ev-cfg-result-type-1').value = info.result_type_1 || '';
@@ -2001,6 +2101,8 @@ async function renderEventAdminView() {
     document.getElementById('ev-cfg-sub1-header').textContent = '🥇 ' + (info.sub1_name || 'Evento 1');
     document.getElementById('ev-cfg-sub2-header').textContent = '🥈 ' + (info.sub2_name || 'Evento 2');
   } else {
+    document.getElementById('ev-cfg-meta').value = info.meta || '';
+    document.getElementById('ev-cfg-desc').value = info.desc || '';
     document.getElementById('ev-cfg-max').value = info.max || '';
     document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
     document.getElementById('ev-cfg-points').value = info.points ?? 10;
@@ -2143,8 +2245,6 @@ async function removeEventImage() {
 
 async function updateEventConfig() {
   const name = document.getElementById('ev-cfg-name').value.trim();
-  const meta = document.getElementById('ev-cfg-meta').value.trim();
-  const desc = document.getElementById('ev-cfg-desc').value.trim();
   const isDual = document.getElementById('ev-cfg-dual').checked;
   const sub1Name = document.getElementById('ev-cfg-sub1').value.trim() || 'Evento 1';
   const sub2Name = document.getElementById('ev-cfg-sub2').value.trim() || 'Evento 2';
@@ -2165,7 +2265,7 @@ async function updateEventConfig() {
 
   let newInfo;
   if (isDual) {
-    // Cada sub-evento tem seus próprios pontos, tipo de resultado, vagas e status
+    // Cada sub-evento tem seus próprios pontos, tipo de resultado, vagas, status, data/local e descrição
     const points1 = parseInt(document.getElementById('ev-cfg-points-1').value) || 0;
     const points2 = parseInt(document.getElementById('ev-cfg-points-2').value) || 0;
     const resultType1 = document.getElementById('ev-cfg-result-type-1').value || null;
@@ -2174,10 +2274,15 @@ async function updateEventConfig() {
     const max2 = parseInt(document.getElementById('ev-cfg-max-2').value) || 0;
     const active1 = document.getElementById('ev-cfg-active-1').value === 'true';
     const active2 = document.getElementById('ev-cfg-active-2').value === 'true';
+    const meta1 = document.getElementById('ev-cfg-meta-1').value.trim();
+    const meta2 = document.getElementById('ev-cfg-meta-2').value.trim();
+    const desc1 = document.getElementById('ev-cfg-desc-1').value.trim();
+    const desc2 = document.getElementById('ev-cfg-desc-2').value.trim();
     newInfo = {
-      id, name, meta, desc,
+      id, name,
       image: prevInfo.image || null,
       is_dual: true, sub1_name: sub1Name, sub2_name: sub2Name,
+      meta_1: meta1, meta_2: meta2, desc_1: desc1, desc_2: desc2,
       points_1: points1, points_2: points2,
       result_type_1: resultType1, result_type_2: resultType2,
       max_1: max1, max_2: max2,
@@ -2185,9 +2290,11 @@ async function updateEventConfig() {
       time_cap_seconds_1: prevInfo.time_cap_seconds_1 || 0,
       time_cap_seconds_2: prevInfo.time_cap_seconds_2 || 0,
       // mantém campos únicos zerados/nulos pra não confundir eventos simples antigos
-      points: 0, result_type: null, time_cap_seconds: 0, max: 0, active: active1 || active2
+      meta: '', desc: '', points: 0, result_type: null, time_cap_seconds: 0, max: 0, active: active1 || active2
     };
   } else {
+    const meta = document.getElementById('ev-cfg-meta').value.trim();
+    const desc = document.getElementById('ev-cfg-desc').value.trim();
     const max = parseInt(document.getElementById('ev-cfg-max').value) || 0;
     const active = document.getElementById('ev-cfg-active').value === 'true';
     const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
@@ -2204,6 +2311,7 @@ async function updateEventConfig() {
   EVENT_INFO = newInfo;
   renderRegistrationsList();
   renderEventAdminView();
+  await renderEventPublicView();
   toast('✅ Evento salvo!');
 }
 
@@ -2211,6 +2319,7 @@ function toggleDualEventFields() {
   const isDual = document.getElementById('ev-cfg-dual').checked;
   document.getElementById('ev-dual-fields-wrap').style.display = isDual ? '' : 'none';
   document.getElementById('ev-single-fields-wrap').style.display = isDual ? 'none' : '';
+  document.getElementById('ev-single-meta-desc-wrap').style.display = isDual ? 'none' : '';
   document.getElementById('ev-dual-config-wrap').style.display = isDual ? '' : 'none';
   document.getElementById('ev-cfg-max-wrap').style.display = isDual ? 'none' : '';
 }
@@ -2252,6 +2361,14 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-dual').checked = false;
   document.getElementById('ev-cfg-sub1').value = '';
   document.getElementById('ev-cfg-sub2').value = '';
+  document.getElementById('ev-cfg-meta-1').value = '';
+  document.getElementById('ev-cfg-meta-2').value = '';
+  document.getElementById('ev-cfg-desc-1').value = '';
+  document.getElementById('ev-cfg-desc-2').value = '';
+  document.getElementById('ev-cfg-max-1').value = '';
+  document.getElementById('ev-cfg-max-2').value = '';
+  document.getElementById('ev-cfg-points-1').value = '';
+  document.getElementById('ev-cfg-points-2').value = '';
   toggleDualEventFields();
   startingFreshEvent = true;
   renderRegistrationsList();
@@ -3184,6 +3301,68 @@ async function addMember() {
 }
 
 let editingMemberId = null;
+// ══════════════════════════════════════════════
+//  SELETOR DE EMOJIS (catálogo amplo, estilo Instagram/WhatsApp)
+// ══════════════════════════════════════════════
+const EMOJI_CATALOG = {
+  'Rostos': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','😎','🤓','🧐','😕','😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀'],
+  'Gestos': ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','💪','🦾'],
+  'Animais': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦗','🕷️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🐇','🦝','🦨','🦡','🦫','🦦','🦥'],
+  'Comida': ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪'],
+  'Esportes': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤸','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️'],
+  'Objetos': ['⌚','📱','💻','⌨️','🖥️','🖨️','🖱️','💽','💾','💿','📷','📸','📹','🎥','📞','☎️','📟','📠','📺','📻','🎙️','🎚️','🎛️','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🔌','💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶','💷','💰','💳','💎','⚖️','🧰','🔧','🔨','⚒️','🛠️','⛏️','🔩','⚙️','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','🪦','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸','🧬','🦠','🧫','🧪','🌡️'],
+  'Símbolos': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🈳','🈂️','🛂','🛃','🛄','🛅'],
+  'Estrelas': ['⭐','🌟','✨','💫','🔥','☀️','🌙','⚡','🌈','☁️','❄️','💧','🌊','🌪️']
+};
+
+let activeEmojiPickerInputId = null;
+
+function buildEmojiPickerHtml() {
+  let html = '';
+  for (const [category, emojis] of Object.entries(EMOJI_CATALOG)) {
+    html += `<div class="emoji-picker-cat-label">${category}</div>`;
+    html += emojis.map(e => `<button type="button" onclick="pickEmoji('${e}')">${e}</button>`).join('');
+  }
+  return html;
+}
+
+function toggleEmojiPicker(inputId) {
+  // Fecha qualquer outro picker aberto
+  document.querySelectorAll('.emoji-picker-grid').forEach(el => {
+    if (el.id !== 'emoji-picker-' + inputId) el.style.display = 'none';
+  });
+  const picker = document.getElementById('emoji-picker-' + inputId);
+  if (!picker) return;
+  const isOpen = picker.style.display === 'grid';
+  if (isOpen) {
+    picker.style.display = 'none';
+    activeEmojiPickerInputId = null;
+  } else {
+    if (!picker.innerHTML) picker.innerHTML = buildEmojiPickerHtml();
+    picker.style.display = 'grid';
+    activeEmojiPickerInputId = inputId;
+  }
+}
+
+function pickEmoji(emoji) {
+  if (!activeEmojiPickerInputId) return;
+  const input = document.getElementById(activeEmojiPickerInputId);
+  if (input) input.value = emoji;
+  const picker = document.getElementById('emoji-picker-' + activeEmojiPickerInputId);
+  if (picker) picker.style.display = 'none';
+  activeEmojiPickerInputId = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (!activeEmojiPickerInputId) return;
+  const picker = document.getElementById('emoji-picker-' + activeEmojiPickerInputId);
+  const input = document.getElementById(activeEmojiPickerInputId);
+  if (picker && !picker.contains(e.target) && e.target !== input) {
+    picker.style.display = 'none';
+    activeEmojiPickerInputId = null;
+  }
+});
+
 function renderMembersList() {
   const members = MEMBERS.slice().sort((a,b)=>b.points-a.points);
   const el = document.getElementById('members-list');
@@ -3193,7 +3372,11 @@ function renderMembersList() {
       return `
       <div class="member-chip" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 0">
         <div class="field-group" style="margin-bottom:0"><label class="field-label">Nome</label><input type="text" id="em-name-${m.id}" value="${m.name.replace(/"/g,'&quot;')}"></div>
-        <div class="field-group" style="margin-bottom:0"><label class="field-label">Emoji (avatar)</label><input type="text" id="em-emoji-${m.id}" value="${m.emoji}" maxlength="2"></div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label">Emoji (avatar)</label>
+          <input type="text" id="em-emoji-${m.id}" value="${(m.emoji||'').replace(/"/g,'&quot;')}" maxlength="4" readonly style="cursor:pointer" onclick="toggleEmojiPicker('em-emoji-${m.id}')">
+          <div id="emoji-picker-em-emoji-${m.id}" class="emoji-picker-grid" style="display:none"></div>
+        </div>
         <div class="field-group" style="margin-bottom:0">
           <label class="field-label">Gênero (categoria do ranking)</label>
           <select id="em-gender-${m.id}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
