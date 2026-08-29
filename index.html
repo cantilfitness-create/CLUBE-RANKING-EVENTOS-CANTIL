@@ -348,6 +348,8 @@ textarea { resize:vertical;min-height:72px; }
 </head>
 <body>
 
+<div id="archived-results-view" style="display:none;min-height:100vh;background:var(--bg);"></div>
+
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 
@@ -1663,10 +1665,10 @@ async function renderResultsBoard(info) {
     return;
   }
 
-  if (!info.result_type) { board.style.display = 'none'; return; }
+  if (!info.result_type) { board.style.display = 'none'; setEventDetailsCollapsed(false); return; }
 
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r.result_value);
-  if (!regs.length) { board.style.display = 'none'; return; }
+  if (!regs.length) { board.style.display = 'none'; setEventDetailsCollapsed(false); return; }
 
   const groupDescs = await getSetting('level_descriptions', {});
   const capLabel = formatTimeCap(info.time_cap_seconds);
@@ -1680,6 +1682,7 @@ async function renderResultsBoard(info) {
   const html = renderResultsGroupsHtml(regs, info.result_type, groupDescs);
   document.getElementById('results-groups').innerHTML = html;
   board.style.display = html ? '' : 'none';
+  setEventDetailsCollapsed(!!html);
 }
 
 // Gera o HTML dos grupos (Verde/Amarelo/Laranja) para uma lista de inscrições e um tipo de resultado
@@ -1720,7 +1723,7 @@ async function renderDualResultsBoard(info) {
   const board = document.getElementById('results-board');
   const hasType1 = !!info.result_type_1;
   const hasType2 = !!info.result_type_2;
-  if (!hasType1 && !hasType2) { board.style.display = 'none'; return; }
+  if (!hasType1 && !hasType2) { board.style.display = 'none'; setEventDetailsCollapsed(false); return; }
 
   const groupDescs = await getSetting('level_descriptions', {});
   const allRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
@@ -1728,7 +1731,7 @@ async function renderDualResultsBoard(info) {
   const regs1 = hasType1 ? allRegs.filter(r => r.result_value_1) : [];
   const regs2 = hasType2 ? allRegs.filter(r => r.result_value_2) : [];
 
-  if (!regs1.length && !regs2.length) { board.style.display = 'none'; return; }
+  if (!regs1.length && !regs2.length) { board.style.display = 'none'; setEventDetailsCollapsed(false); return; }
 
   const titleEl = document.getElementById('results-title');
   if (titleEl) titleEl.innerHTML = '🏁 Resultados';
@@ -1748,6 +1751,34 @@ async function renderDualResultsBoard(info) {
 
   document.getElementById('results-groups').innerHTML = html;
   board.style.display = html ? '' : 'none';
+  setEventDetailsCollapsed(!!html);
+}
+
+// Quando o evento já tem resultados lançados, o card de descrição/imagem do evento
+// fica recolhido por padrão (mostrando só o nome), dando prioridade visual aos resultados.
+// A pessoa pode clicar para expandir e ver os detalhes completos se quiser.
+function setEventDetailsCollapsed(shouldOffer) {
+  const toggleBtn = document.getElementById('event-details-toggle');
+  const detailsBody = document.getElementById('event-details-body');
+  if (!toggleBtn || !detailsBody) return;
+  if (shouldOffer) {
+    toggleBtn.style.display = 'block';
+    detailsBody.style.display = 'none';
+    toggleBtn.textContent = '📋 Ver detalhes do evento';
+    toggleBtn.dataset.expanded = '0';
+  } else {
+    toggleBtn.style.display = 'none';
+    detailsBody.style.display = '';
+  }
+}
+
+function toggleEventDetails() {
+  const toggleBtn = document.getElementById('event-details-toggle');
+  const detailsBody = document.getElementById('event-details-body');
+  const expanded = toggleBtn.dataset.expanded === '1';
+  detailsBody.style.display = expanded ? 'none' : '';
+  toggleBtn.textContent = expanded ? '📋 Ver detalhes do evento' : '🔼 Ocultar detalhes';
+  toggleBtn.dataset.expanded = expanded ? '0' : '1';
 }
 
 async function renderEventPublicView() {
@@ -2343,9 +2374,16 @@ async function startNewEvent() {
   const toKeep = currentRegs.filter(isNoShow);
 
   const msg = toDelete.length
-    ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) e resultado(s) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Essa ação não pode ser desfeita. Continuar?`
+    ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Antes de apagar, um arquivo com todos os resultados fica salvo com link permanente. Continuar?`
     : 'Isso limpa o formulário pra você preencher um evento novo. Continuar?';
   if (!confirm(msg)) return;
+
+  let archiveUrl = null;
+  if (toDelete.length && info.id) {
+    // Salva um "arquivo" congelado do evento (nome, resultados, presença) ANTES de apagar,
+    // pra gerar um link permanente que continua funcionando mesmo depois do evento sumir
+    archiveUrl = await archiveEventResults(info, toDelete);
+  }
 
   if (toDelete.length) {
     const idsToDelete = toDelete.map(r => r.id);
@@ -2374,7 +2412,113 @@ async function startNewEvent() {
   renderRegistrationsList();
   renderNoShowList();
   await renderResultsBoard(defaultEventInfo());
-  toast(`🆕 Evento limpo! ${toDelete.length} registro(s) apagado(s). Preencha os dados do novo evento e clique em Salvar`);
+
+  if (archiveUrl) {
+    // Mostra o link permanente do arquivo pro admin poder copiar e compartilhar
+    const shortMsg = `🆕 Evento arquivado! Link permanente dos resultados:\n${archiveUrl}`;
+    toast(`🆕 Evento arquivado! ${toDelete.length} registro(s) movido(s) para o histórico.`);
+    setTimeout(() => {
+      if (confirm(`📎 Link permanente dos resultados criado:\n\n${archiveUrl}\n\nDeseja copiar esse link agora?`)) {
+        navigator.clipboard?.writeText(archiveUrl).then(() => toast('📋 Link copiado!')).catch(()=>{});
+      }
+    }, 400);
+  } else {
+    toast(`🆕 Evento limpo! Preencha os dados do novo evento e clique em Salvar`);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  ARQUIVO DE RESULTADOS (permanece acessível mesmo após o evento ser apagado)
+// ══════════════════════════════════════════════
+async function archiveEventResults(info, regs) {
+  const archiveId = 'arc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  const groupDescs = await getSetting('level_descriptions', {});
+
+  // Monta um snapshot leve: só o essencial pra exibir os resultados depois
+  const snapshot = {
+    name: info.name,
+    is_dual: !!info.is_dual,
+    sub1_name: info.sub1_name,
+    sub2_name: info.sub2_name,
+    meta: info.meta, desc: info.desc,
+    meta_1: info.meta_1, desc_1: info.desc_1,
+    meta_2: info.meta_2, desc_2: info.desc_2,
+    result_type: info.result_type,
+    result_type_1: info.result_type_1,
+    result_type_2: info.result_type_2,
+    time_cap_seconds: info.time_cap_seconds,
+    time_cap_seconds_1: info.time_cap_seconds_1,
+    time_cap_seconds_2: info.time_cap_seconds_2,
+    level_descriptions: groupDescs,
+    archived_at: new Date().toISOString(),
+    registrations: regs.map(r => ({
+      name: r.name, phone: r.phone, fitness_level: r.fitness_level,
+      is_member: r.is_member, is_ct_student: r.is_ct_student, sub_events: r.sub_events,
+      attended: r.attended, attended_1: r.attended_1, attended_2: r.attended_2,
+      result_value: r.result_value, result_value_1: r.result_value_1, result_value_2: r.result_value_2
+    }))
+  };
+
+  const { error } = await sb.from('event_archives').insert({ id: archiveId, data: JSON.stringify(snapshot) });
+  if (error) { console.error(error); toast('⚠️ Erro ao arquivar evento (link não gerado)'); return null; }
+
+  const baseUrl = location.origin + location.pathname;
+  return `${baseUrl}?resultado=${archiveId}`;
+}
+
+// Exibe a tela de resultados arquivados quando o link tem ?resultado=ID
+async function renderArchivedResults(archiveId) {
+  const { data, error } = await sb.from('event_archives').select('data').eq('id', archiveId).limit(1);
+  const container = document.getElementById('archived-results-view');
+  if (error || !data || !data.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:64px 24px">😕 Este link de resultados não foi encontrado ou expirou.</div>`;
+    container.style.display = 'block';
+    document.querySelector('.main-tabs')?.style && (document.querySelector('.main-tabs').style.display = 'none');
+    document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+    return;
+  }
+
+  let snap;
+  try { snap = JSON.parse(data[0].data); } catch { snap = null; }
+  if (!snap) { container.innerHTML = '<div class="empty-state">😕 Arquivo corrompido.</div>'; container.style.display='block'; return; }
+
+  const archivedDate = new Date(snap.archived_at).toLocaleDateString('pt-BR');
+  let html = `
+    <div style="max-width:680px;margin:0 auto;padding:40px 24px;">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">📁 Resultados Arquivados</div>
+        <div class="event-name" style="font-size:26px">${snap.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Evento realizado — arquivado em ${archivedDate}</div>
+      </div>`;
+
+  const groupDescs = snap.level_descriptions || {};
+
+  if (snap.is_dual) {
+    const sub1Name = snap.sub1_name || 'Evento 1';
+    const sub2Name = snap.sub2_name || 'Evento 2';
+    const regs1 = (snap.registrations||[]).filter(r => r.result_value_1);
+    const regs2 = (snap.registrations||[]).filter(r => r.result_value_2);
+    if (regs1.length) {
+      html += `<div class="results-subevent-header">🥇 ${sub1Name}</div>`;
+      html += renderResultsGroupsHtml(regs1, snap.result_type_1, groupDescs, 'result_value_1');
+    }
+    if (regs2.length) {
+      html += `<div class="results-subevent-header">🥈 ${sub2Name}</div>`;
+      html += renderResultsGroupsHtml(regs2, snap.result_type_2, groupDescs, 'result_value_2');
+    }
+    if (!regs1.length && !regs2.length) html += `<div class="empty-state">Nenhum resultado registrado neste evento.</div>`;
+  } else {
+    const regs = (snap.registrations||[]).filter(r => r.result_value);
+    if (regs.length) {
+      html += renderResultsGroupsHtml(regs, snap.result_type, groupDescs, 'result_value');
+    } else {
+      html += `<div class="empty-state">Nenhum resultado registrado neste evento.</div>`;
+    }
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+  container.style.display = 'block';
 }
 
 function renderRegistrationsList() {
@@ -2583,7 +2727,13 @@ function onResultSelectChange() {
   finalInput.value = reg && reg[resultField] ? reg[resultField] : '';
   finalInput.placeholder = resultType === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
-  document.getElementById('result-level-select').value = (reg && reg.fitness_level) || 'Iniciante';
+  // IMPORTANTE: setamos o valor do select sem disparar o onchange (que salvaria
+  // o nível no banco). Isso evita o bug de trocar de participante e acidentalmente
+  // sobrescrever o nível de outra pessoa com o valor que estava mostrando antes.
+  const levelSelect = document.getElementById('result-level-select');
+  levelSelect.dataset.suppressChange = '1';
+  levelSelect.value = (reg && reg.fitness_level) || 'Iniciante';
+  setTimeout(() => { levelSelect.dataset.suppressChange = ''; }, 0);
   deleteBtn.style.display = (reg && reg[resultField]) ? 'block' : 'none';
 }
 
@@ -2612,11 +2762,13 @@ async function deleteSelectedResult() {
 }
 
 async function updateResultLevel() {
+  const levelSelect = document.getElementById('result-level-select');
+  if (levelSelect.dataset.suppressChange === '1') return; // mudança programática, não é o usuário editando
   const regId = parseInt(document.getElementById('result-select').value);
   if (!regId) return;
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   if (!reg) return;
-  const newLevel = document.getElementById('result-level-select').value;
+  const newLevel = levelSelect.value;
   const { error } = await sb.from('event_registrations').update({ fitness_level: newLevel }).eq('id', regId);
   if (error) { toast('⚠️ Erro ao atualizar nível'); console.error(error); return; }
   reg.fitness_level = newLevel;
@@ -3486,6 +3638,17 @@ function setFilter(f) {
 //  START
 // ══════════════════════════════════════════════
 async function start() {
+  const params0 = new URLSearchParams(location.search);
+  const archiveId = params0.get('resultado');
+  if (archiveId) {
+    // Link permanente de resultados arquivados — mostra só essa tela, sem carregar o resto do app
+    document.querySelectorAll('body > *').forEach(el => {
+      if (el.id !== 'archived-results-view') el.style.display = 'none';
+    });
+    await renderArchivedResults(archiveId);
+    return;
+  }
+
   await loadMembers();
   renderRanking();
   const params = new URLSearchParams(location.search);
