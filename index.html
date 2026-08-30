@@ -121,6 +121,10 @@ body::before {
 .filter-tab { padding:8px 18px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:20px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s; }
 .filter-tab.active { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
 .filter-tab:hover:not(.active) { color:var(--text);border-color:var(--muted); }
+.filter-tab.kids-tab.active { background:linear-gradient(135deg,#ff9ecb,#ffd166);color:#3a1a0a;border-color:#ffd166; }
+.rank-item.kids-item { background:linear-gradient(90deg,rgba(255,158,203,0.08),transparent);border-left:3px solid #ff9ecb; }
+.rank-item.kids-item .rank-avatar { border:2px solid #ffd166;box-shadow:0 0 0 3px rgba(255,158,203,0.2); }
+.kids-badge { display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#ff9ecb,#ffd166);color:#3a1a0a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle; }
 
 /* MAIN NAV TABS */
 .main-tabs { max-width:680px;margin:0 auto 32px;padding:0 24px;display:flex;gap:8px;opacity:0;animation:fadeUp .6s ease .35s forwards; }
@@ -332,8 +336,9 @@ textarea { resize:vertical;min-height:72px; }
 .pts-tag { display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700; }
 .pts-pos { background:rgba(61,232,154,.12);color:var(--green); }
 .pts-neg { background:rgba(255,95,109,.12);color:var(--red); }
-.toast { position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#061510;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none; }
-.toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+.toast { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);background:var(--s1);border:2px solid var(--green);color:var(--text);padding:20px 28px;border-radius:18px;font-size:15px;font-weight:700;z-index:9999;opacity:0;transition:all .25s;max-width:88vw;text-align:center;line-height:1.5;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
+.toast.show { opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all; }
+.toast-close { position:absolute;top:6px;right:10px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 @media(max-width:480px){
   .podium{height:200px;gap:8px}
@@ -407,7 +412,7 @@ textarea { resize:vertical;min-height:72px; }
       <button class="filter-tab active" onclick="setFilter('all')">🏆 Geral</button>
       <button class="filter-tab" onclick="setFilter('F')">👩 Feminino</button>
       <button class="filter-tab" onclick="setFilter('M')">👨 Masculino</button>
-      <button class="filter-tab" onclick="setFilter('kids')">🧒 Infantil</button>
+      <button class="filter-tab kids-tab" onclick="setFilter('kids')">🧒 Infantil</button>
     </div>
     <div class="stars-legend">🔥 = desafio feito &nbsp;·&nbsp; ⭐ = evento feito (escolhido ao lançar o ponto)</div>
     <div class="ranking-card" id="ranking-list"></div>
@@ -610,9 +615,11 @@ textarea { resize:vertical;min-height:72px; }
         <div class="adm-tabs" style="flex-wrap:wrap;">
           <button class="adm-tab active" onclick="admTab('quick')">⚡ Rápido</button>
           <button class="adm-tab" onclick="admTab('pts')">Pontos</button>
+          <button class="adm-tab" onclick="admTab('historico')">📜 Histórico</button>
           <button class="adm-tab" onclick="admTab('members')">Membros</button>
           <button class="adm-tab" onclick="admTab('challenges')">🎬 Desafios</button>
           <button class="adm-tab" onclick="admTab('evento')">🏁 Evento</button>
+          <button class="adm-tab" onclick="admTab('arquivados')">📁 Encerrados</button>
           <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
           <button class="adm-tab" onclick="admTab('settings')">Config</button>
         </div>
@@ -655,6 +662,15 @@ textarea { resize:vertical;min-height:72px; }
           <hr class="divider">
           <div class="section-label">Últimos registros</div>
           <div id="recent-history"></div>
+        </div>
+
+        <!-- HISTÓRICO (gerenciar ícones de desafio/evento e ver mais lançamentos) -->
+        <div class="adm-panel" id="tab-historico">
+          <div class="section-label">📜 Histórico de Lançamentos (últimos 30)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+            Lançou "Evento" ou "Desafio" por engano e o ícone ⭐/🔥 ficou preso no ranking? Troque a categoria aqui pra "Treino diário" — isso remove o ícone <strong>sem mexer nos pontos</strong> da pessoa.
+          </div>
+          <div id="history-manager-list"></div>
         </div>
 
         <!-- MEMBROS -->
@@ -959,6 +975,15 @@ textarea { resize:vertical;min-height:72px; }
           <div id="event-noshow-list"></div>
         </div>
 
+        <!-- EVENTOS ENCERRADOS (editar resultados arquivados) -->
+        <div class="adm-panel" id="tab-arquivados">
+          <div class="section-label">📁 Eventos Encerrados</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+            Mesmo depois de encerrado, você pode editar, corrigir ou inserir resultados que ficaram faltando. As alterações aparecem na hora pra quem já tem o link salvo.
+          </div>
+          <div id="archived-events-list"></div>
+        </div>
+
         <!-- ASSINANTE -->
         <div class="adm-panel" id="tab-subscribers">
           <div class="section-label">🔑 Gerar Código de Acesso</div>
@@ -1087,8 +1112,12 @@ function calcAge(birthday) {
 }
 
 // true se o membro tem entre 6 e 14 anos (inclusive) HOJE — assim que fizer 15, sai
-// automaticamente da categoria infantil e passa a contar no ranking geral
+// automaticamente da categoria infantil e passa a contar no ranking geral.
+// REGRA: quem não tem data de nascimento cadastrada é considerado ADULTO por padrão
+// (a maioria dos membros não vai ter essa data preenchida, então isso evita que
+// todo mundo sem data caia sem querer na categoria infantil).
 function isKidsCategory(member) {
+  if (!member.birthday) return false; // sem data cadastrada = adulto, nunca infantil
   const age = calcAge(member.birthday);
   if (age === null) return false;
   return age >= 6 && age <= 14;
@@ -1234,7 +1263,7 @@ async function loadMembers() {
 }
 
 async function loadHistory() {
-  const { data, error } = await sb.from('history').select('*').order('created_at', { ascending:false }).limit(50);
+  const { data, error } = await sb.from('history').select('*').order('created_at', { ascending:false }).limit(60);
   if (error) { console.error(error); return []; }
   HISTORY = data || [];
   return HISTORY;
@@ -1379,11 +1408,11 @@ function renderRanking() {
     }
 
     return `
-      <div class="rank-item${pos===1?' top-1':pos===2?' top-2':pos===3?' top-3':''}" style="animation-delay:${.05*i}s">
+      <div class="rank-item${pos===1?' top-1':pos===2?' top-2':pos===3?' top-3':''}${isKidsCategory(m)?' kids-item':''}" style="animation-delay:${.05*i}s">
         <div class="rank-num">${pos}º</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${m.name} ${trend}${bonus}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-name">${m.name} ${trend}${bonus}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
           <div class="rank-badge-small">${m.points} pts</div>
           ${challengeTag}
           ${lastSeen}
@@ -1943,6 +1972,12 @@ async function renderEventPublicView() {
   const sel = document.getElementById('ev-member-select');
   sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join('');
 
+  // Sempre remove a mensagem de "fechado/esgotado" antiga antes de decidir se
+  // precisa mostrar uma nova — evita que várias mensagens empilhem na tela
+  // toda vez que o evento é salvo com o status fechado.
+  const existingClosedMsg = document.getElementById('event-closed-msg');
+  if (existingClosedMsg) existingClosedMsg.remove();
+
   if (isClosed || isFull) {
     formWrap.style.display = 'none';
     if (jumpBtn) jumpBtn.style.display = 'none';
@@ -1951,8 +1986,6 @@ async function renderEventPublicView() {
   } else {
     formWrap.style.display = '';
     if (jumpBtn) jumpBtn.style.display = 'block';
-    const oldMsg = document.getElementById('event-closed-msg');
-    if (oldMsg) oldMsg.remove();
   }
 }
 
@@ -2340,10 +2373,14 @@ async function updateEventConfig() {
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
-  renderRegistrationsList();
-  renderEventAdminView();
-  await renderEventPublicView();
-  toast('✅ Evento salvo!');
+  try {
+    renderRegistrationsList();
+    await renderEventAdminView();
+    await renderEventPublicView();
+  } catch (err) {
+    console.error('Erro ao atualizar a tela após salvar (mas o evento FOI salvo):', err);
+  }
+  toast('✅ Evento salvo com sucesso!');
 }
 
 function toggleDualEventFields() {
@@ -2451,8 +2488,8 @@ async function archiveEventResults(info, regs) {
     time_cap_seconds_2: info.time_cap_seconds_2,
     level_descriptions: groupDescs,
     archived_at: new Date().toISOString(),
-    registrations: regs.map(r => ({
-      name: r.name, phone: r.phone, fitness_level: r.fitness_level,
+    registrations: regs.map((r, idx) => ({
+      idx, name: r.name, phone: r.phone, fitness_level: r.fitness_level,
       is_member: r.is_member, is_ct_student: r.is_ct_student, sub_events: r.sub_events,
       attended: r.attended, attended_1: r.attended_1, attended_2: r.attended_2,
       result_value: r.result_value, result_value_1: r.result_value_1, result_value_2: r.result_value_2
@@ -2519,6 +2556,123 @@ async function renderArchivedResults(archiveId) {
   html += `</div>`;
   container.innerHTML = html;
   container.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════
+//  GERENCIAR EVENTOS ARQUIVADOS (editar mesmo após encerrar)
+// ══════════════════════════════════════════════
+let ARCHIVED_EVENTS = [];
+
+async function loadArchivedEvents() {
+  const { data, error } = await sb.from('event_archives').select('*').order('created_at', { ascending:false }).limit(30);
+  if (error) { console.error(error); return []; }
+  ARCHIVED_EVENTS = (data||[]).map(row => {
+    let snap = null;
+    try { snap = JSON.parse(row.data); } catch {}
+    return { id: row.id, snap };
+  }).filter(a => a.snap);
+  return ARCHIVED_EVENTS;
+}
+
+async function renderArchivedEventsAdminList() {
+  await loadArchivedEvents();
+  const el = document.getElementById('archived-events-list');
+  if (!ARCHIVED_EVENTS.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum evento arquivado ainda.</div>'; return; }
+  el.innerHTML = ARCHIVED_EVENTS.map(a => {
+    const d = new Date(a.snap.archived_at);
+    const dateStr = d.toLocaleDateString('pt-BR');
+    const totalRegs = (a.snap.registrations||[]).length;
+    const baseUrl = location.origin + location.pathname;
+    const link = `${baseUrl}?resultado=${a.id}`;
+    return `
+    <div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+      <div style="font-weight:800;font-size:14px;margin-bottom:2px">${a.snap.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Arquivado em ${dateStr} · ${totalRegs} participante(s)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" onclick="openArchiveEditor('${a.id}')">✏️ Editar Resultados</button>
+        <button class="btn-sm" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('📋 Link copiado!'))">🔗 Copiar Link</button>
+        <button class="btn-sm-danger" onclick="deleteArchive('${a.id}')">🗑️ Excluir Arquivo</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteArchive(archiveId) {
+  if (!confirm('Excluir este arquivo permanentemente? O link de resultados deixará de funcionar.')) return;
+  const { error } = await sb.from('event_archives').delete().eq('id', archiveId);
+  if (error) { toast('⚠️ Erro ao excluir arquivo'); console.error(error); return; }
+  ARCHIVED_EVENTS = ARCHIVED_EVENTS.filter(a => a.id !== archiveId);
+  renderArchivedEventsAdminList();
+  toast('🗑️ Arquivo excluído!');
+}
+
+let currentEditingArchiveId = null;
+
+function openArchiveEditor(archiveId) {
+  currentEditingArchiveId = archiveId;
+  const archive = ARCHIVED_EVENTS.find(a => a.id === archiveId);
+  if (!archive) return;
+  renderArchiveEditorModal(archive);
+  document.getElementById('archive-editor-overlay').classList.add('open');
+}
+
+function closeArchiveEditor() {
+  document.getElementById('archive-editor-overlay').classList.remove('open');
+  currentEditingArchiveId = null;
+}
+
+function renderArchiveEditorModal(archive) {
+  const snap = archive.snap;
+  document.getElementById('archive-editor-title').textContent = snap.name;
+  const regs = snap.registrations || [];
+
+  const resultFieldFor = (subCtx) => subCtx ? 'result_value_' + subCtx : 'result_value';
+
+  function participantRowHtml(r, idx) {
+    const rows = [];
+    if (snap.is_dual) {
+      const sub1Name = snap.sub1_name || 'Evento 1';
+      const sub2Name = snap.sub2_name || 'Evento 2';
+      const inSub1 = (r.sub_events||'').includes(sub1Name);
+      const inSub2 = (r.sub_events||'').includes(sub2Name);
+      return `
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">${r.name}</div>
+          ${inSub1 ? `
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--muted);width:70px;flex-shrink:0">🥇 ${sub1Name}</span>
+            <input type="text" value="${r.result_value_1||''}" placeholder="resultado" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, '1', this.value)">
+          </div>` : ''}
+          ${inSub2 ? `
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:11px;color:var(--muted);width:70px;flex-shrink:0">🥈 ${sub2Name}</span>
+            <input type="text" value="${r.result_value_2||''}" placeholder="resultado" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, '2', this.value)">
+          </div>` : ''}
+        </div>`;
+    } else {
+      return `
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+          <div style="font-weight:700;font-size:13px;flex:1">${r.name}</div>
+          <input type="text" value="${r.result_value||''}" placeholder="resultado" style="width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, null, this.value)">
+        </div>`;
+    }
+  }
+
+  document.getElementById('archive-editor-body').innerHTML = regs.map((r, idx) => participantRowHtml(r, idx)).join('')
+    || '<div style="color:var(--muted);font-size:13px">Nenhum participante neste arquivo.</div>';
+}
+
+async function updateArchiveResult(idx, subCtx, newValue) {
+  if (!currentEditingArchiveId) return;
+  const archive = ARCHIVED_EVENTS.find(a => a.id === currentEditingArchiveId);
+  if (!archive) return;
+  const field = subCtx ? 'result_value_' + subCtx : 'result_value';
+  if (!archive.snap.registrations[idx]) return;
+  archive.snap.registrations[idx][field] = newValue.trim() || null;
+
+  const { error } = await sb.from('event_archives').update({ data: JSON.stringify(archive.snap) }).eq('id', currentEditingArchiveId);
+  if (error) { toast('⚠️ Erro ao salvar alteração'); console.error(error); return; }
+  toast('✅ Resultado atualizado no arquivo!');
 }
 
 function renderRegistrationsList() {
@@ -2594,6 +2748,7 @@ async function toggleAttendance(id, attended, subCtx) {
   if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
   reg[attendedField] = attended;
 
+  let pointsMsg = '';
   if (attended === true && reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
     const pts = (info.is_dual && subCtx)
       ? (subCtx === '2' ? (info.points_2||0) : (info.points_1||0))
@@ -2603,11 +2758,15 @@ async function toggleAttendance(id, attended, subCtx) {
     reg[pointsAwardedField] = true;
     await loadMembers();
     renderRanking();
+    const updatedMember = MEMBERS.find(m => m.id === reg.member_id);
+    pointsMsg = updatedMember
+      ? ` — +${pts} pts somados ao ranking geral! (total agora: ${updatedMember.points} pts)`
+      : ` — +${pts} pts somados ao ranking geral!`;
   }
   renderRegistrationsList();
   renderNoShowList();
   if (attended === null) toast('↺ Presença desmarcada — voltou para sem presença');
-  else toast(attended ? '✅ Presença confirmada!' : '🚫 Marcado como faltante');
+  else toast(attended ? `✅ Presença confirmada${pointsMsg}` : '🚫 Marcado como faltante');
 }
 
 function renderNoShowList() {
@@ -2813,6 +2972,7 @@ async function saveSelectedResult() {
   reg[resultField] = value;
   reg[attendedField] = true;
 
+  let pointsMsg = '';
   if (reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
     const pts = info.is_dual
       ? (currentSubEventContext === '2' ? (info.points_2||0) : (info.points_1||0))
@@ -2822,17 +2982,19 @@ async function saveSelectedResult() {
     reg[pointsAwardedField] = true;
     await loadMembers();
     renderRanking();
+    const updatedMember = MEMBERS.find(m => m.id === reg.member_id);
+    pointsMsg = updatedMember ? ` (+${pts} pts no ranking geral, total: ${updatedMember.points})` : ` (+${pts} pts no ranking geral)`;
   }
   populateResultSelect();
   document.getElementById('result-select').value = '';
   document.getElementById('result-final-input').value = '';
   document.getElementById('result-remaining-input').value = '';
   document.getElementById('delete-result-btn').style.display = 'none';
-  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}`;
+  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}${pointsMsg}`;
   renderRegistrationsList();
   renderNoShowList();
   await renderResultsBoard(EVENT_INFO || defaultEventInfo());
-  toast(`✅ Resultado de ${reg.name} salvo!`);
+  toast(`✅ Resultado de ${reg.name} salvo!${pointsMsg}`);
 }
 
 async function deleteRegistration(id) {
@@ -3310,12 +3472,14 @@ async function checkPass() {
 
 async function admTab(name) {
   document.querySelectorAll('.adm-tab').forEach((b,i)=>{
-    b.classList.toggle('active',['quick','pts','members','challenges','evento','subscribers','settings'][i]===name);
+    b.classList.toggle('active',['quick','pts','historico','members','challenges','evento','arquivados','subscribers','settings'][i]===name);
   });
   document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='members'){renderMembersList();}
   if(name==='pts'){renderAdminSelect();renderRecentHistory();}
+  if(name==='historico'){renderHistoryManagerList();}
+  if(name==='arquivados'){renderArchivedEventsAdminList();}
   if(name==='quick'){renderQuickTap();}
   if(name==='challenges'){loadChallengeVideos().then(renderChallengesAdminList);}
   if(name==='evento'){await renderEventAdminView();}
@@ -3417,6 +3581,44 @@ function renderRecentHistory() {
       <button class="btn-sm-danger" onclick="deleteEntry(${h.id})">✕</button>
     </div>`;
   }).join('');
+}
+
+// ── HISTÓRICO — gerenciar categoria (remove ícone ⭐/🔥 sem mexer nos pontos) ──
+async function renderHistoryManagerList() {
+  await loadHistory();
+  const history = HISTORY.slice(0, 30);
+  const el = document.getElementById('history-manager-list');
+  if (!history.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum registro ainda.</div>'; return; }
+  el.innerHTML = history.map(h => {
+    const d = new Date(h.created_at);
+    const dateStr = d.toLocaleDateString('pt-BR');
+    const timeStr = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const cat = h.category || 'treino';
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:13px;font-weight:700">${h.member_name}</div>
+        <div style="font-size:11px;color:var(--muted)">${h.reason} · ${dateStr} ${timeStr}</div>
+      </div>
+      <span class="pts-tag ${h.points>=0?'pts-pos':'pts-neg'}">${h.points>0?'+':''}${h.points}</span>
+      <select onchange="changeHistoryCategory(${h.id}, this.value)" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;">
+        <option value="treino" ${cat==='treino'?'selected':''}>🏋️ Treino</option>
+        <option value="desafio" ${cat==='desafio'?'selected':''}>🔥 Desafio</option>
+        <option value="evento" ${cat==='evento'?'selected':''}>⭐ Evento</option>
+      </select>
+      <button class="btn-sm-danger" onclick="deleteEntry(${h.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function changeHistoryCategory(historyId, newCategory) {
+  const { error } = await sb.from('history').update({ category: newCategory }).eq('id', historyId);
+  if (error) { toast('⚠️ Erro ao atualizar categoria'); console.error(error); return; }
+  const entry = HISTORY.find(h => h.id === historyId);
+  if (entry) entry.category = newCategory;
+  await loadMembers();
+  renderRanking();
+  toast('✅ Categoria atualizada — ícone ajustado no ranking!');
 }
 
 async function deleteEntry(historyId) {
@@ -3621,9 +3823,15 @@ async function resetPts() {
 let toastT;
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
+  el.innerHTML = `<button class="toast-close" onclick="closeToast()">✕</button>${msg}`;
+  el.classList.add('show');
   clearTimeout(toastT);
-  toastT=setTimeout(()=>el.classList.remove('show'),3000);
+  toastT=setTimeout(()=>el.classList.remove('show'), 10000);
+}
+
+function closeToast() {
+  document.getElementById('toast').classList.remove('show');
+  clearTimeout(toastT);
 }
 
 function setFilter(f) {
@@ -3761,6 +3969,21 @@ setInterval(async () => {
       </div>
       <button class="btn btn-blue" onclick="saveEditRegistration()">💾 Salvar Alterações</button>
       <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="closeEditRegistration()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDITOR DE RESULTADOS DE EVENTO ARQUIVADO -->
+<div class="modal-overlay" id="archive-editor-overlay" onclick="if(event.target===this)closeArchiveEditor()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="archive-editor-title" style="font-size:16px">Editar Resultados</div>
+      <button class="close-btn" onclick="closeArchiveEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Edite o resultado de qualquer participante — salva automaticamente ao sair do campo.</div>
+      <div id="archive-editor-body"></div>
+      <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:10px" onclick="closeArchiveEditor()">Fechar</button>
     </div>
   </div>
 </div>
