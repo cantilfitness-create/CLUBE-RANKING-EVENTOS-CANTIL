@@ -2295,8 +2295,8 @@ async function handleEventImageUpload(event) {
   }
 }
 
-async function removeEventImage() {
-  if (!confirm('Remover a imagem deste evento?')) return;
+async function removeEventImage(skipConfirm) {
+  if (!skipConfirm && !confirm('Remover a imagem deste evento?')) return;
   const info = await getEventInfo();
   const newInfo = { ...info, image: null };
   const ok = await setSetting('event_info', newInfo);
@@ -2304,7 +2304,7 @@ async function removeEventImage() {
   EVENT_INFO = newInfo;
   document.getElementById('event-image-preview-wrap').style.display = 'none';
   document.getElementById('ev-cfg-image-input').value = '';
-  toast('🗑️ Imagem removida!');
+  if (!skipConfirm) toast('🗑️ Imagem removida!');
 }
 
 async function updateEventConfig() {
@@ -2416,10 +2416,17 @@ async function startNewEvent() {
   if (!confirm(msg)) return;
 
   let archiveUrl = null;
+  let archiveFailed = false;
   if (toDelete.length && info.id) {
     // Salva um "arquivo" congelado do evento (nome, resultados, presença) ANTES de apagar,
     // pra gerar um link permanente que continua funcionando mesmo depois do evento sumir
     archiveUrl = await archiveEventResults(info, toDelete);
+    if (!archiveUrl) archiveFailed = true;
+  }
+
+  if (archiveFailed) {
+    const proceed = confirm('⚠️ NÃO foi possível salvar o arquivo de resultados (verifique se a tabela "event_archives" existe no Supabase). Se continuar, as inscrições serão apagadas SEM backup. Deseja continuar mesmo assim?');
+    if (!proceed) return;
   }
 
   if (toDelete.length) {
@@ -2429,10 +2436,14 @@ async function startNewEvent() {
     EVENT_REGISTRATIONS = EVENT_REGISTRATIONS.filter(r => !idsToDelete.includes(r.id));
   }
 
+  // Limpa TODOS os campos do formulário — evento único e evento duplo
   document.getElementById('ev-cfg-name').value = '';
   document.getElementById('ev-cfg-meta').value = '';
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
+  document.getElementById('ev-cfg-points').value = '';
+  document.getElementById('ev-cfg-result-type').value = '';
+  document.getElementById('ev-cfg-active').value = 'true';
   document.getElementById('ev-cfg-dual').checked = false;
   document.getElementById('ev-cfg-sub1').value = '';
   document.getElementById('ev-cfg-sub2').value = '';
@@ -2444,15 +2455,21 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-max-2').value = '';
   document.getElementById('ev-cfg-points-1').value = '';
   document.getElementById('ev-cfg-points-2').value = '';
+  document.getElementById('ev-cfg-result-type-1').value = '';
+  document.getElementById('ev-cfg-result-type-2').value = '';
+  document.getElementById('ev-cfg-active-1').value = 'true';
+  document.getElementById('ev-cfg-active-2').value = 'true';
+  document.getElementById('ev-cfg-timecap-min').value = '';
+  document.getElementById('ev-cfg-timecap-sec').value = '';
+  removeEventImage(true); // limpa a imagem sem pedir confirmação de novo
   toggleDualEventFields();
   startingFreshEvent = true;
+  EVENT_INFO = null; // força buscar do zero na próxima vez, evitando qualquer resquício em memória
   renderRegistrationsList();
   renderNoShowList();
   await renderResultsBoard(defaultEventInfo());
 
   if (archiveUrl) {
-    // Mostra o link permanente do arquivo pro admin poder copiar e compartilhar
-    const shortMsg = `🆕 Evento arquivado! Link permanente dos resultados:\n${archiveUrl}`;
     toast(`🆕 Evento arquivado! ${toDelete.length} registro(s) movido(s) para o histórico.`);
     setTimeout(() => {
       if (confirm(`📎 Link permanente dos resultados criado:\n\n${archiveUrl}\n\nDeseja copiar esse link agora?`)) {
@@ -2497,7 +2514,11 @@ async function archiveEventResults(info, regs) {
   };
 
   const { error } = await sb.from('event_archives').insert({ id: archiveId, data: JSON.stringify(snapshot) });
-  if (error) { console.error(error); toast('⚠️ Erro ao arquivar evento (link não gerado)'); return null; }
+  if (error) {
+    console.error('Erro ao arquivar evento:', error.message || error);
+    toast(`⚠️ Erro ao arquivar: ${error.message || 'tabela event_archives pode não existir'}`);
+    return null;
+  }
 
   const baseUrl = location.origin + location.pathname;
   return `${baseUrl}?resultado=${archiveId}`;
