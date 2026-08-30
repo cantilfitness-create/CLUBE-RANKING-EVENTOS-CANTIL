@@ -80,7 +80,8 @@ body::before {
 .rank-num { font-family:'Bebas Neue',sans-serif;font-size:22px;min-width:32px;text-align:center;color:var(--muted); }
 .rank-avatar { width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--s2);border:1px solid var(--border); }
 .rank-info { flex:1;min-width:0; }
-.rank-name { font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.rank-name { font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+.rank-name-text { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
 .rank-badge-small { font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.5px;margin-top:2px; }
 .rank-bar-wrap { flex:1;display:flex;flex-direction:column;gap:4px; }
 .rank-bar { height:4px;background:var(--s2);border-radius:4px;overflow:hidden; }
@@ -121,10 +122,10 @@ body::before {
 .filter-tab { padding:8px 18px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:20px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s; }
 .filter-tab.active { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
 .filter-tab:hover:not(.active) { color:var(--text);border-color:var(--muted); }
-.filter-tab.kids-tab.active { background:linear-gradient(135deg,#ff9ecb,#ffd166);color:#3a1a0a;border-color:#ffd166; }
-.rank-item.kids-item { background:linear-gradient(90deg,rgba(255,158,203,0.08),transparent);border-left:3px solid #ff9ecb; }
-.rank-item.kids-item .rank-avatar { border:2px solid #ffd166;box-shadow:0 0 0 3px rgba(255,158,203,0.2); }
-.kids-badge { display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#ff9ecb,#ffd166);color:#3a1a0a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle; }
+.filter-tab.kids-tab.active { background:linear-gradient(135deg,#7dd3f5,#a8e6ff);color:#0a2a3a;border-color:#7dd3f5; }
+.rank-item.kids-item { background:linear-gradient(90deg,rgba(125,211,245,0.08),transparent);border-left:3px solid #7dd3f5; }
+.rank-item.kids-item .rank-avatar { border:2px solid #a8e6ff;box-shadow:0 0 0 3px rgba(125,211,245,0.2); }
+.kids-badge { display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,#7dd3f5,#a8e6ff);color:#0a2a3a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle;white-space:nowrap; }
 
 /* MAIN NAV TABS */
 .main-tabs { max-width:680px;margin:0 auto 32px;padding:0 24px;display:flex;gap:8px;opacity:0;animation:fadeUp .6s ease .35s forwards; }
@@ -1412,7 +1413,7 @@ function renderRanking() {
         <div class="rank-num">${pos}º</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name">${m.name} ${trend}${bonus}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${trend}${bonus}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
           <div class="rank-badge-small">${m.points} pts</div>
           ${challengeTag}
           ${lastSeen}
@@ -3773,7 +3774,7 @@ function renderMembersList() {
     <div class="member-chip">
       <div class="chip-avatar">${m.emoji}</div>
       <div class="chip-info">
-        <div class="chip-name">${m.name} ${isKidsCategory(m) ? '<span class="reg-member-badge" style="background:rgba(61,232,154,0.15);color:var(--green);border-color:rgba(61,232,154,0.35)">🧒 INFANTIL</span>' : ''}</div>
+        <div class="chip-name">${m.name} ${isKidsCategory(m) ? '<span class="reg-member-badge" style="background:rgba(125,211,245,0.15);color:#7dd3f5;border-color:rgba(125,211,245,0.35)">🧒 INFANTIL</span>' : ''}</div>
         <div class="chip-id">${m.points} pontos · ${m.gender==='M' ? '👨 Masculino' : '👩 Feminino'}${m.birthday ? ' · ' + calcAge(m.birthday) + ' anos' : ''}</div>
       </div>
       <div class="chip-pts">${m.points}</div>
