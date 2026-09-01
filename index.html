@@ -2464,8 +2464,18 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-timecap-sec').value = '';
   removeEventImage(true); // limpa a imagem sem pedir confirmação de novo
   toggleDualEventFields();
+
+  // IMPORTANTE: precisa salvar um event_info vazio no banco de dados.
+  // Sem isso, os campos ficam limpos só na tela — ao recarregar a página,
+  // o app busca de novo o event_info antigo do Supabase e tudo "volta".
+  const emptyInfo = defaultEventInfo();
+  const savedOk = await setSetting('event_info', emptyInfo);
+  if (!savedOk) {
+    toast('⚠️ Atenção: os campos foram limpos na tela, mas houve erro ao salvar isso no banco. Ao recarregar a página, o evento antigo pode voltar!');
+  }
+  EVENT_INFO = emptyInfo;
+
   startingFreshEvent = true;
-  EVENT_INFO = null; // força buscar do zero na próxima vez, evitando qualquer resquício em memória
   renderRegistrationsList();
   renderNoShowList();
   await renderResultsBoard(defaultEventInfo());
