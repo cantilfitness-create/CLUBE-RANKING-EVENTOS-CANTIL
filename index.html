@@ -825,6 +825,13 @@ textarea { resize:vertical;min-height:72px; }
                 <option value="false">🚫 Inscrições fechadas</option>
               </select>
             </div>
+            <div class="field-group">
+              <label class="field-label">🙋 Visitantes (não-membros) podem se inscrever?</label>
+              <select id="ev-cfg-allow-visitor" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                <option value="true">✅ Sim, aceitar visitantes</option>
+                <option value="false">🚫 Não, só membros/alunos do CT</option>
+              </select>
+            </div>
           </div>
 
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
@@ -1378,8 +1385,6 @@ function renderRanking() {
       else if (m.points < prevPts) trend = '<span style="color:#ff5f6d;font-size:16px;font-weight:900" title="Descendo">▼</span>';
       else trend = '<span style="color:#5a6380;font-size:16px" title="Estacionado">●</span>';
     }
-    const bonusMap = { 'LUCAS': '🪢 +10 Desafio da Corda' };
-    const bonus = bonusMap[m.name] ? `<span class="bonus-badge">${bonusMap[m.name]}</span>` : '';
 
     // Emojis de categoria — 🔥 desafio, ⭐ evento (contagem explícita, escolhida no lançamento)
     let categoryBadges = '';
@@ -1413,7 +1418,7 @@ function renderRanking() {
         <div class="rank-num">${pos}º</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${trend}${bonus}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
           <div class="rank-badge-small">${m.points} pts</div>
           ${challengeTag}
           ${lastSeen}
@@ -1988,9 +1993,30 @@ async function renderEventPublicView() {
     formWrap.style.display = '';
     if (jumpBtn) jumpBtn.style.display = 'block';
   }
+
+  // Controla se o botão "Visitante" fica disponível — só quando o admin liberou
+  // essa opção especificamente pra este evento (padrão: liberado, se não configurado)
+  const visitorBtn = document.getElementById('mt-not-member');
+  const allowVisitor = info.is_dual ? true : (info.allow_visitor !== false);
+  if (visitorBtn) {
+    visitorBtn.disabled = !allowVisitor;
+    visitorBtn.style.opacity = allowVisitor ? '1' : '0.4';
+    visitorBtn.style.cursor = allowVisitor ? 'pointer' : 'not-allowed';
+    visitorBtn.title = allowVisitor ? '' : 'Inscrições de visitantes fechadas para este evento — só membros/alunos do CT';
+  }
 }
 
 function setEventPersonType(isInternal) {
+  // Proteção extra: mesmo que o botão "Visitante" seja clicado forçadamente
+  // (ex: via inspecionar elemento), bloqueia se o admin desativou essa opção
+  if (!isInternal) {
+    const info = EVENT_INFO || defaultEventInfo();
+    const allowVisitor = info.is_dual ? true : (info.allow_visitor !== false);
+    if (!allowVisitor) {
+      toast('🚫 Inscrições de visitantes estão fechadas para este evento. Só membros/alunos do CT podem se inscrever.');
+      return;
+    }
+  }
   eventIsMember = isInternal; // mantém nome da variável por compatibilidade interna
   document.getElementById('mt-is-member').classList.toggle('active', isInternal);
   document.getElementById('mt-not-member').classList.toggle('active', !isInternal);
@@ -2038,6 +2064,16 @@ async function submitEventRegistration() {
   const info = await getEventInfo();
   document.getElementById('ev-error').textContent = '';
   document.getElementById('ev-blocked').style.display = 'none';
+
+  // Proteção final: bloqueia envio se for visitante e o admin fechou essa opção
+  // pra este evento (evita inscrição feita numa janela em que a página não
+  // teve tempo de reagir à mudança do admin)
+  if (!eventIsMember) {
+    const allowVisitor = info.is_dual ? true : (info.allow_visitor !== false);
+    if (!allowVisitor) {
+      return toast('🚫 Inscrições de visitantes estão fechadas para este evento. Só membros/alunos do CT podem se inscrever.');
+    }
+  }
 
   const isClube = eventIsMember && document.getElementById('ev-is-clube').checked;
   const isCT = eventIsMember && document.getElementById('ev-is-ct').checked;
@@ -2172,6 +2208,7 @@ async function renderEventAdminView() {
     document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
     document.getElementById('ev-cfg-points').value = info.points ?? 10;
     document.getElementById('ev-cfg-result-type').value = info.result_type || '';
+    document.getElementById('ev-cfg-allow-visitor').value = info.allow_visitor === false ? 'false' : 'true';
   }
   toggleDualEventFields();
 
@@ -2364,8 +2401,9 @@ async function updateEventConfig() {
     const active = document.getElementById('ev-cfg-active').value === 'true';
     const points = parseInt(document.getElementById('ev-cfg-points').value) || 0;
     const result_type = document.getElementById('ev-cfg-result-type').value || null;
+    const allowVisitor = document.getElementById('ev-cfg-allow-visitor').value === 'true';
     newInfo = {
-      id, name, meta, desc, max, points, active, result_type,
+      id, name, meta, desc, max, points, active, result_type, allow_visitor: allowVisitor,
       time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null,
       is_dual: false, sub1_name: sub1Name, sub2_name: sub2Name
     };
