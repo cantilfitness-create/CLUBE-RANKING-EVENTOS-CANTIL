@@ -497,13 +497,9 @@ textarea { resize:vertical;min-height:72px; }
         <label class="field-label">Idade</label>
         <input type="number" id="ev-age" placeholder="ex: 28">
       </div>
-      <div class="field-group">
-        <label class="field-label">Nível de condicionamento</label>
-        <select id="ev-level">
-          <option value="Iniciante">🟢 Iniciante</option>
-          <option value="Intermediário">🟡 Intermediário</option>
-          <option value="Avançado">🟠 Avançado</option>
-        </select>
+      <div class="field-group" id="ev-level-wrap">
+        <label class="field-label">Categoria</label>
+        <select id="ev-level"></select>
       </div>
       <div class="field-group" id="ev-phone-wrap">
         <label class="field-label">Telefone (WhatsApp)</label>
@@ -1751,10 +1747,13 @@ function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField) {
                        .slice().sort((a,b)=>a.name.localeCompare(b.name));
     if (!items.length) return;
     const desc = groupDescs[g.key];
+    // Se o admin escreveu uma descrição pra essa categoria (ex: "2K"), ela vira
+    // o título principal do grupo — assim o resultado mostra a mesma categoria
+    // que a pessoa escolheu ao se inscrever, não o nome fixo Verde/Amarelo/Laranja
+    const titleText = desc ? desc : `Grupo ${g.name}`;
     html += `
       <div class="results-group">
-        <div class="results-group-title">${g.emoji} Grupo ${g.name}</div>
-        ${desc ? `<div class="results-group-desc">${desc}</div>` : ''}
+        <div class="results-group-title">${g.emoji} ${titleText}</div>
         <div class="results-list">
           <div class="results-header-row"><span>PARTICIPANTES</span><span>${colLabel}</span></div>
           ${items.map(r => `
@@ -1837,6 +1836,7 @@ async function renderEventPublicView() {
   if (!eventRegLoaded) await loadEventRegistrations();
 
   await renderResultsBoard(info);
+  await populateLevelSelect();
 
   document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
 
@@ -2959,6 +2959,32 @@ async function loadLevelDescriptionsIntoForm() {
   if (iEl) iEl.value = descs['Iniciante'] || '';
   if (mEl) mEl.value = descs['Intermediário'] || '';
   if (aEl) aEl.value = descs['Avançado'] || '';
+}
+
+// Monta o select de categoria na inscrição pública usando os mesmos nomes/descrições
+// que o admin escreveu em "Descrição de cada nível" — independente de o evento ter
+// resultado configurado (tempo/rounds) ou ser só presença. Categorias em branco
+// não aparecem como opção. Se nenhuma estiver preenchida, cai no padrão fixo.
+async function populateLevelSelect() {
+  const sel = document.getElementById('ev-level');
+  if (!sel) return;
+  const descs = await getSetting('level_descriptions', {});
+  const levels = [
+    { key:'Iniciante', emoji:'🟢' },
+    { key:'Intermediário', emoji:'🟡' },
+    { key:'Avançado', emoji:'🟠' }
+  ];
+  const withText = levels.filter(l => descs[l.key] && descs[l.key].trim());
+
+  if (withText.length) {
+    sel.innerHTML = withText.map(l => `<option value="${l.key}">${l.emoji} ${descs[l.key]}</option>`).join('');
+  } else {
+    // Nenhuma categoria configurada ainda — fallback pro padrão de sempre
+    sel.innerHTML = `
+      <option value="Iniciante">🟢 Iniciante</option>
+      <option value="Intermediário">🟡 Intermediário</option>
+      <option value="Avançado">🟠 Avançado</option>`;
+  }
 }
 
 function populateResultSelect() {
