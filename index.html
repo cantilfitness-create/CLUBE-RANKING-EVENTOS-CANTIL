@@ -340,6 +340,37 @@ textarea { resize:vertical;min-height:72px; }
 .toast { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);background:var(--s1);border:2px solid var(--green);color:var(--text);padding:20px 28px;border-radius:18px;font-size:15px;font-weight:700;z-index:9999;opacity:0;transition:all .25s;max-width:88vw;text-align:center;line-height:1.5;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
 .toast.show { opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all; }
 .toast-close { position:absolute;top:6px;right:10px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px; }
+
+.registration-confirm-overlay {
+  position:fixed;inset:0;z-index:10000;
+  background:rgba(6,8,15,0.92);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;padding:24px;
+  opacity:0;transition:opacity .3s;
+}
+.registration-confirm-overlay.show { display:flex;opacity:1; }
+.registration-confirm-card {
+  background:linear-gradient(160deg,var(--s1),var(--s2));
+  border:2px solid var(--green);border-radius:28px;
+  padding:48px 32px;text-align:center;max-width:400px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 6px rgba(61,232,154,0.08);
+  transform:scale(0.85);transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+}
+.registration-confirm-overlay.show .registration-confirm-card { transform:scale(1); }
+.registration-confirm-emoji { font-size:56px;margin-bottom:16px;animation:bounceEmoji 1.2s ease-in-out infinite; }
+@keyframes bounceEmoji { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.registration-confirm-title { font-size:26px;font-weight:900;color:var(--green);margin-bottom:12px;line-height:1.25; }
+.registration-confirm-detail { font-size:15px;color:var(--text);line-height:1.6;margin-bottom:28px; }
+.registration-confirm-btn {
+  background:var(--green);color:#06170f;border:none;border-radius:14px;
+  padding:14px 32px;font-size:16px;font-weight:800;cursor:pointer;
+  font-family:'Outfit',sans-serif;transition:transform .15s;
+}
+.registration-confirm-btn:hover { transform:scale(1.05); }
+@media(max-width:420px){
+  .registration-confirm-card { padding:36px 22px; }
+  .registration-confirm-title { font-size:22px; }
+  .registration-confirm-emoji { font-size:46px; }
+}
 @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 @media(max-width:480px){
   .podium{height:200px;gap:8px}
@@ -958,12 +989,8 @@ textarea { resize:vertical;min-height:72px; }
               </div>
 
               <div class="field-group" id="result-level-wrap" style="display:none;margin-bottom:14px">
-                <label class="field-label">Nível de condicionamento (pode ajustar no dia do evento)</label>
-                <select id="result-level-select" onchange="updateResultLevel()">
-                  <option value="Iniciante">🟢 Iniciante</option>
-                  <option value="Intermediário">🟡 Intermediário</option>
-                  <option value="Avançado">🟠 Avançado</option>
-                </select>
+                <label class="field-label">Categoria (pode ajustar no dia do evento)</label>
+                <select id="result-level-select" onchange="updateResultLevel()"></select>
               </div>
 
               <div id="result-tempo-helper" style="display:none">
@@ -1150,13 +1177,16 @@ const SK = { subUnlocked:'rk_sub_unlocked' };
 
 // ── Configurações persistentes no Supabase (senha, banner, mensagem assinante) ──
 async function getSetting(key, fallback) {
-  const { data, error } = await sb.from('app_settings').select('value').eq('key', key).limit(1);
+  const { data, error } = await sb.from('app_settings').select('value').eq('key', key).order('updated_at', { ascending:false }).limit(1);
   if (error || !data || !data.length) return fallback;
   try { return JSON.parse(data[0].value); } catch { return data[0].value; }
 }
 async function setSetting(key, value) {
   const strVal = typeof value === 'string' ? value : JSON.stringify(value);
-  const { error } = await sb.from('app_settings').upsert({ key, value: strVal, updated_at: new Date().toISOString() });
+  // onConflict explícito garante que sempre ATUALIZA a linha existente da chave,
+  // em vez de criar linhas duplicadas (o que fazia leituras antigas voltarem
+  // depois de salvar, como acontecia com as Regras do Evento)
+  const { error } = await sb.from('app_settings').upsert({ key, value: strVal, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (error) { console.error(error); toast('⚠️ Erro ao salvar configuração'); return false; }
   return true;
 }
@@ -2188,20 +2218,23 @@ async function submitEventRegistration() {
   await loadEventRegistrations();
   await renderEventPublicView();
 
-  const successCard = document.getElementById('ev-success-card');
-  const successDetail = document.getElementById('ev-success-detail');
-  if (successCard && successDetail) {
-    successDetail.textContent = subEvents
-      ? `Você está inscrito(a) em: ${subEvents}`
-      : `${name}, sua vaga em ${info.name} está garantida!`;
-    successCard.style.display = 'block';
-    successCard.scrollIntoView({ behavior:'smooth', block:'center' });
-  }
+  const successDetail = subEvents
+    ? `Você está inscrito(a) em: ${subEvents}`
+    : `${name}, sua vaga em ${info.name} está garantida!`;
+  showRegistrationConfirm(successDetail);
+}
 
-  const confirmMsg = subEvents
-    ? `✅ Inscrição confirmada em: ${subEvents}! Nos vemos lá 🎉`
-    : '✅ Inscrição confirmada! Nos vemos lá 🎉';
-  toast(confirmMsg);
+function showRegistrationConfirm(detailText) {
+  const overlay = document.getElementById('registration-confirm-overlay');
+  const detailEl = document.getElementById('registration-confirm-detail');
+  if (!overlay || !detailEl) return;
+  detailEl.textContent = detailText;
+  overlay.classList.add('show');
+}
+
+function closeRegistrationConfirm() {
+  const overlay = document.getElementById('registration-confirm-overlay');
+  if (overlay) overlay.classList.remove('show');
 }
 
 // ── Admin ──
@@ -2965,8 +2998,8 @@ async function loadLevelDescriptionsIntoForm() {
 // que o admin escreveu em "Descrição de cada nível" — independente de o evento ter
 // resultado configurado (tempo/rounds) ou ser só presença. Categorias em branco
 // não aparecem como opção. Se nenhuma estiver preenchida, cai no padrão fixo.
-async function populateLevelSelect() {
-  const sel = document.getElementById('ev-level');
+async function populateLevelSelect(targetId) {
+  const sel = document.getElementById(targetId || 'ev-level');
   if (!sel) return;
   const descs = await getSetting('level_descriptions', {});
   const levels = [
@@ -2985,6 +3018,11 @@ async function populateLevelSelect() {
       <option value="Intermediário">🟡 Intermediário</option>
       <option value="Avançado">🟠 Avançado</option>`;
   }
+}
+
+// Mesmo select dinâmico, usado no painel admin de lançar resultados
+async function populateResultLevelSelect() {
+  await populateLevelSelect('result-level-select');
 }
 
 function populateResultSelect() {
@@ -3006,7 +3044,7 @@ function populateResultSelect() {
   }).join('');
 }
 
-function onResultSelectChange() {
+async function onResultSelectChange() {
   const info = EVENT_INFO || defaultEventInfo();
   const suffix = info.is_dual ? '_' + currentSubEventContext : '';
   const resultType = info.is_dual
@@ -3024,6 +3062,9 @@ function onResultSelectChange() {
   finalInput.value = reg && reg[resultField] ? reg[resultField] : '';
   finalInput.placeholder = resultType === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
+  // Popula o select com os mesmos rótulos configurados em "Descrição de cada nível"
+  // (ex: "2K", "6K"), pra bater exatamente com o que o inscrito escolheu ao se inscrever
+  await populateResultLevelSelect();
   // IMPORTANTE: setamos o valor do select sem disparar o onchange (que salvaria
   // o nível no banco). Isso evita o bug de trocar de participante e acidentalmente
   // sobrescrever o nível de outra pessoa com o valor que estava mostrando antes.
@@ -3240,10 +3281,18 @@ document.addEventListener('keydown', e => {
   if (e.key==='Escape' && document.getElementById('edit-reg-overlay')?.classList.contains('open')) closeEditRegistration();
 });
 
-function printEventReport() {
+async function printEventReport() {
   const info = EVENT_INFO || defaultEventInfo();
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
   if (!regs.length) return toast('⚠️ Não há inscritos nesse evento ainda.');
+
+  const groupDescs = await getSetting('level_descriptions', {});
+  const levelLabel = (key) => (groupDescs[key] && groupDescs[key].trim()) ? groupDescs[key] : (key || '—');
+  const formatWhen = (createdAt) => {
+    if (!createdAt) return '—';
+    const d = new Date(createdAt);
+    return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  };
 
   let attendedCount, noShowCount, pendingCount, rows, headerCols;
 
@@ -3262,12 +3311,13 @@ function printEventReport() {
         <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
         <td>${r.sub_events||'—'}</td>
         <td>${r.age||'—'}</td>
-        <td>${r.fitness_level||'—'}</td>
+        <td>${levelLabel(r.fitness_level)}</td>
         <td>${r.phone||'—'}</td>
         <td>${presLabel(r.attended_1)}${r.result_value_1?' ('+r.result_value_1+')':''}</td>
         <td>${presLabel(r.attended_2)}${r.result_value_2?' ('+r.result_value_2+')':''}</td>
+        <td>${formatWhen(r.created_at)}</td>
       </tr>`).join('');
-    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>${sub1}</th><th>${sub2}</th>`;
+    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>${sub1}</th><th>${sub2}</th><th>Inscrição em</th>`;
   } else {
     attendedCount = regs.filter(r=>r.attended===true).length;
     noShowCount = regs.filter(r=>r.attended===false).length;
@@ -3280,13 +3330,14 @@ function printEventReport() {
         <td>${r.name}</td>
         <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
         <td>${r.age||'—'}</td>
-        <td>${r.fitness_level||'—'}</td>
+        <td>${levelLabel(r.fitness_level)}</td>
         <td>${r.phone||'—'}</td>
         <td>${r.heard_from||'—'}${r.referred_by?' ('+r.referred_by+')':''}</td>
         <td>${r.attended===true?'✅ Presente':r.attended===false?'❌ Faltou':'—'}</td>
         ${hasCustomQ ? `<td>${r.custom_answer||'—'}</td>` : ''}
+        <td>${formatWhen(r.created_at)}</td>
       </tr>`).join('');
-    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Nível</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}`;
+    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}<th>Inscrição em</th>`;
   }
 
   const html = `
@@ -4125,6 +4176,16 @@ setInterval(async () => {
       <div id="archive-editor-body"></div>
       <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:10px" onclick="closeArchiveEditor()">Fechar</button>
     </div>
+  </div>
+</div>
+
+<!-- CONFIRMAÇÃO GRANDE DE INSCRIÇÃO — aparece no centro da tela -->
+<div id="registration-confirm-overlay" class="registration-confirm-overlay" onclick="if(event.target===this)closeRegistrationConfirm()">
+  <div class="registration-confirm-card">
+    <div class="registration-confirm-emoji">😉💪🏻</div>
+    <div class="registration-confirm-title">Inscrição confirmada!</div>
+    <div class="registration-confirm-detail" id="registration-confirm-detail"></div>
+    <button class="registration-confirm-btn" onclick="closeRegistrationConfirm()">Show! 🎉</button>
   </div>
 </div>
 
