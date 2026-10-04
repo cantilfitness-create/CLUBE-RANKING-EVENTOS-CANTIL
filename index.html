@@ -663,6 +663,16 @@ textarea { resize:vertical;min-height:72px; }
             <input type="number" id="quick-value" value="3" style="width:70px;text-align:center;font-weight:800;font-size:16px;">
             <div style="flex:1;display:flex;align-items:center;font-size:11px;color:var(--muted);">pontos por toque</div>
           </div>
+          <!-- LISTA COLADA: distribui pontos por nome (busca por similaridade) -->
+          <details open style="margin-bottom:18px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+            <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--accent);">📋 Colar lista de nomes</summary>
+            <div style="margin-top:12px;">
+              <textarea id="lista-input" rows="5" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Cole os nomes, um por linha&#10;Ex:&#10;Danielle&#10;danielle (marcos)&#10;thais"></textarea>
+              <button class="btn btn-blue" style="margin-top:10px;" onclick="listaConferir()">🔎 Conferir lista</button>
+              <div id="lista-preview" style="margin-top:12px;"></div>
+            </div>
+          </details>
+
           <input type="text" id="quick-search" class="qt-search" placeholder="🔍 Buscar membro...">
           <div id="quick-tap-list"></div>
         </div>
@@ -3725,6 +3735,146 @@ async function quickAdd(id) {
 document.addEventListener('input', e => {
   if (e.target && e.target.id === 'quick-search') renderQuickTap();
 });
+
+// ── LISTA COLADA: distribuir pontos por nome (com busca por similaridade) ──
+let LISTA_ROWS = [];
+
+function listaEsc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// minúsculas, sem acentos, sem pontuação: "Danielle ( MARCOS)" -> "danielle marcos"
+function listaNorm(t) {
+  return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+    .replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function listaLev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({length:n+1}, (_,j)=>j);
+  for (let i=1;i<=m;i++) {
+    const cur = [i];
+    for (let j=1;j<=n;j++) cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function listaSim(a, b) {
+  if (!a.length && !b.length) return 1;
+  return 1 - listaLev(a,b)/Math.max(a.length,b.length);
+}
+// Nota de 0 a 1. Nome extra em qualquer lado reduz a nota,
+// então "danielle" casa melhor com "Danielle" do que com "Danielle (MARCOS)".
+function listaScore(inputNorm, memberNorm) {
+  if (!inputNorm || !memberNorm) return 0;
+  if (inputNorm === memberNorm) return 1;
+  const it = inputNorm.split(' '), mt = memberNorm.split(' ');
+  const used = new Set();
+  let sum = 0;
+  it.forEach(t => {
+    let best = 0, bi = -1;
+    mt.forEach((m,i) => {
+      if (used.has(i)) return;
+      let s = listaSim(t, m);
+      if (s < 0.7) s = 0;
+      if (t.length >= 3 && m.startsWith(t)) s = Math.max(s, 0.85);   // abreviação: "dani" -> "danielle"
+      if (t.length === 1 && m[0] === t) s = Math.max(s, 0.6);        // inicial: "m" -> "marcos"
+      if (s > best) { best = s; bi = i; }
+    });
+    if (bi >= 0) { used.add(bi); sum += best; }
+  });
+  const coverage = sum / Math.max(it.length, mt.length);
+  return Math.max(coverage, listaSim(inputNorm, memberNorm));
+}
+function listaMatch(raw) {
+  const n = listaNorm(raw);
+  const scored = MEMBERS.map(m => ({ m, s: listaScore(n, listaNorm(m.name)) })).sort((a,b)=>b.s-a.s);
+  const best = scored[0], second = scored[1];
+  const cands = scored.filter(x => x.s >= 0.4).slice(0,3).map(x => x.m);
+  if (best && ((best.s >= 0.85 && (!second || best.s - second.s >= 0.15)) || (best.s >= 0.75 && (!second || best.s - second.s >= 0.3))))
+    return { id: best.m.id, status: 'ok', cands, score: best.s };
+  return { id: null, status: (best && best.s >= 0.5) ? 'ambig' : 'none', cands, score: best ? best.s : 0 };
+}
+function listaParse(text) {
+  return String(text||'').split(/\r?\n|;/)
+    .map(l => l.replace(/^\s*\d+\s*[.)\-–:]\s*/, '')          // "1. " / "2) "
+               .replace(/^[^\p{L}\p{N}(]+/u, '')               // bullets, emojis, traços
+               .replace(/[^\p{L}\p{N})]+$/u, '').trim())
+    .filter(Boolean);
+}
+function listaConferir() {
+  if (!MEMBERS.length) return toast('⚠️ Nenhum membro carregado');
+  const lines = listaParse(document.getElementById('lista-input').value);
+  if (!lines.length) return toast('⚠️ Cole a lista de nomes primeiro');
+  const seen = new Set();
+  LISTA_ROWS = lines.map(raw => {
+    const r = listaMatch(raw);
+    const row = { raw, id: r.id, status: r.status, cands: r.cands, include: !!r.id, dup: false, edit: false };
+    if (row.id) { if (seen.has(row.id)) { row.dup = true; row.include = false; } else seen.add(row.id); }
+    return row;
+  });
+  listaRender();
+}
+function listaSetId(i, v) {
+  const row = LISTA_ROWS[i]; const id = parseInt(v) || null;
+  row.id = id; row.include = !!id; row.status = id ? 'manual' : row.status; row.edit = false; row.dup = false;
+  listaRender();
+}
+function listaToggle(i, on) { LISTA_ROWS[i].include = on; listaRender(); }
+function listaEdit(i) { LISTA_ROWS[i].edit = !LISTA_ROWS[i].edit; listaRender(); }
+
+function listaRender() {
+  const el = document.getElementById('lista-preview');
+  const val = parseInt(document.getElementById('quick-value').value) || 3;
+  const sorted = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  const colors = { ok:'var(--green)', manual:'var(--green)', ambig:'var(--gold)', none:'var(--red)' };
+  const rowsHtml = LISTA_ROWS.map((r,i) => {
+    const m = r.id ? MEMBERS.find(x=>x.id===r.id) : null;
+    const norm = m && listaNorm(m.name) === listaNorm(r.raw);
+    let tag = '';
+    if (r.dup) tag = '<span style="color:var(--gold)">⚠️ repetido na lista</span>';
+    else if (r.status === 'ambig') tag = '<span style="color:var(--gold)">❓ escolha quem é</span>';
+    else if (r.status === 'none') tag = '<span style="color:var(--red)">❌ não encontrado</span>';
+    else if (r.status === 'ok' && !norm) tag = '<span style="color:var(--green)">≈ similar</span>';
+    const showSel = !r.id || r.edit;
+    const candIds = new Set(r.cands.map(c=>c.id));
+    const opts = '<option value="">— escolher —</option>' +
+      (r.cands.length ? '<optgroup label="Sugestões">' + r.cands.map(c=>`<option value="${c.id}" ${c.id===r.id?'selected':''}>${listaEsc(c.name)}</option>`).join('') + '</optgroup>' : '') +
+      '<optgroup label="Todos">' + sorted.filter(x=>!candIds.has(x.id)).map(x=>`<option value="${x.id}" ${x.id===r.id?'selected':''}>${listaEsc(x.name)}</option>`).join('') + '</optgroup>';
+    return `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-left:3px solid ${colors[r.status]||'var(--border)'};border-radius:10px;margin-bottom:6px;">
+      <input type="checkbox" style="width:20px;height:20px;margin-top:2px;flex-shrink:0;" ${r.include?'checked':''} ${r.id?'':'disabled'} onchange="listaToggle(${i},this.checked)">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;">${m ? m.emoji+' '+listaEsc(m.name) : '<span style="color:var(--muted)">—</span>'}${m ? `<span style="font-weight:400;color:var(--muted);font-size:11px;"> · ${m.points} pts</span>` : ''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">digitado: “${listaEsc(r.raw)}” ${tag}</div>
+        ${showSel ? `<select style="margin-top:6px;padding:8px 10px;font-size:13px;" onchange="listaSetId(${i},this.value)">${opts}</select>` : ''}
+      </div>
+      ${r.id && !r.edit ? `<button class="btn-sm-danger" style="flex-shrink:0;" onclick="listaEdit(${i})">trocar</button>` : ''}
+    </div>`;
+  }).join('');
+  const n = LISTA_ROWS.filter(r=>r.include && r.id).length;
+  const pend = LISTA_ROWS.filter(r=>!r.id).length;
+  el.innerHTML = rowsHtml +
+    (pend ? `<div style="font-size:12px;color:var(--gold);margin:8px 0;">⚠️ ${pend} linha(s) sem nome definido serão ignoradas.</div>` : '') +
+    `<button class="btn btn-blue" style="margin-top:8px;" ${n?'':'disabled'} onclick="listaDistribuir()">✅ Distribuir ${val>0?'+':''}${val} pts para ${n} pessoa${n===1?'':'s'}</button>`;
+}
+
+async function listaDistribuir() {
+  const val = parseInt(document.getElementById('quick-value').value) || 3;
+  const rows = LISTA_ROWS.filter(r => r.include && r.id);
+  if (!rows.length) return toast('⚠️ Nenhum nome selecionado');
+  const btn = document.querySelector('#lista-preview .btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Distribuindo...'; }
+  let ok = 0, fail = 0;
+  for (const r of rows) {
+    const m = await addPointsToMember(r.id, val, 'Lista colada');
+    if (m) ok++; else fail++;
+  }
+  await loadHistory(); await loadMembers();
+  renderRanking(); renderQuickTap(); renderAdminSelect(); renderRecentHistory();
+  LISTA_ROWS = [];
+  document.getElementById('lista-preview').innerHTML = '';
+  if (!fail) document.getElementById('lista-input').value = '';
+  toast(fail ? `⚠️ ${ok} ok, ${fail} com erro` : `✅ +${val} pts para ${ok} pessoa${ok===1?'':'s'}!`);
+}
 
 // ── PONTOS ──
 function renderAdminSelect() {
