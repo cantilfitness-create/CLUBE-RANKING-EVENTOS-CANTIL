@@ -116,6 +116,14 @@ body::before {
 .rank-item.top-3 { background:linear-gradient(90deg,rgba(232,150,90,0.1),transparent);border-left:3px solid var(--bronze); }
 .rank-item.top-3 .rank-num { color:var(--bronze);font-size:23px; }
 .rank-item.top-3 .rank-pts { color:var(--bronze); }
+/* 👻 CEMITÉRIO — sem pontuar há mais de 60 dias */
+.rank-item.ghost { background:rgba(255,255,255,0.012); }
+.rank-item.ghost > * { filter:grayscale(.9); opacity:.5; transition:opacity .2s; }
+.rank-item.ghost:hover { background:rgba(255,255,255,0.03); }
+.rank-item.ghost:hover > * { opacity:.8; }
+.rank-item.ghost .rank-num { font-size:20px; opacity:.85; filter:none; }
+.rank-item.ghost .rank-bar-fill { background:#5a5a5a; }
+.ghost-divider { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:14px 24px 10px;border-top:1px solid var(--border);background:rgba(0,0,0,0.25);opacity:.85; }
 .section-label { font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px; }
 .section-label::after { content:'';flex:1;height:1px;background:var(--border); }
 .filter-tabs { display:flex;gap:8px;margin-bottom:16px; }
@@ -1290,7 +1298,9 @@ async function loadMembers() {
     const eventoCount = {};
     const lastTag = {};
     const lastChange = {};
+    const lastGain = {};
     hist.forEach(h => {
+      if (h.points > 0 && !lastGain[h.member_id]) lastGain[h.member_id] = h.created_at;  // última vez que PONTUOU
       if (!lastActivity[h.member_id]) {
         lastActivity[h.member_id] = h.created_at;
       }
@@ -1316,7 +1326,8 @@ async function loadMembers() {
       desafioCount: desafioCount[m.id] || 0,
       eventoCount: eventoCount[m.id] || 0,
       lastTag: lastTag[m.id] || null,
-      lastChange: lastChange[m.id] || null
+      lastChange: lastChange[m.id] || null,
+      lastGain: lastGain[m.id] || null
     }));
   }
   return MEMBERS;
@@ -1377,6 +1388,16 @@ async function addPointsToMember(id, pts, reason, category='treino') {
 // ══════════════════════════════════════════════
 //  RENDER PUBLIC RANKING
 // ══════════════════════════════════════════════
+// 👻 Fantasma = mais de GHOST_DAYS dias sem ganhar pontos
+const GHOST_DAYS = 60;
+function ghostDays(m) {
+  const ref = m.lastGain || m.last_updated || m.created_at;
+  if (!ref) return null;
+  const d = Math.floor((Date.now() - new Date(ref).getTime()) / 86400000);
+  return isNaN(d) ? null : d;
+}
+function isGhost(m) { const d = ghostDays(m); return d !== null && d > GHOST_DAYS; }
+
 function renderRanking() {
   const all = MEMBERS.slice().sort((a,b)=>b.points-a.points);
   // Membros de 6 a 14 anos (categoria infantil) NÃO entram no ranking geral,
@@ -1390,18 +1411,22 @@ function renderRanking() {
     const nonKids = all.filter(m => !isKidsCategory(m));
     members = currentFilter === 'all' ? nonKids : nonKids.filter(m=>m.gender===currentFilter);
   }
-  const max = members[0]?.points || 1;
+  // 👻 Quem está há mais de 60 dias sem pontuar vai para o fim da lista (fora do pódio e da numeração)
+  const activeMembers = members.filter(m => !isGhost(m));
+  const ghostMembers  = members.filter(m => isGhost(m));
+  const max = activeMembers[0]?.points || members[0]?.points || 1;
 
   const ranked = [];
   let pos = 1;
-  for (let i = 0; i < members.length; i++) {
-    if (i > 0 && members[i].points < members[i-1].points) pos++;
-    ranked.push({ ...members[i], pos });
+  for (let i = 0; i < activeMembers.length; i++) {
+    if (i > 0 && activeMembers[i].points < activeMembers[i-1].points) pos++;
+    ranked.push({ ...activeMembers[i], pos });
   }
+  ghostMembers.forEach(m => ranked.push({ ...m, pos: null, ghost: true }));
 
   const podiumWrap = document.getElementById('podium-wrap');
   const podiumEl = document.getElementById('podium');
-  const topPositions = [...new Set(ranked.map(m=>m.pos))].slice(0,3);
+  const topPositions = [...new Set(ranked.filter(m=>!m.ghost).map(m=>m.pos))].slice(0,3);
   const podiumMembers = ranked.filter(m=>topPositions.includes(m.pos)).slice(0,3);
 
   if (!podiumMembers.length) { podiumWrap.style.display='none'; }
@@ -1428,7 +1453,7 @@ function renderRanking() {
 
   listEl.innerHTML = ranked.map((m,i) => {
     const pos = m.pos;
-    const pct = Math.round((m.points/max)*100);
+    const pct = Math.min(100, Math.round((m.points/max)*100));
     const prev = lget(LK.prev)||{};
     const prevPts = prev[m.id];
     let trend = '';
@@ -1465,13 +1490,15 @@ function renderRanking() {
       lastSeen = `<div class="rank-last-seen">🕐 última alteração: ${dateStr} às ${timeStr}${prevText}</div>`;
     }
 
-    return `
-      <div class="rank-item${pos===1?' top-1':pos===2?' top-2':pos===3?' top-3':''}${isKidsCategory(m)?' kids-item':''}" style="animation-delay:${.05*i}s">
-        <div class="rank-num">${pos}º</div>
+    const ghostDivider = (m.ghost && !ranked[i-1]?.ghost)
+      ? `<div class="ghost-divider">👻 sem pontuar há mais de ${GHOST_DAYS} dias</div>` : '';
+    return `${ghostDivider}
+      <div class="rank-item${pos===1?' top-1':pos===2?' top-2':pos===3?' top-3':''}${m.ghost?' ghost':''}${isKidsCategory(m)?' kids-item':''}" style="animation-delay:${.05*i}s">
+        <div class="rank-num">${m.ghost?'👻':pos+'º'}</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
-          <div class="rank-badge-small">${m.points} pts</div>
+          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${m.ghost?'':trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-badge-small">${m.points} pts${m.ghost?` · ${ghostDays(m)} dias sem pontuar`:''}</div>
           ${challengeTag}
           ${lastSeen}
         </div>
@@ -3804,18 +3831,22 @@ function listaConferir() {
   if (!MEMBERS.length) return toast('⚠️ Nenhum membro carregado');
   const lines = listaParse(document.getElementById('lista-input').value);
   if (!lines.length) return toast('⚠️ Cole a lista de nomes primeiro');
-  const seen = new Set();
   LISTA_ROWS = lines.map(raw => {
     const r = listaMatch(raw);
-    const row = { raw, id: r.id, status: r.status, cands: r.cands, include: !!r.id, dup: false, edit: false };
-    if (row.id) { if (seen.has(row.id)) { row.dup = true; row.include = false; } else seen.add(row.id); }
-    return row;
+    return { raw, id: r.id, status: r.status, cands: r.cands, include: !!r.id, nth: 0, edit: false };
   });
+  listaRecount();
   listaRender();
+}
+// Conta quantas vezes cada pessoa aparece (repetir é permitido: cada linha vale um lançamento)
+function listaRecount() {
+  const c = {};
+  LISTA_ROWS.forEach(r => { if (r.id) { c[r.id] = (c[r.id] || 0) + 1; r.nth = c[r.id]; } else r.nth = 0; });
 }
 function listaSetId(i, v) {
   const row = LISTA_ROWS[i]; const id = parseInt(v) || null;
-  row.id = id; row.include = !!id; row.status = id ? 'manual' : row.status; row.edit = false; row.dup = false;
+  row.id = id; row.include = !!id; row.status = id ? 'manual' : row.status; row.edit = false;
+  listaRecount();
   listaRender();
 }
 function listaToggle(i, on) { LISTA_ROWS[i].include = on; listaRender(); }
@@ -3830,10 +3861,10 @@ function listaRender() {
     const m = r.id ? MEMBERS.find(x=>x.id===r.id) : null;
     const norm = m && listaNorm(m.name) === listaNorm(r.raw);
     let tag = '';
-    if (r.dup) tag = '<span style="color:var(--gold)">⚠️ repetido na lista</span>';
-    else if (r.status === 'ambig') tag = '<span style="color:var(--gold)">❓ escolha quem é</span>';
-    else if (r.status === 'none') tag = '<span style="color:var(--red)">❌ não encontrado</span>';
-    else if (r.status === 'ok' && !norm) tag = '<span style="color:var(--green)">≈ similar</span>';
+    if (r.nth > 1) tag += `<span style="color:var(--gold);font-weight:700">🔁 ${r.nth}ª vez na lista</span> `;
+    if (r.status === 'ambig') tag += '<span style="color:var(--gold)">❓ escolha quem é</span>';
+    else if (r.status === 'none') tag += '<span style="color:var(--red)">❌ não encontrado</span>';
+    else if (r.status === 'ok' && !norm) tag += '<span style="color:var(--green)">≈ similar</span>';
     const showSel = !r.id || r.edit;
     const candIds = new Set(r.cands.map(c=>c.id));
     const opts = '<option value="">— escolher —</option>' +
@@ -3850,11 +3881,15 @@ function listaRender() {
       ${r.id && !r.edit ? `<button class="btn-sm-danger" style="flex-shrink:0;" onclick="listaEdit(${i})">trocar</button>` : ''}
     </div>`;
   }).join('');
-  const n = LISTA_ROWS.filter(r=>r.include && r.id).length;
+  const sel = LISTA_ROWS.filter(r=>r.include && r.id);
+  const n = sel.length;
+  const uniq = new Set(sel.map(r=>r.id)).size;
   const pend = LISTA_ROWS.filter(r=>!r.id).length;
+  const reps = LISTA_ROWS.filter(r=>r.nth > 1).length;
   el.innerHTML = rowsHtml +
+    (reps ? `<div style="font-size:12px;color:var(--gold);margin:8px 0;">🔁 ${reps} nome(s) repetido(s): cada repetição soma os pontos de novo.</div>` : '') +
     (pend ? `<div style="font-size:12px;color:var(--gold);margin:8px 0;">⚠️ ${pend} linha(s) sem nome definido serão ignoradas.</div>` : '') +
-    `<button class="btn btn-blue" style="margin-top:8px;" ${n?'':'disabled'} onclick="listaDistribuir()">✅ Distribuir ${val>0?'+':''}${val} pts para ${n} pessoa${n===1?'':'s'}</button>`;
+    `<button class="btn btn-blue" style="margin-top:8px;" ${n?'':'disabled'} onclick="listaDistribuir()">✅ Distribuir ${val>0?'+':''}${val} pts para ${uniq} pessoa${uniq===1?'':'s'}${n>uniq?` (${n} lançamentos)`:''}</button>`;
 }
 
 async function listaDistribuir() {
@@ -3873,7 +3908,7 @@ async function listaDistribuir() {
   LISTA_ROWS = [];
   document.getElementById('lista-preview').innerHTML = '';
   if (!fail) document.getElementById('lista-input').value = '';
-  toast(fail ? `⚠️ ${ok} ok, ${fail} com erro` : `✅ +${val} pts para ${ok} pessoa${ok===1?'':'s'}!`);
+  toast(fail ? `⚠️ ${ok} ok, ${fail} com erro` : `✅ ${ok} lançamento${ok===1?'':'s'} de ${val>0?'+':''}${val} pts feito${ok===1?'':'s'}!`);
 }
 
 // ── PONTOS ──
