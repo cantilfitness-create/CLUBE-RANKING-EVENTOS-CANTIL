@@ -797,7 +797,7 @@ textarea { resize:vertical;min-height:72px; }
           </div>
           <div id="ev-dual-fields-wrap" style="display:none">
             <div style="background:rgba(45,125,255,0.06);border:1px solid rgba(45,125,255,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
-              <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px">🥇 Evento 1 — Dados</div>
+              <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px" id="ev-cfg-sub1-header">🥇 Evento 1</div>
               <div class="field-group">
                 <label class="field-label">Nome do Evento 1</label>
                 <input type="text" id="ev-cfg-sub1" placeholder="ex: Treinamento Funcional">
@@ -806,13 +806,37 @@ textarea { resize:vertical;min-height:72px; }
                 <label class="field-label">Data e local (Evento 1)</label>
                 <input type="text" id="ev-cfg-meta-1" placeholder="ex: 20/08 às 9h · CT Cantil Fitness">
               </div>
-              <div class="field-group" style="margin-bottom:0">
+              <div class="field-group">
                 <label class="field-label">Descrição (Evento 1)</label>
                 <textarea id="ev-cfg-desc-1" rows="3" placeholder="ex: Traga sua garrafinha e disposição!" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
               </div>
+              <div style="height:1px;background:rgba(255,255,255,0.08);margin:6px 0 14px"></div>
+              <div class="field-group">
+                <label class="field-label">Vagas (Evento 1)</label>
+                <input type="number" id="ev-cfg-max-1" placeholder="ex: 40">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Pontos por presença (Evento 1)</label>
+                <input type="number" id="ev-cfg-points-1" placeholder="ex: 10">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Tipo de resultado (Evento 1)</label>
+                <select id="ev-cfg-result-type-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="">— Sem resultado (só presença)</option>
+                  <option value="tempo">⏱️ Tempo (For Time)</option>
+                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+                </select>
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Status (Evento 1)</label>
+                <select id="ev-cfg-active-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="true">✅ Inscrições abertas</option>
+                  <option value="false">🚫 Inscrições fechadas</option>
+                </select>
+              </div>
             </div>
             <div style="background:rgba(255,208,96,0.06);border:1px solid rgba(255,208,96,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
-              <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px">🥈 Evento 2 — Dados</div>
+              <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px" id="ev-cfg-sub2-header">🥈 Evento 2</div>
               <div class="field-group">
                 <label class="field-label">Nome do Evento 2</label>
                 <input type="text" id="ev-cfg-sub2" placeholder="ex: Corrida 5km">
@@ -821,9 +845,33 @@ textarea { resize:vertical;min-height:72px; }
                 <label class="field-label">Data e local (Evento 2)</label>
                 <input type="text" id="ev-cfg-meta-2" placeholder="ex: 20/08 às 11h · Parque da Cidade">
               </div>
-              <div class="field-group" style="margin-bottom:0">
+              <div class="field-group">
                 <label class="field-label">Descrição (Evento 2)</label>
                 <textarea id="ev-cfg-desc-2" rows="3" placeholder="ex: Nível intermediário/avançado, traga tênis de corrida." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+              </div>
+              <div style="height:1px;background:rgba(255,255,255,0.08);margin:6px 0 14px"></div>
+              <div class="field-group">
+                <label class="field-label">Vagas (Evento 2)</label>
+                <input type="number" id="ev-cfg-max-2" placeholder="ex: 40">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Pontos por presença (Evento 2)</label>
+                <input type="number" id="ev-cfg-points-2" placeholder="ex: 10">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Tipo de resultado (Evento 2)</label>
+                <select id="ev-cfg-result-type-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="">— Sem resultado (só presença)</option>
+                  <option value="tempo">⏱️ Tempo (For Time)</option>
+                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
+                </select>
+              </div>
+              <div class="field-group" style="margin-bottom:0">
+                <label class="field-label">Status (Evento 2)</label>
+                <select id="ev-cfg-active-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
+                  <option value="true">✅ Inscrições abertas</option>
+                  <option value="false">🚫 Inscrições fechadas</option>
+                </select>
               </div>
             </div>
           </div>
@@ -896,60 +944,7 @@ textarea { resize:vertical;min-height:72px; }
           </div>
 
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
-          <div id="ev-dual-config-wrap" style="display:none">
-            <div style="background:rgba(45,125,255,0.06);border:1px solid rgba(45,125,255,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
-              <div style="font-weight:800;font-size:13px;color:#5b9dff;margin-bottom:10px" id="ev-cfg-sub1-header">🥇 Evento 1</div>
-              <div class="field-group">
-                <label class="field-label">Vagas (Evento 1)</label>
-                <input type="number" id="ev-cfg-max-1" placeholder="ex: 40">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Pontos por presença (Evento 1)</label>
-                <input type="number" id="ev-cfg-points-1" placeholder="ex: 10">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Tipo de resultado (Evento 1)</label>
-                <select id="ev-cfg-result-type-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-                  <option value="">— Sem resultado (só presença)</option>
-                  <option value="tempo">⏱️ Tempo (For Time)</option>
-                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
-                </select>
-              </div>
-              <div class="field-group" style="margin-bottom:0">
-                <label class="field-label">Status (Evento 1)</label>
-                <select id="ev-cfg-active-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-                  <option value="true">✅ Inscrições abertas</option>
-                  <option value="false">🚫 Inscrições fechadas</option>
-                </select>
-              </div>
-            </div>
-            <div style="background:rgba(255,208,96,0.06);border:1px solid rgba(255,208,96,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
-              <div style="font-weight:800;font-size:13px;color:var(--gold);margin-bottom:10px" id="ev-cfg-sub2-header">🥈 Evento 2</div>
-              <div class="field-group">
-                <label class="field-label">Vagas (Evento 2)</label>
-                <input type="number" id="ev-cfg-max-2" placeholder="ex: 40">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Pontos por presença (Evento 2)</label>
-                <input type="number" id="ev-cfg-points-2" placeholder="ex: 10">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Tipo de resultado (Evento 2)</label>
-                <select id="ev-cfg-result-type-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-                  <option value="">— Sem resultado (só presença)</option>
-                  <option value="tempo">⏱️ Tempo (For Time)</option>
-                  <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
-                </select>
-              </div>
-              <div class="field-group" style="margin-bottom:0">
-                <label class="field-label">Status (Evento 2)</label>
-                <select id="ev-cfg-active-2" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
-                  <option value="true">✅ Inscrições abertas</option>
-                  <option value="false">🚫 Inscrições fechadas</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          <div id="ev-dual-config-wrap" style="display:none"></div>
 
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
@@ -2254,6 +2249,7 @@ async function submitEventRegistration() {
   eventRegLoaded = false;
   await loadEventRegistrations();
   await renderEventPublicView();
+  try { renderRegistrationsList(); } catch (e) { console.error(e); }   // atualiza também a lista do admin
 
   const successDetail = subEvents
     ? `Você está inscrito(a) em: ${subEvents}`
@@ -2323,7 +2319,7 @@ async function renderEventAdminView() {
     imgPreviewWrap.style.display = 'none';
   }
 
-  if (!eventRegLoaded) await loadEventRegistrations();
+  await loadEventRegistrations();   // sempre busca de novo: evita lista de inscritos desatualizada
   renderRegistrationsList();
   renderNoShowList();
 
