@@ -958,6 +958,26 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
           <hr class="divider">
+          <div class="section-label">🏷️ Categorias da inscrição <span style="font-weight:400;color:var(--muted);font-size:11px">(texto de cada nível que aparece no formulário)</span></div>
+            <div class="field-group">
+              <label class="field-label">📝 Descrição de cada nível (aparece pequeno abaixo do nome do grupo)</label>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟢</span>
+                  <input type="text" id="level-desc-Iniciante" placeholder="ex: Iniciante · 1km · 40 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟡</span>
+                  <input type="text" id="level-desc-Intermediário" placeholder="ex: Intermediário · 1,6km · 50 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="font-size:16px;flex-shrink:0">🟠</span>
+                  <input type="text" id="level-desc-Avançado" placeholder="ex: Avançado · 2,2km · 60 push up x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
+                </div>
+              </div>
+              <button class="btn btn-blue" style="margin-top:10px" onclick="saveLevelDescriptions()">💾 Salvar Descrições dos Níveis</button>
+            </div>
+          <hr class="divider">
           <div class="section-label">📌 Regras do Evento <span style="font-weight:400;color:var(--muted);font-size:11px">(fixas — valem para todos os eventos, edite quando quiser)</span></div>
           <div class="field-group">
             <textarea id="ev-cfg-rules" rows="5" placeholder="ex: Chegar 15 min antes • Trazer garrafa d'água • Uso de tênis obrigatório" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;resize:vertical"></textarea>
@@ -985,24 +1005,6 @@ textarea { resize:vertical;min-height:72px; }
               </div>
             </div>
 
-            <div class="field-group">
-              <label class="field-label">📝 Descrição de cada nível (aparece pequeno abaixo do nome do grupo)</label>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;gap:8px;align-items:center">
-                  <span style="font-size:16px;flex-shrink:0">🟢</span>
-                  <input type="text" id="level-desc-Iniciante" placeholder="ex: Iniciante · 1km · 40 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <span style="font-size:16px;flex-shrink:0">🟡</span>
-                  <input type="text" id="level-desc-Intermediário" placeholder="ex: Intermediário · 1,6km · 50 squats x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <span style="font-size:16px;flex-shrink:0">🟠</span>
-                  <input type="text" id="level-desc-Avançado" placeholder="ex: Avançado · 2,2km · 60 push up x2" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;">
-                </div>
-              </div>
-              <button class="btn btn-blue" style="margin-top:10px" onclick="saveLevelDescriptions()">💾 Salvar Descrições dos Níveis</button>
-            </div>
 
             <div class="result-panel">
               <div class="field-group" style="margin-bottom:14px">
@@ -1097,8 +1099,8 @@ textarea { resize:vertical;min-height:72px; }
         <div class="adm-panel" id="tab-settings">
           <div class="section-label">💬 WhatsApp de Dúvidas (Evento)</div>
           <div class="field-group">
-            <label class="field-label">Número com DDD (só números)</label>
-            <input type="text" id="whatsapp-number" placeholder="ex: 21999998888">
+            <label class="field-label">Número com DDD ou link do WhatsApp</label>
+            <input type="text" id="whatsapp-number" placeholder="ex: 21999998888  ou  https://wa.me/5521999998888" autocapitalize="off" autocorrect="off" spellcheck="false">
           </div>
           <div class="field-group">
             <label class="field-label">Mensagem padrão (opcional)</label>
@@ -1227,14 +1229,28 @@ function linkify(text) {
 
 // ── WHATSAPP ──
 async function renderWhatsappButton() {
-  const number = String((await getSetting('whatsapp_number', '')) ?? '');
-  const msg = String((await getSetting('whatsapp_msg', '')) ?? '');
+  const raw = String((await getSetting('whatsapp_number', '')) ?? '').trim();
+  const msg = String((await getSetting('whatsapp_msg', '')) ?? '').trim();
   const btn = document.getElementById('whatsapp-btn');
   if (!btn) return;
-  if (!number) { btn.classList.remove('show'); btn.style.display='none'; return; }
-  const cleanNumber = number.replace(/\D/g,'');
-  const encodedMsg = encodeURIComponent(msg || 'Olá! Tenho uma dúvida sobre o evento.');
-  btn.href = `https://wa.me/${cleanNumber}?text=${encodedMsg}`;
+  if (!raw) { btn.classList.remove('show'); btn.style.display='none'; return; }
+
+  let href;
+  if (/^(https?:\/\/|wa\.me\/|chat\.whatsapp\.com\/|api\.whatsapp\.com\/|whats\.app\/)/i.test(raw)) {
+    // Link colado direto (conversa, grupo, comunidade, wa.me...)
+    href = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    // em link de conversa (wa.me / api.whatsapp), acrescenta a mensagem padrão se o link ainda não tiver uma
+    if (msg && /^https?:\/\/(wa\.me|api\.whatsapp\.com)/i.test(href) && !/[?&]text=/.test(href))
+      href += (href.includes('?') ? '&' : '?') + 'text=' + encodeURIComponent(msg);
+  } else {
+    // Número: só dígitos; se vier só DDD + número (10 ou 11 dígitos), coloca o 55 do Brasil
+    let digits = raw.replace(/\D/g, '');
+    if (digits.length === 10 || digits.length === 11) digits = '55' + digits;
+    href = `https://wa.me/${digits}?text=${encodeURIComponent(msg || 'Olá! Tenho uma dúvida sobre o evento.')}`;
+  }
+  btn.href = href;
+  btn.target = '_blank';
+  btn.rel = 'noopener';
   btn.classList.add('show');
   btn.style.display = 'flex';
 }
