@@ -1227,8 +1227,8 @@ function linkify(text) {
 
 // ── WHATSAPP ──
 async function renderWhatsappButton() {
-  const number = await getSetting('whatsapp_number', '');
-  const msg = await getSetting('whatsapp_msg', '');
+  const number = String((await getSetting('whatsapp_number', '')) ?? '');
+  const msg = String((await getSetting('whatsapp_msg', '')) ?? '');
   const btn = document.getElementById('whatsapp-btn');
   if (!btn) return;
   if (!number) { btn.classList.remove('show'); btn.style.display='none'; return; }
@@ -1961,9 +1961,9 @@ async function renderEventPublicView() {
     customQWrap.style.display = 'none';
   }
 
-  await renderWhatsappButton();
+  try { await renderWhatsappButton(); } catch (e) { console.error('WhatsApp:', e); }
 
-  const rules = await getEventRules();
+  const rules = String((await getEventRules()) ?? '');
   const rulesWrap = document.getElementById('event-rules-wrap');
   if (rules) {
     document.getElementById('event-rules-text').innerHTML = linkify(rules);
