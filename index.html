@@ -198,8 +198,16 @@ body::before {
 .capacity-fill { height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease; }
 .capacity-fill.full { background:linear-gradient(90deg,var(--red),#ff8f8f); }
 .capacity-full-msg { text-align:center;font-size:13px;font-weight:700;color:var(--red);margin-top:14px;padding:10px;background:rgba(255,95,109,0.1);border:1px solid rgba(255,95,109,0.3);border-radius:12px; }
+/* Botão grande de inscrição + destaque das opções */
+.ev-cta { display:none;width:100%;margin-top:18px;padding:18px 14px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0a00;font-family:'Outfit',sans-serif;font-weight:900;font-size:17px;letter-spacing:.5px;cursor:pointer;box-shadow:0 6px 22px rgba(232,255,0,0.28);animation:ctaPulse 2s ease-in-out infinite; }
+.ev-cta:active { transform:scale(.98); }
+.ev-cta-sub { display:block;font-weight:600;font-size:11px;opacity:.7;margin-top:3px;letter-spacing:0; }
+@keyframes ctaPulse { 0%,100%{box-shadow:0 6px 22px rgba(232,255,0,0.22)} 50%{box-shadow:0 6px 32px rgba(232,255,0,0.5)} }
+.ev-choose-title { font-size:13px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:10px;text-align:center; }
+@keyframes attnGlow { 0%,100%{box-shadow:0 0 0 rgba(232,255,0,0);transform:scale(1)} 50%{box-shadow:0 0 18px rgba(232,255,0,0.55);transform:scale(1.03)} }
+.member-toggle.attn button:not(:disabled) { animation:attnGlow .9s ease 2; }
 .member-toggle { display:flex;gap:8px;margin-bottom:16px; }
-.member-toggle button { flex:1;padding:12px;border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .25s; }
+.member-toggle button { flex:1;padding:18px 12px;min-height:64px;border:2px solid rgba(232,255,0,0.35);background:var(--s1);color:var(--text);border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .25s; }
 .member-toggle button.active { background:var(--accent);color:#0a0a00;border-color:var(--accent); }
 .member-toggle button:not(.active):hover { border-color:var(--muted);color:var(--text); }
 #event-fields-wrap { display:none; }
@@ -483,6 +491,7 @@ textarea { resize:vertical;min-height:72px; }
       <div class="event-meta" id="event-meta"></div>
       <div class="event-desc" id="event-desc"></div>
       <div id="event-dual-info-blocks" style="display:none;margin-top:14px;display:flex;flex-direction:column;gap:10px;"></div>
+      <button id="jump-to-form-btn" class="ev-cta" onclick="goToEventForm()" style="display:none">📝 QUERO ME INSCREVER<span class="ev-cta-sub">toque aqui e escolha como se inscrever</span></button>
       <div id="event-rules-wrap" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(232,255,0,0.2)">
         <div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px;margin-bottom:4px">📌 REGRAS DO EVENTO</div>
         <div id="event-rules-text" style="font-size:12px;color:var(--muted);line-height:1.6;white-space:pre-line"></div>
@@ -491,13 +500,13 @@ textarea { resize:vertical;min-height:72px; }
         <div class="capacity-label"><span id="capacity-text"></span></div>
         <div class="capacity-bar"><div class="capacity-fill" id="capacity-fill" style="width:0%"></div></div>
       </div>
-      <button id="jump-to-form-btn" onclick="document.getElementById('event-form-wrap').scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>document.getElementById('ev-name')?.focus(),400);" style="display:none;width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:var(--accent);color:#0a0a00;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">📝 Inscreva-se agora</button>
       <a id="whatsapp-btn" href="#" target="_blank" class="whatsapp-event-btn" style="display:none">
         <span style="font-size:18px">💬</span> Dúvidas? Fale no WhatsApp
       </a>
     </div>
 
     <div id="event-form-wrap">
+      <div class="ev-choose-title">👇 Como você quer se inscrever?</div>
       <div class="member-toggle">
         <button id="mt-not-member" onclick="setEventPersonType(false)">🙋 Visitante</button>
         <button id="mt-is-member" onclick="setEventPersonType(true)">
@@ -1893,6 +1902,19 @@ function toggleEventDetails() {
   toggleBtn.dataset.expanded = expanded ? '0' : '1';
 }
 
+// % de vagas livres: nunca mostra 0% enquanto ainda sobra vaga (ex: 199 de 200)
+function capPctAvail(count, max) {
+  if (!(max > 0)) return null;
+  if (count >= max) return 0;
+  return Math.max(1, Math.ceil(((max - count) / max) * 100));
+}
+// A pessoa está inscrita neste sub-evento? (evita contar errado quando um nome contém o outro)
+function evRegInSub(r, name, other) {
+  let t = r.sub_events || '';
+  if (other && other !== name && other.includes(name)) t = t.split(other).join('');
+  return t.includes(name);
+}
+
 async function renderEventPublicView() {
   const info = await getEventInfo();
   if (!eventRegLoaded) await loadEventRegistrations();
@@ -1960,8 +1982,8 @@ async function renderEventPublicView() {
   if (info.is_dual) {
     const sub1Name = info.sub1_name || 'Evento 1';
     const sub2Name = info.sub2_name || 'Evento 2';
-    const count1 = currentRegs.filter(r => (r.sub_events||'').includes(sub1Name)).length;
-    const count2 = currentRegs.filter(r => (r.sub_events||'').includes(sub2Name)).length;
+    const count1 = currentRegs.filter(r => evRegInSub(r, sub1Name, sub2Name)).length;
+    const count2 = currentRegs.filter(r => evRegInSub(r, sub2Name, sub1Name)).length;
     const max1 = info.max_1 || 0;
     const max2 = info.max_2 || 0;
     const active1 = info.active_1 !== false;
@@ -1979,10 +2001,10 @@ async function renderEventPublicView() {
     if (infoBlocksEl) {
       const pctText1 = closed1
         ? (!active1 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas')
-        : (max1 > 0 ? `🎟️ ${Math.max(0, 100 - Math.round((count1/max1)*100))}% das vagas disponíveis` : '✅ Inscrições abertas');
+        : (max1 > 0 ? `🎟️ ${capPctAvail(count1, max1)}% das vagas disponíveis` : '✅ Inscrições abertas');
       const pctText2 = closed2
         ? (!active2 ? '🚫 Inscrições fechadas' : '🎟️ Vagas esgotadas')
-        : (max2 > 0 ? `🎟️ ${Math.max(0, 100 - Math.round((count2/max2)*100))}% das vagas disponíveis` : '✅ Inscrições abertas');
+        : (max2 > 0 ? `🎟️ ${capPctAvail(count2, max2)}% das vagas disponíveis` : '✅ Inscrições abertas');
 
       infoBlocksEl.innerHTML = `
         <div class="dual-info-card dual-info-card-1">
@@ -2013,7 +2035,7 @@ async function renderEventPublicView() {
       sub1Check.disabled = true;
       sub1Check.checked = false;
     } else {
-      const pctAvail1 = max1 > 0 ? Math.max(0, 100 - Math.round((count1/max1)*100)) : null;
+      const pctAvail1 = max1 > 0 ? capPctAvail(count1, max1) : null;
       cap1El.textContent = max1 > 0 ? `🎟️ ${pctAvail1}% das vagas disponíveis` : '✅ Inscrições abertas';
       sub1CheckWrap.style.opacity = '1';
       sub1Check.disabled = false;
@@ -2025,7 +2047,7 @@ async function renderEventPublicView() {
       sub2Check.disabled = true;
       sub2Check.checked = false;
     } else {
-      const pctAvail2 = max2 > 0 ? Math.max(0, 100 - Math.round((count2/max2)*100)) : null;
+      const pctAvail2 = max2 > 0 ? capPctAvail(count2, max2) : null;
       cap2El.textContent = max2 > 0 ? `🎟️ ${pctAvail2}% das vagas disponíveis` : '✅ Inscrições abertas';
       sub2CheckWrap.style.opacity = '1';
       sub2Check.disabled = false;
@@ -2042,8 +2064,8 @@ async function renderEventPublicView() {
     const max = info.max || 0;
     if (max > 0) {
       capWrap.style.display = '';
-      const pctFilled = Math.min(100, Math.round((count/max)*100));
-      const pctAvailable = Math.max(0, 100 - pctFilled);
+      const pctFilled = Math.min(100, (count/max)*100);
+      const pctAvailable = capPctAvail(count, max);
       const fill = document.getElementById('capacity-fill');
       fill.style.width = pctFilled+'%';
       fill.classList.toggle('full', count >= max);
@@ -2094,6 +2116,14 @@ async function renderEventPublicView() {
   }
 }
 
+function goToEventForm() {
+  const wrap = document.getElementById('event-form-wrap');
+  if (!wrap) return;
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const t = wrap.querySelector('.member-toggle');
+  if (t) { t.classList.remove('attn'); void t.offsetWidth; t.classList.add('attn'); }
+}
+
 function setEventPersonType(isInternal) {
   // Proteção extra: mesmo que o botão "Visitante" seja clicado forçadamente
   // (ex: via inspecionar elemento), bloqueia se o admin desativou essa opção
@@ -2120,6 +2150,7 @@ function setEventPersonType(isInternal) {
     document.getElementById('ev-is-ct').checked = false;
   }
   toggleInternalFields();
+  setTimeout(() => document.getElementById('event-form-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
 }
 
 function toggleInternalFields() {
