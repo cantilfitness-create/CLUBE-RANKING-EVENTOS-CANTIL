@@ -325,6 +325,21 @@ body::before {
 .field-label { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;display:block; }
 input[type="password"],input[type="text"],input[type="number"],select,textarea { width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s; }
 input:focus,select:focus,textarea:focus { border-color:var(--accent); }
+
+/* ── Contraste: setinha dos selects, bordas dos campos e checkboxes ── */
+select {
+  -webkit-appearance:none; appearance:none; cursor:pointer;
+  padding-right:48px !important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23e8ff00' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important;
+  background-position:right 14px center !important;
+  background-size:22px 22px !important;
+  border-color:rgba(255,255,255,0.22);
+}
+select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(232,255,0,0.12); }
+option { background:#1c1c1c; color:#f4f4ef; }
+input[type="password"],input[type="text"],input[type="number"],textarea { border-color:rgba(255,255,255,0.18); }
+input[type="checkbox"],input[type="radio"] { accent-color:#e8ff00; }
 input::placeholder,textarea::placeholder { color:var(--muted); }
 textarea { resize:vertical;min-height:72px; }
 .btn { width:100%;padding:13px;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
