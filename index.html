@@ -124,6 +124,22 @@ body::before {
 .rank-item.ghost .rank-num { font-size:20px; opacity:.85; filter:none; }
 .rank-item.ghost .rank-bar-fill { background:#5a5a5a; }
 .ghost-divider { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:14px 24px 10px;border-top:1px solid var(--border);background:rgba(0,0,0,0.25);opacity:.85; }
+/* 🏅 Distintivos */
+.bd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.bd-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:14px 8px 12px;text-align:center;cursor:pointer}
+.bd-card:active{transform:scale(.98)}
+.bd-name{font-weight:800;font-size:13px;margin-top:6px}.bd-count{font-size:11px;color:var(--muted);margin-top:2px}
+.bd-mini{display:inline-flex;gap:2px;align-items:center;margin-left:6px;vertical-align:middle;font-size:10px;color:var(--muted)}
+.bd-opts{display:flex;flex-wrap:wrap;gap:8px}
+.bd-opt{padding:8px 12px;border:2px solid var(--border);background:var(--s2);color:var(--text);border-radius:10px;font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer}
+.bd-opt.on{border-color:var(--accent);color:var(--accent)}
+.bd-sw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
+.bd-sw.on{border-color:#fff}
+.bd-mem{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:14px}
+.bd-chip{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;margin:3px 4px 0 0}
+.bd-ov{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.bd-ov.open{display:flex}
+.bd-box{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:22px 18px;max-width:340px;width:100%;max-height:85vh;overflow:auto;text-align:center}
 .section-label { font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px; }
 .section-label::after { content:'';flex:1;height:1px;background:var(--border); }
 .filter-tabs { display:flex;gap:8px;margin-bottom:16px; }
@@ -485,6 +501,10 @@ textarea { resize:vertical;min-height:72px; }
 <!-- VIEW: DESAFIOS (público) -->
 <div class="view-section" id="view-desafios">
   <div class="video-wrap">
+    <div id="badges-wrap" style="display:none;margin-bottom:28px">
+      <div class="section-label">🏅 Distintivos Cantil</div>
+      <div class="bd-grid" id="badges-grid"></div>
+    </div>
     <div class="section-label">🎬 Desafios em Destaque</div>
     <div class="video-grid" id="desafios-grid"></div>
 
@@ -682,6 +702,7 @@ textarea { resize:vertical;min-height:72px; }
           <button class="adm-tab" onclick="admTab('historico')">📜 Histórico</button>
           <button class="adm-tab" onclick="admTab('members')">Membros</button>
           <button class="adm-tab" onclick="admTab('challenges')">🎬 Desafios</button>
+          <button class="adm-tab" onclick="admTab('distintivos')">🏅 Distintivos</button>
           <button class="adm-tab" onclick="admTab('evento')">🏁 Evento</button>
           <button class="adm-tab" onclick="admTab('arquivados')">📁 Encerrados</button>
           <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
@@ -806,6 +827,31 @@ textarea { resize:vertical;min-height:72px; }
         </div>
 
         <!-- EVENTO -->
+        <div class="adm-panel" id="tab-distintivos">
+          <div class="section-label">🏅 Criar / editar distintivo</div>
+          <div id="bd-preview" style="text-align:center;margin:6px 0 14px"></div>
+          <div class="field-group"><label class="field-label">Padrão</label><div class="bd-opts" id="bd-shapes"></div></div>
+          <div class="field-group"><label class="field-label">Cor geral</label>
+            <div class="bd-opts" id="bd-colors" style="align-items:center"></div>
+            <input type="color" id="bd-color" value="#e8ff00" oninput="bdPickColor(this.value)" style="width:100%;height:44px;margin-top:8px;padding:2px;border-radius:10px;background:var(--s2);border:1px solid var(--border)"></div>
+          <div class="field-group"><label class="field-label">Nome do distintivo</label><input type="text" id="bd-name" placeholder="ex: Batalha dos 100" oninput="bdPreview()"></div>
+          <div class="field-group"><label class="field-label">Ícone (emoji)</label><input type="text" id="bd-emoji" placeholder="ex: 🔥" oninput="bdPreview()"></div>
+          <div class="field-group"><label class="field-label">Texto principal</label><input type="text" id="bd-title" maxlength="18" placeholder="ex: FINISHER" oninput="bdPreview()"></div>
+          <div class="field-group"><label class="field-label">Texto de baixo</label><input type="text" id="bd-sub" maxlength="26" placeholder="ex: CANTIL 2026" oninput="bdPreview()"></div>
+          <div class="field-group"><label class="field-label">Descrição (aparece ao tocar)</label><textarea id="bd-desc" rows="2" placeholder="ex: Concluiu o treinão de feriado"></textarea></div>
+          <button class="btn btn-blue" onclick="bdSave()">💾 Salvar distintivo</button>
+          <button class="btn-sm-danger" style="margin-top:8px;width:100%;padding:12px" onclick="bdReset()">Limpar / novo</button>
+
+          <div class="section-label" style="margin-top:26px">📚 Meus distintivos</div>
+          <div id="bd-list"></div>
+
+          <div class="section-label" style="margin-top:26px">🎖️ Conceder a membros</div>
+          <div class="field-group"><label class="field-label">Distintivo</label><select id="bd-award-badge" onchange="BD_SEL.clear();bdRenderMembers()"></select></div>
+          <input type="text" id="bd-search" placeholder="🔍 Buscar membro..." oninput="bdRenderMembers()" style="margin-bottom:10px">
+          <div id="bd-members"></div>
+          <button class="btn btn-blue" id="bd-award-btn" style="margin-top:8px" onclick="bdAward()">🎖️ Conceder</button>
+        </div>
+
         <div class="adm-panel" id="tab-evento">
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
@@ -1532,7 +1578,7 @@ function renderRanking() {
         <div class="rank-num">${m.ghost?'👻':pos+'º'}</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name"><span class="rank-name-text">${m.name}</span> ${m.ghost?'':trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-name"><span class="rank-name-text">${m.name}</span>${m.ghost?'':bdMini(m.id)} ${m.ghost?'':trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
           <div class="rank-badge-small">${m.points} pts${m.ghost?` · ${ghostDays(m)} dias sem pontuar`:''}</div>
           ${challengeTag}
           ${lastSeen}
@@ -1665,7 +1711,146 @@ function renderVideoGrid(elId, videos, emptyMsg, mode) {
 }
 
 // Desafios: separa "Abertos" (destaque, card grande) de "Mini" (lista compacta)
+// ── DISTINTIVOS (guardados em app_settings: "badges" e "badge_awards") ──
+let BADGES = [], BADGE_AWARDS = {}, bdShape = 'shield', bdEditId = null, bdUid = 0;
+const BD_SEL = new Set();
+const BD_SHAPES = { shield:'Escudo', medal:'Medalha', star:'Estrela', hex:'Hexágono', diamond:'Losango', seal:'Selo' };
+const BD_COLORS = ['#e8ff00','#ffd060','#3de89a','#5b9dff','#ff5f6d','#b07cff','#ff9f43','#ff7ac8','#c8d6e5','#e8965a'];
+const BD_W = { shield:[130,120], medal:[130,120], hex:[130,120], seal:[130,120], star:[96,80], diamond:[110,84] };
+const BD_LAY = { shield:[92,140,164], diamond:[86,132,154], hex:[92,138,162], star:[98,142,166], seal:[92,138,162], medal:[78,120,142] };
+
+async function loadBadges() {
+  const b = await getSetting('badges', []), a = await getSetting('badge_awards', {});
+  BADGES = Array.isArray(b) ? b : [];
+  BADGE_AWARDS = (a && typeof a === 'object' && !Array.isArray(a)) ? a : {};
+}
+function bdRGB(h) { h = String(h||'#e8ff00').replace('#',''); if (h.length===3) h = h.split('').map(x=>x+x).join(''); return [0,2,4].map(i => parseInt(h.substr(i,2),16)||0); }
+function bdLum(h) { const [r,g,b] = bdRGB(h); return .299*r + .587*g + .114*b; }
+function bdShade(h, f) { const t = f<0?0:255, q = Math.abs(f); return '#' + bdRGB(h).map(v => Math.round(v+(t-v)*q).toString(16).padStart(2,'0')).join(''); }
+function bdPoly(cx, cy, R, r, n, rot) { const p=[]; for (let i=0;i<n*2;i++){ const a=rot+Math.PI*i/n, d=i%2?r:R; p.push((cx+d*Math.cos(a)).toFixed(1)+','+(cy+d*Math.sin(a)).toFixed(1)); } return p.join(' '); }
+function bdShapeEl(k, at) {
+  const T = -Math.PI/2;
+  if (k==='shield')  return `<path ${at} d="M100 8L184 34V108C184 160 144 196 100 214C56 196 16 160 16 108V34Z"/>`;
+  if (k==='diamond') return `<path ${at} d="M100 6L194 110L100 214L6 110Z"/>`;
+  if (k==='hex')     return `<polygon ${at} points="${bdPoly(100,110,102,102,3,T)}"/>`;
+  if (k==='star')    return `<polygon ${at} points="${bdPoly(100,114,108,58,5,T)}"/>`;
+  if (k==='seal')    return `<polygon ${at} points="${bdPoly(100,110,102,92,18,T)}"/>`;
+  return `<circle ${at} cx="100" cy="92" r="84"/>`;
+}
+function bdSVG(b, px) {
+  const id = 'bg' + (++bdUid), c = b.color || '#e8ff00', hi = bdShade(c,.35), lo = bdShade(c,-.35);
+  const tx = bdLum(c) > 150 ? '#1a1a14' : '#ffffff', k = BD_LAY[b.shape] ? b.shape : 'shield', [ey,ty,sy] = BD_LAY[k];
+  const title = String(b.title||'').toUpperCase().slice(0,18), sub = String(b.sub||'').toUpperCase().slice(0,26);
+  const [tw, sw] = BD_W[k], base = title.length<=8 ? 30 : title.length<=12 ? 24 : 19;
+  const ts = Math.max(11, Math.min(base, Math.floor(tw/((title.length||1)*.62)))), ss = Math.max(8, Math.min(12, Math.floor(sw/((sub.length||1)*.62))));
+  const esc = listaEsc;
+  const ribbon = k==='medal' ? `<path d="M62 150L46 214L80 198L98 160Z M138 150L154 214L120 198L102 160Z" fill="${lo}"/>` : '';
+  const cy = k==='medal' ? 92 : 110;
+  return `<svg viewBox="0 0 200 220" width="${px}" height="${Math.round(px*1.1)}" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>${ribbon}
+${bdShapeEl(k, `fill="url(#${id})" stroke="${lo}" stroke-width="3"`)}
+<g transform="translate(100 ${cy}) scale(.86) translate(-100 -${cy})">${bdShapeEl(k, `fill="none" stroke="${tx}" stroke-opacity=".4" stroke-width="3"`)}</g>
+<text x="100" y="${ey+16}" text-anchor="middle" font-size="${k==='star'?40:52}">${esc(b.emoji||'')}</text>
+<text x="100" y="${ty}" text-anchor="middle" fill="${tx}" font-family="'Bebas Neue','Outfit',sans-serif" font-weight="800" font-size="${ts}" letter-spacing="1">${esc(title)}</text>
+<text x="100" y="${sy}" text-anchor="middle" fill="${tx}" fill-opacity=".85" font-family="'Outfit',sans-serif" font-weight="700" font-size="${ss}">${esc(sub)}</text></svg>`;
+}
+function bdHolders(id) { return (BADGE_AWARDS[id]||[]).filter(a => MEMBERS.some(m => m.id===a.m)); }
+function bdMini(mid) {
+  const own = BADGES.filter(b => (BADGE_AWARDS[b.id]||[]).some(a => a.m===mid));
+  return own.length ? `<span class="bd-mini">${own.slice(0,4).map(b=>bdSVG(b,20)).join('')}${own.length>4?'+'+(own.length-4):''}</span>` : '';
+}
+function renderBadgesPublic() {
+  const wrap = document.getElementById('badges-wrap'); if (!wrap) return;
+  wrap.style.display = BADGES.length ? 'block' : 'none';
+  document.getElementById('badges-grid').innerHTML = BADGES.map(b => { const n = bdHolders(b.id).length;
+    return `<div class="bd-card" onclick="bdOpen('${b.id}')">${bdSVG(b,96)}<div class="bd-name">${listaEsc(b.name||b.title||'')}</div><div class="bd-count">${n?n+(n===1?' pessoa':' pessoas'):'ninguém ainda'}</div></div>`; }).join('');
+}
+function bdOpen(id) {
+  const b = BADGES.find(x => x.id===id); if (!b) return;
+  const hs = bdHolders(id).map(a => { const m = MEMBERS.find(x => x.id===a.m); return `<span class="bd-chip">${m.emoji||''} ${listaEsc(m.name)}</span>`; }).join('');
+  document.getElementById('bd-box').innerHTML = `${bdSVG(b,150)}<div style="font-weight:800;font-size:18px;margin-top:8px">${listaEsc(b.name||'')}</div>
+    ${b.desc?`<div style="font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-line">${listaEsc(b.desc)}</div>`:''}
+    <div class="section-label" style="margin-top:16px">Quem conquistou</div><div>${hs||'<span style="color:var(--muted);font-size:13px">Ninguém ainda.</span>'}</div>
+    <button class="btn-sm-danger" style="margin-top:16px;width:100%;padding:12px" onclick="document.getElementById('bd-ov').classList.remove('open')">Fechar</button>`;
+  document.getElementById('bd-ov').classList.add('open');
+}
+// — admin —
+function bdForm() { return { shape:bdShape, color:document.getElementById('bd-color').value, name:document.getElementById('bd-name').value.trim(), emoji:document.getElementById('bd-emoji').value.trim(), title:document.getElementById('bd-title').value.trim(), sub:document.getElementById('bd-sub').value.trim(), desc:document.getElementById('bd-desc').value.trim() }; }
+function bdPreview() { document.getElementById('bd-preview').innerHTML = bdSVG(bdForm(), 170); }
+function bdDrawOpts() {
+  document.getElementById('bd-shapes').innerHTML = Object.entries(BD_SHAPES).map(([k,v]) => `<button class="bd-opt${k===bdShape?' on':''}" onclick="bdPickShape('${k}')">${v}</button>`).join('');
+  const cur = document.getElementById('bd-color').value.toLowerCase();
+  document.getElementById('bd-colors').innerHTML = BD_COLORS.map(c => `<button class="bd-sw${c===cur?' on':''}" style="background:${c}" onclick="bdPickColor('${c}')"></button>`).join('');
+}
+function bdPickShape(k) { bdShape = k; bdDrawOpts(); bdPreview(); }
+function bdPickColor(c) { document.getElementById('bd-color').value = c; bdDrawOpts(); bdPreview(); }
+function bdReset() {
+  bdEditId = null; bdShape = 'shield';
+  ['bd-name','bd-emoji','bd-title','bd-sub','bd-desc'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('bd-color').value = '#e8ff00'; bdDrawOpts(); bdPreview();
+}
+function bdEdit(id) {
+  const b = BADGES.find(x => x.id===id); if (!b) return;
+  bdEditId = id; bdShape = b.shape || 'shield';
+  document.getElementById('bd-name').value = b.name||''; document.getElementById('bd-emoji').value = b.emoji||'';
+  document.getElementById('bd-title').value = b.title||''; document.getElementById('bd-sub').value = b.sub||'';
+  document.getElementById('bd-desc').value = b.desc||''; document.getElementById('bd-color').value = b.color || '#e8ff00';
+  bdDrawOpts(); bdPreview(); document.getElementById('bd-preview').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+async function bdPersist() {
+  const ok = await setSetting('badges', BADGES) && await setSetting('badge_awards', BADGE_AWARDS);
+  renderBadgesPublic(); renderRanking(); bdRenderList(); bdRenderAwardSelect();
+  return ok;
+}
+async function bdSave() {
+  const f = bdForm(); if (!f.name) return toast('⚠️ Dê um nome ao distintivo');
+  if (bdEditId) BADGES = BADGES.map(b => b.id===bdEditId ? { ...f, id:bdEditId } : b);
+  else BADGES.push({ ...f, id:'b' + Date.now().toString(36) });
+  if (await bdPersist()) { toast('✅ Distintivo salvo!'); bdReset(); }
+}
+async function bdDelete(id) {
+  if (!confirm('Excluir este distintivo e retirar de todos que o receberam?')) return;
+  BADGES = BADGES.filter(b => b.id!==id); delete BADGE_AWARDS[id]; await bdPersist(); toast('🗑️ Distintivo excluído');
+}
+async function bdRevoke(id, mid) {
+  BADGE_AWARDS[id] = (BADGE_AWARDS[id]||[]).filter(a => a.m!==mid); await bdPersist();
+}
+function bdRenderList() {
+  const el = document.getElementById('bd-list');
+  if (!BADGES.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhum distintivo criado ainda.</div>'; return; }
+  el.innerHTML = BADGES.map(b => { const hs = bdHolders(b.id);
+    return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:12px">${bdSVG(b,56)}
+        <div style="flex:1;min-width:0"><div style="font-weight:800">${listaEsc(b.name)}</div><div style="font-size:11px;color:var(--muted)">${hs.length} pessoa(s)</div></div>
+        <button class="btn-sm-danger" onclick="bdEdit('${b.id}')">editar</button><button class="btn-sm-danger" onclick="bdDelete('${b.id}')">🗑️</button></div>
+      <div>${hs.map(a => { const m = MEMBERS.find(x => x.id===a.m); return `<span class="bd-chip">${listaEsc(m.name)} <span style="cursor:pointer;color:var(--red)" onclick="bdRevoke('${b.id}',${m.id})">✕</span></span>`; }).join('')}</div></div>`; }).join('');
+}
+function bdRenderAwardSelect() {
+  const sel = document.getElementById('bd-award-badge'), cur = sel.value;
+  sel.innerHTML = BADGES.length ? BADGES.map(b => `<option value="${b.id}" ${b.id===cur?'selected':''}>${listaEsc(b.name)}</option>`).join('') : '<option value="">— crie um distintivo primeiro —</option>';
+  bdRenderMembers();
+}
+function bdToggle(id, on) { on ? BD_SEL.add(id) : BD_SEL.delete(id); bdRenderMembers(true); }
+function bdRenderMembers(keep) {
+  const bid = document.getElementById('bd-award-badge').value, q = listaNorm(document.getElementById('bd-search').value);
+  const held = new Set((BADGE_AWARDS[bid]||[]).map(a => a.m));
+  document.getElementById('bd-members').innerHTML = MEMBERS.slice().sort((a,b) => a.name.localeCompare(b.name,'pt-BR')).filter(m => !q || listaNorm(m.name).includes(q)).map(m =>
+    `<label class="bd-mem"><input type="checkbox" style="width:20px;height:20px" ${held.has(m.id)?'checked disabled':BD_SEL.has(m.id)?'checked':''} onchange="bdToggle(${m.id},this.checked)"> ${m.emoji||''} ${listaEsc(m.name)}${held.has(m.id)?' <span style="color:var(--green);font-size:11px">✓ já tem</span>':''}</label>`).join('');
+  const n = BD_SEL.size, btn = document.getElementById('bd-award-btn');
+  btn.textContent = `🎖️ Conceder a ${n} pessoa${n===1?'':'s'}`; btn.disabled = !n || !bid;
+}
+async function bdAward() {
+  const bid = document.getElementById('bd-award-btn') && document.getElementById('bd-award-badge').value;
+  if (!bid || !BD_SEL.size) return;
+  const d = new Date().toISOString().slice(0,10), list = BADGE_AWARDS[bid] || [];
+  BD_SEL.forEach(m => { if (!list.some(a => a.m===m)) list.push({ m, d }); });
+  BADGE_AWARDS[bid] = list; const n = BD_SEL.size; BD_SEL.clear();
+  if (await bdPersist()) toast(`🎖️ Distintivo concedido a ${n} pessoa${n===1?'':'s'}!`);
+}
+function bdInit() { bdDrawOpts(); bdPreview(); bdRenderList(); bdRenderAwardSelect(); }
+
 function renderDesafiosView() {
+  renderBadgesPublic();
   const abertos = CHALLENGE_VIDEOS.filter(v => v.is_open !== false);
   const minis = CHALLENGE_VIDEOS.filter(v => v.is_open === false);
   renderVideoGrid('desafios-grid', abertos, 'Nenhum desafio em destaque ainda.', 'open');
@@ -3758,7 +3943,7 @@ async function checkPass() {
 
 async function admTab(name) {
   document.querySelectorAll('.adm-tab').forEach((b,i)=>{
-    b.classList.toggle('active',['quick','pts','historico','members','challenges','evento','arquivados','subscribers','settings'][i]===name);
+    b.classList.toggle('active',['quick','pts','historico','members','challenges','distintivos','evento','arquivados','subscribers','settings'][i]===name);
   });
   document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -3768,6 +3953,7 @@ async function admTab(name) {
   if(name==='arquivados'){renderArchivedEventsAdminList();}
   if(name==='quick'){renderQuickTap();}
   if(name==='challenges'){loadChallengeVideos().then(renderChallengesAdminList);}
+  if(name==='distintivos'){loadBadges().then(bdInit);}
   if(name==='evento'){await renderEventAdminView();}
   if(name==='subscribers'){
     loadSubscriberVideos().then(renderSubscriberVideosAdminList);
@@ -4292,6 +4478,7 @@ async function start() {
   }
 
   await loadMembers();
+  try { await loadBadges(); } catch (e) { console.error('badges', e); }
   renderRanking();
   const params = new URLSearchParams(location.search);
   const urlTab = params.get('tab');
@@ -4432,5 +4619,6 @@ setInterval(async () => {
   </div>
 </div>
 
+<div class="bd-ov" id="bd-ov" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" id="bd-box"></div></div>
 </body>
 </html>
