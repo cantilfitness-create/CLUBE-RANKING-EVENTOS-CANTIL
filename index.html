@@ -124,6 +124,21 @@ body::before {
 .rank-item.ghost .rank-num { font-size:20px; opacity:.85; filter:none; }
 .rank-item.ghost .rank-bar-fill { background:#5a5a5a; }
 .ghost-divider { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:14px 24px 10px;border-top:1px solid var(--border);background:rgba(0,0,0,0.25);opacity:.85; }
+/* 🏁 Meta coletiva */
+.mt-wrap{max-width:520px;margin:0 auto;padding:22px 18px 70px}
+.mt-card{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:20px 18px;margin-bottom:16px}
+.mt-live{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:1px;padding:6px 12px;border-radius:20px;background:rgba(232,255,0,.1);color:var(--accent)}
+.mt-live i{width:8px;height:8px;border-radius:50%;background:currentColor;animation:mtPulse 1.2s infinite}
+@keyframes mtPulse{50%{opacity:.25}}
+.mt-bar{height:30px;background:#222;border-radius:16px;overflow:hidden;margin:14px 0 8px}
+.mt-fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:16px;transition:width .9s ease}
+.mt-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;text-align:center}
+.mt-stats b{display:block;font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px}
+.mt-stats span{font-size:11px;color:var(--muted)}
+.mt-row{padding:12px 0;border-top:1px solid var(--border)}
+.mt-row:first-child{border-top:0}
+.mt-mini{height:6px;background:#222;border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.mt-mini div{height:100%;background:var(--accent)}
 /* 🏅 Distintivos */
 .bd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .bd-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:14px 8px 12px;text-align:center;cursor:pointer}
@@ -672,6 +687,44 @@ textarea { resize:vertical;min-height:72px; }
 </div>
 
 <!-- Admin trigger: small gear icon, discreet -->
+<div id="meta-view" style="display:none;min-height:100vh;background:var(--bg);">
+  <div class="mt-wrap">
+    <div style="text-align:center;margin-bottom:18px">
+      <img id="meta-logo" alt="" style="display:none;max-height:70px;max-width:60%;margin:0 auto 10px">
+      <div id="meta-title" style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.05">Meta coletiva</div>
+    </div>
+    <div id="meta-groups" style="display:none"></div>
+    <div class="mt-card" id="meta-single">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="mt-live" id="meta-badge"><i></i>AO VIVO</span><span id="meta-upd" style="font-size:11px;color:var(--muted)"></span></div>
+      <div style="text-align:center;margin-top:16px"><span id="meta-total" style="font-family:'Bebas Neue',sans-serif;font-size:76px;line-height:1;color:var(--accent)">0</span><span id="meta-goal" style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--muted)"> / 38 km</span></div>
+      <div class="mt-bar"><div class="mt-fill" id="meta-fill"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span id="meta-pct">0%</span><span id="meta-left" style="color:var(--muted)"></span></div>
+      <div class="mt-stats"><div><b id="meta-n">0</b><span>pessoas</span></div><div><b id="meta-time" class="mt-tick">—</b><span id="meta-time-l">tempo</span></div><div><b id="meta-laps">0</b><span>registros</span></div></div>
+    </div>
+    <button class="btn btn-blue" id="meta-add-btn" onclick="mtOpenSheet()" style="font-size:17px;padding:18px">➕ Registrar meu km</button>
+    <button class="btn-sm-danger" id="meta-img-single" style="width:100%;padding:14px;margin:10px 0 18px" onclick="mtShowImage('')">🖼️ Baixar imagem para as redes</button>
+    <div class="mt-card"><div class="section-label" style="margin-top:0">🏃 Quanto cada um fez</div><div id="meta-report"></div></div>
+  </div>
+  <div class="bd-ov" id="meta-sheet" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+    <div style="font-weight:800;font-size:18px;margin-bottom:4px">➕ Registrar meu km</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Você pode registrar <b>quantas vezes quiser</b> — a cada volta ou parada. Seus km se somam.</div>
+    <div class="field-group"><label class="field-label">Seu nome</label><select id="mt-name" onchange="mtNameChange()"></select>
+      <input type="text" id="mt-name-free" placeholder="Digite seu nome completo" oninput="mtShowMine()" style="display:none;margin-top:8px">
+      <div id="mt-mine" style="display:none;margin-top:8px;font-size:13px;color:var(--accent);font-weight:700"></div></div>
+    <div class="field-group" id="mt-group-wrap" style="display:none"><label class="field-label">Seu grupo</label><select id="mt-group" onchange="mtShowMine()"></select></div>
+    <div class="field-group"><label class="field-label">Km percorridos agora</label><input type="text" id="mt-km" inputmode="decimal" placeholder="ex: 2,4">
+      <div id="mt-chips" class="bd-opts" style="margin-top:8px"></div></div>
+    <div class="field-group"><label class="field-label">Tempo (opcional)</label><input type="text" id="mt-sec" inputmode="numeric" placeholder="ex: 14:30 (minutos:segundos)"></div>
+    <button class="btn btn-blue" id="mt-send" onclick="mtSubmit()">✅ Somar na meta</button>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-sheet').classList.remove('open')">Cancelar</button>
+  </div></div>
+  <div class="bd-ov" id="meta-img-ov" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="padding:14px">
+    <img id="meta-img" alt="" style="width:100%;border-radius:12px"><div style="font-size:12px;color:var(--muted);margin:8px 0">Toque e segure a imagem para salvar, ou use os botões.</div>
+    <button class="btn btn-blue" onclick="mtDownload()">⬇️ Baixar</button>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtShare()">📤 Compartilhar</button>
+  </div></div>
+</div>
+
 <div class="admin-trigger" onclick="openAdminModal()" title="Admin">⚙</div>
 
 
@@ -703,6 +756,7 @@ textarea { resize:vertical;min-height:72px; }
           <button class="adm-tab" onclick="admTab('members')">Membros</button>
           <button class="adm-tab" onclick="admTab('challenges')">🎬 Desafios</button>
           <button class="adm-tab" onclick="admTab('distintivos')">🏅 Distintivos</button>
+          <button class="adm-tab" onclick="admTab('meta')">🏁 Meta</button>
           <button class="adm-tab" onclick="admTab('evento')">🏁 Evento</button>
           <button class="adm-tab" onclick="admTab('arquivados')">📁 Encerrados</button>
           <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
@@ -855,6 +909,30 @@ textarea { resize:vertical;min-height:72px; }
           <input type="text" id="bd-search" placeholder="🔍 Buscar membro..." oninput="bdRenderMembers()" style="margin-bottom:10px">
           <div id="bd-members"></div>
           <button class="btn btn-blue" id="bd-award-btn" style="margin-top:8px" onclick="bdAward()">🎖️ Conceder</button>
+        </div>
+
+        <div class="adm-panel" id="tab-meta">
+          <div class="section-label">🏁 Meta coletiva (link ao vivo)</div>
+          <div id="mt-sql-warn" style="display:none;background:rgba(255,95,109,.12);border:1px solid var(--red);border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px">⚠️ A tabela <b>relay_entries</b> ainda não existe no Supabase. Rode o arquivo <b>supabase-meta.sql</b> no SQL Editor.</div>
+          <div class="field-group"><label class="field-label">Título</label><input type="text" id="mta-title" placeholder="ex: Desafio 38 km — Aniversário do Coach"></div>
+          <div class="field-group"><label class="field-label">Meta única (km) — usada quando não há grupos</label><input type="text" id="mta-goal" inputmode="decimal" placeholder="38"></div>
+          <div class="field-group"><label class="field-label">Km de cada volta (opcional)</label><input type="text" id="mta-lap" inputmode="decimal" placeholder="ex: 0,4 — cria botões de 1, 2, 3 voltas"></div>
+          <div class="field-group"><label class="field-label">Lista de nomes para escolher</label><select id="mta-src"><option value="evento">Inscritos do evento atual</option><option value="membros">Membros do clube</option><option value="ambos">Inscritos + membros</option></select></div>
+          <div class="section-label" style="margin-top:18px">👥 Grupos (opcional)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Cada grupo tem nome, cor, meta e barra próprios (ex: Grupo Verde 38 km, Grupo Laranja 38 km). Sem grupos, vale a meta única.</div>
+          <div id="mta-groups"></div>
+          <button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="mtaAddGroup()">➕ Adicionar grupo (até 4)</button>
+          <div class="field-group"><label class="field-label">Sua logo (vai na imagem para as redes)</label><input type="file" id="mta-logo" accept="image/*" onchange="mtLogoPick(this)"><img id="mta-logo-prev" alt="" style="display:none;max-height:60px;margin-top:8px;background:#fff;border-radius:8px;padding:4px"></div>
+          <button class="btn btn-blue" onclick="mtSaveCfg()">💾 Salvar configuração</button>
+          <div class="section-label" style="margin-top:22px">🔗 Link público</div>
+          <input type="text" id="mta-link" readonly style="margin-bottom:8px">
+          <button class="btn btn-blue" onclick="mtCopyLink()">📋 Copiar link</button>
+          <div class="section-label" style="margin-top:22px">Controle</div>
+          <button class="btn btn-blue" onclick="mtStart()">🏁 Dar a largada (inicia o cronômetro)</button>
+          <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtToggleClosed()" id="mta-close">⏹ Encerrar registros</button>
+          <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtNewChallenge()">🔄 Novo desafio (zera tudo)</button>
+          <div class="section-label" style="margin-top:22px">Últimos registros</div>
+          <div id="mta-list"></div>
         </div>
 
         <div class="adm-panel" id="tab-evento">
@@ -1716,6 +1794,249 @@ function renderVideoGrid(elId, videos, emptyMsg, mode) {
 }
 
 // Desafios: separa "Abertos" (destaque, card grande) de "Mini" (lista compacta)
+// ── 🏁 META COLETIVA (tabela relay_entries + config em app_settings "relay_challenge"; grupos opcionais) ──
+let MT_CFG = null, MT_ENTRIES = [], MT_ERR = '', MT_LOGO = '', mtTick = null, mtPoll = null, mtBlob = null, MTA_GROUPS = [];
+const mtKm = v => Number((+v||0).toFixed(2)).toLocaleString('pt-BR');
+const mtDur = ms => { const t = Math.max(0, Math.floor(ms/1000)), h = Math.floor(t/3600), m = Math.floor(t%3600/60), sc = t%60; return h ? `${h}h${String(m).padStart(2,'0')}` : `${m}min${String(sc).padStart(2,'0')}s`; };
+const mtClock = sec => { const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), sc = sec%60; return (h ? h+':'+String(m).padStart(2,'0') : m) + ':' + String(sc).padStart(2,'0'); };
+const mtMulti = () => ((MT_CFG && MT_CFG.groups) || []).length > 0;
+function mtGroups() { const gs = (MT_CFG && MT_CFG.groups) || []; return gs.length ? gs : [{ id:'', name:'', color:'#e8ff00', goal:+(MT_CFG && MT_CFG.goal) || 1, names:[] }]; }
+const mtGroup = gid => mtGroups().find(x => x.id === (gid||'')) || mtGroups()[0];
+async function mtLoadCfg() { const c = await getSetting('relay_challenge', null); MT_CFG = (c && typeof c === 'object') ? c : null; }
+async function mtLoadEntries() {
+  if (!MT_CFG) { MT_ENTRIES = []; return true; }
+  let all = [], from = 0;
+  for (;;) {
+    const { data, error } = await sb.from('relay_entries').select('*').eq('challenge_id', MT_CFG.id).order('id', { ascending:true }).range(from, from+999);
+    if (error) { MT_ERR = error.message || 'erro'; return false; }
+    all = all.concat(data||[]); if (!data || data.length < 1000) break; from += 1000;
+  }
+  MT_ENTRIES = all; MT_ERR = ''; return true;
+}
+function mtAgg(gid) {
+  const g = {}, goal = mtGroup(gid).goal; let total = 0, cross = null;
+  MT_ENTRIES.filter(e => (e.grp||'') === (gid||'')).forEach(e => { const km = +e.km, k = listaNorm(e.name), p = g[k] || (g[k] = { name:e.name, km:0, sec:0, kmT:0, n:0 });
+    p.km += km; p.n++; if (e.seconds) { p.sec += e.seconds; p.kmT += km; }
+    total += km; if (cross === null && total >= goal) cross = e.created_at; });
+  return { list:Object.values(g).sort((a,b) => b.km - a.km), total, cross, n:MT_ENTRIES.filter(e => (e.grp||'') === (gid||'')).length };
+}
+function mtPace(p) { if (!p.kmT || !p.sec) return '—'; const s = p.sec/p.kmT; return `${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}/km`; }
+function mtTimes(gid) {
+  const a = mtAgg(gid), es = MT_ENTRIES.filter(e => (e.grp||'') === (gid||''));
+  const t0 = MT_CFG.startedAt ? new Date(MT_CFG.startedAt).getTime() : (MT_ENTRIES.length ? new Date(MT_ENTRIES[0].created_at).getTime() : null);
+  const done = a.cross ? new Date(a.cross).getTime() : null, last = es.length ? new Date(es[es.length-1].created_at).getTime() : null;
+  return { a, t0, done, end: done || (MT_CFG.closed ? last : null) };
+}
+function mtMine(name, gid) {
+  const k = listaNorm(name); if (!k) return null; let km = 0, n = 0;
+  MT_ENTRIES.forEach(e => { if (listaNorm(e.name) === k && (gid === undefined || (e.grp||'') === gid)) { km += +e.km; n++; } });
+  return n ? { km, n } : null;
+}
+function mtRows(a) {
+  return a.list.length ? a.list.map((p,i) => `<div class="mt-row">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${listaEsc(p.name)}</b><b style="color:var(--accent)">${mtKm(p.km)} km</b></div>
+    <div class="mt-mini"><div style="width:${Math.min(100, p.km/(a.total||1)*100).toFixed(1)}%"></div></div>
+    <div style="font-size:11px;color:var(--muted)">${(p.km/(a.total||1)*100).toFixed(1).replace('.',',')}% da meta do grupo · ${p.n} registro${p.n>1?'s':''} · tempo ${p.sec ? mtClock(p.sec) : '—'} · ritmo ${mtPace(p)}</div></div>`).join('')
+    : '<div style="color:var(--muted);font-size:13px">Ninguém registrou ainda. Seja o primeiro!</div>';
+}
+function mtGroupCard(g) {
+  const T = mtTimes(g.id), a = T.a, pct = Math.min(100, a.total/g.goal*100), c = g.color;
+  const badge = T.done ? '🎉 META SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : T.t0 ? '<i></i>AO VIVO' : '<i></i>AGUARDANDO';
+  return `<div class="mt-card" style="border-color:${c}66">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:${c}">${listaEsc(g.name)}</b><span class="mt-live" style="color:${c};background:${c}22">${badge}</span></div>
+    <div style="text-align:center;margin-top:8px"><span style="font-family:'Bebas Neue',sans-serif;font-size:62px;line-height:1;color:${c}">${mtKm(a.total)}</span><span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--muted)"> / ${mtKm(g.goal)} km</span></div>
+    <div class="mt-bar"><div class="mt-fill" style="width:${pct}%;background:${c}"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>${Math.floor(pct)}%</span><span style="color:var(--muted)">${T.done ? '+'+mtKm(a.total-g.goal)+' km além da meta' : 'faltam '+mtKm(g.goal-a.total)+' km'}</span></div>
+    <div class="mt-stats"><div><b>${a.list.length}</b><span>pessoas</span></div><div><b class="mt-tick" data-t0="${T.t0||''}" data-end="${T.end||''}">—</b><span>${T.done ? 'tempo p/ bater a meta' : 'tempo'}</span></div><div><b>${a.n}</b><span>registros</span></div></div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:12px" onclick="mtShowImage('${g.id}')">🖼️ Imagem para as redes — ${listaEsc(g.name)}</button></div>`;
+}
+function mtRender() {
+  const el = id => document.getElementById(id);
+  if (!MT_CFG) { el('meta-title').textContent = 'Nenhum desafio ativo'; el('meta-add-btn').style.display = 'none'; return; }
+  el('meta-title').textContent = MT_CFG.title || 'Meta coletiva';
+  if (MT_LOGO) { el('meta-logo').src = MT_LOGO; el('meta-logo').style.display = 'block'; }
+  const multi = mtMulti(); el('meta-single').style.display = multi ? 'none' : 'block'; el('meta-groups').style.display = multi ? 'block' : 'none';
+  el('meta-img-single').style.display = multi ? 'none' : 'block';
+  if (!multi) {
+    const g = mtGroups()[0], T = mtTimes(''), a = T.a, pct = Math.min(100, a.total/g.goal*100);
+    el('meta-total').textContent = mtKm(a.total); el('meta-goal').textContent = ' / ' + mtKm(g.goal) + ' km';
+    el('meta-fill').style.width = pct + '%'; el('meta-pct').textContent = Math.floor(pct) + '%';
+    el('meta-left').textContent = T.done ? `+${mtKm(a.total-g.goal)} km além da meta` : `faltam ${mtKm(g.goal-a.total)} km`;
+    el('meta-n').textContent = a.list.length; el('meta-laps').textContent = a.n;
+    el('meta-badge').innerHTML = T.done ? '🎉 META SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : T.t0 ? '<i></i>AO VIVO' : '<i></i>AGUARDANDO LARGADA';
+    el('meta-time-l').textContent = T.done ? 'tempo p/ bater a meta' : 'tempo';
+    el('meta-time').dataset.t0 = T.t0 || ''; el('meta-time').dataset.end = T.end || '';
+    el('meta-report').innerHTML = mtRows(a);
+  } else {
+    el('meta-groups').innerHTML = mtGroups().map(mtGroupCard).join('');
+    el('meta-report').innerHTML = mtGroups().map(g => `<div class="section-label" style="color:${g.color};margin-top:6px">${listaEsc(g.name)}</div>` + mtRows(mtAgg(g.id))).join('');
+  }
+  el('meta-add-btn').style.display = MT_CFG.closed ? 'none' : 'block';
+  const me0 = localStorage.getItem('mt_me'), mine0 = me0 && mtMine(me0);
+  el('meta-add-btn').textContent = mine0 ? `➕ Registrar mais km (você já fez ${mtKm(mine0.km)} km)` : '➕ Registrar meu km';
+  el('meta-upd').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  clearInterval(mtTick);
+  const tk = () => document.querySelectorAll('.mt-tick').forEach(n => { const t0 = +n.dataset.t0, end = +n.dataset.end; n.textContent = t0 ? mtDur((end || Date.now()) - t0) : '—'; });
+  tk(); mtTick = setInterval(tk, 1000);
+}
+async function mtRefresh() {
+  try { await mtLoadCfg(); await mtLoadEntries(); } catch (e) { console.error(e); }
+  mtRender();
+}
+async function mtStartPublic() {
+  document.getElementById('meta-view').style.display = 'block';
+  await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
+  try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
+  if (MT_CFG && /membros|ambos/.test(MT_CFG.source||'')) await loadMembers();
+  await mtLoadEntries(); mtRender();
+  mtPoll = setInterval(() => { if (!document.hidden) mtRefresh(); }, 6000);
+}
+function mtNames() {
+  const src = (MT_CFG && MT_CFG.source) || 'evento', m = new Map(), add = n => { n = String(n||'').trim(); if (n) m.set(listaNorm(n), n); };
+  if (src !== 'membros') { const id = EVENT_INFO && EVENT_INFO.id; (EVENT_REGISTRATIONS||[]).filter(r => !id || r.event_id === id).forEach(r => add(r.name)); }
+  if (src !== 'evento') MEMBERS.forEach(x => add(x.name));
+  return [...m.values()].sort((a,b) => a.localeCompare(b,'pt-BR'));
+}
+function mtAssigned(name) { const k = listaNorm(name); const g = k && ((MT_CFG && MT_CFG.groups) || []).find(g => (g.names||[]).some(n => listaNorm(n) === k)); return g ? g.id : null; }
+function mtOpenSheet() {
+  if (!MT_CFG || MT_CFG.closed) return;
+  const me = localStorage.getItem('mt_me') || '', names = mtNames();
+  document.getElementById('mt-name').innerHTML = '<option value="">— escolha seu nome —</option>' + names.map(n => `<option ${listaNorm(n)===listaNorm(me)?'selected':''}>${listaEsc(n)}</option>`).join('') + '<option value="__free">✏️ Meu nome não está na lista</option>';
+  const multi = mtMulti(), gs = document.getElementById('mt-group');
+  document.getElementById('mt-group-wrap').style.display = multi ? 'block' : 'none';
+  if (multi) { gs.innerHTML = '<option value="">— escolha seu grupo —</option>' + mtGroups().map(g => `<option value="${g.id}">${listaEsc(g.name)}</option>`).join(''); gs.value = localStorage.getItem('mt_grp') || ''; }
+  mtNameChange(); document.getElementById('mt-km').value = ''; document.getElementById('mt-sec').value = '';
+  const lap = parseFloat(String(MT_CFG.lapKm||'').replace(',', '.'));
+  document.getElementById('mt-chips').innerHTML = lap > 0 ? [1,2,3,4,5].map(n => `<button class="bd-opt" onclick="document.getElementById('mt-km').value='${String(+(n*lap).toFixed(2)).replace('.',',')}'">${n} volta${n>1?'s':''}</button>`).join('') : '';
+  document.getElementById('meta-sheet').classList.add('open');
+}
+function mtCurName() { const sel = document.getElementById('mt-name').value; return (sel === '__free' ? document.getElementById('mt-name-free').value : sel).trim(); }
+function mtNameChange() {
+  document.getElementById('mt-name-free').style.display = document.getElementById('mt-name').value === '__free' ? 'block' : 'none';
+  if (mtMulti()) { const as = mtAssigned(mtCurName()), gs = document.getElementById('mt-group'); if (as) gs.value = as; gs.disabled = !!as; }
+  mtShowMine();
+}
+function mtShowMine() {
+  const gs = document.getElementById('mt-group'), m = mtMine(mtCurName(), mtMulti() ? (gs.value || undefined) : ''), el = document.getElementById('mt-mine');
+  el.style.display = m ? 'block' : 'none'; el.textContent = '';
+  if (m) el.textContent = `Você já registrou ${mtKm(m.km)} km (${m.n} vez${m.n>1?'es':''}). Este novo registro vai somar.`;
+}
+async function mtSubmit() {
+  const name = mtCurName(), multi = mtMulti(), grp = multi ? document.getElementById('mt-group').value : '';
+  const km = parseFloat(document.getElementById('mt-km').value.replace(',', '.'));
+  const raw = document.getElementById('mt-sec').value.trim(); let sec = null;
+  if (raw) { const p = raw.split(':').map(Number); if (p.some(isNaN)) return toast('⚠️ Tempo inválido. Use mm:ss'); sec = p.length === 3 ? p[0]*3600+p[1]*60+p[2] : p.length === 2 ? p[0]*60+p[1] : p[0]*60; }
+  if (!name) return toast('⚠️ Escolha ou digite seu nome');
+  if (multi && !grp) return toast('⚠️ Escolha o seu grupo');
+  if (!(km > 0) || km > 60) return toast('⚠️ Informe os km (entre 0,1 e 60)');
+  if (km > 15 && !confirm(`Confirma ${mtKm(km)} km de uma vez?`)) return;
+  const btn = document.getElementById('mt-send'); btn.disabled = true;
+  const { error } = await sb.from('relay_entries').insert({ challenge_id:MT_CFG.id, name, km, seconds:sec && sec > 0 ? Math.round(sec) : null, ...(multi ? { grp } : {}) });
+  btn.disabled = false;
+  if (error) return toast('❌ Não foi possível registrar. Tente de novo.');
+  localStorage.setItem('mt_me', name); if (multi) localStorage.setItem('mt_grp', grp);
+  document.getElementById('meta-sheet').classList.remove('open');
+  await mtRefresh(); const mm = mtMine(name, multi ? grp : ''); toast(`✅ +${mtKm(km)} km somados!` + (mm ? ` Seu total: ${mtKm(mm.km)} km` : ''));
+}
+// — imagem para as redes (canvas 1080x1920) —
+function mtWrap(x, t, cx, y, maxW, lh) { const w = t.split(' '); let l = '', ys = y; w.forEach(wd => { const tt = l ? l+' '+wd : wd; if (x.measureText(tt).width > maxW && l) { x.fillText(l, cx, ys); l = wd; ys += lh; } else l = tt; }); x.fillText(l, cx, ys); return ys; }
+async function mtMakeImage(gid) {
+  try { await Promise.all([document.fonts.load('120px "Bebas Neue"'), document.fonts.load('800 40px "Outfit"')]); } catch (e) {}
+  const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const g = mtGroup(gid), col = g.color, T = mtTimes(g.id), a = T.a, goal = g.goal, t0 = T.t0, end = T.end, done = T.done, pct = Math.min(100, Math.round(a.total/goal*100));
+  const rgba = (h, al) => { const [r,gg,b] = bdRGB(h); return `rgba(${r},${gg},${b},${al})`; };
+  let gr = x.createLinearGradient(0,0,0,H); gr.addColorStop(0,'#0b0b0b'); gr.addColorStop(1,'#16160a'); x.fillStyle = gr; x.fillRect(0,0,W,H);
+  gr = x.createRadialGradient(760,620,40,760,620,760); gr.addColorStop(0,rgba(col,.22)); gr.addColorStop(1,rgba(col,0)); x.fillStyle = gr; x.fillRect(0,0,W,H);
+  x.textAlign = 'center'; x.fillStyle = col;
+  if (MT_LOGO) { const im = new Image(); await new Promise(r => { im.onload = r; im.onerror = r; im.src = MT_LOGO; }); if (im.width) { const k = Math.min(520/im.width, 190/im.height); x.drawImage(im, W/2-im.width*k/2, 90, im.width*k, im.height*k); } }
+  else { x.font = '84px "Bebas Neue",Impact,sans-serif'; x.fillText('CANTIL FITNESS', W/2, 190); }
+  const tt = String(MT_CFG.title||'').toUpperCase(); let ts = 92;
+  const lines = () => { x.font = `${ts}px "Bebas Neue",Impact,sans-serif`; let n = 1, l = ''; tt.split(' ').forEach(w => { const t = l ? l+' '+w : w; if (x.measureText(t).width > 920 && l) { n++; l = w; } else l = t; }); return n; };
+  while (lines() > 2 && ts > 52) ts -= 4;
+  x.fillStyle = '#fff'; x.font = `${ts}px "Bebas Neue",Impact,sans-serif`; let ye = mtWrap(x, tt, W/2, 380, 920, ts + 4);
+  if (g.name) { let gs = 84; do { x.font = `${gs}px "Bebas Neue",Impact,sans-serif`; gs -= 4; } while (x.measureText(g.name.toUpperCase()).width > 920 && gs > 40); x.fillStyle = col; ye += 92; x.fillText(g.name.toUpperCase(), W/2, ye); }
+  const label = done ? 'SUPERADO' : MT_CFG.closed ? 'ENCERRADO' : `EM ANDAMENTO  ${pct}%`;
+  x.font = '800 44px Outfit,Arial,sans-serif'; const pw = x.measureText(label).width + 80; x.fillStyle = col;
+  { const px = W/2-pw/2, py = ye+40, r = 42; x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+pw,py,px+pw,py+84,r); x.arcTo(px+pw,py+84,px,py+84,r); x.arcTo(px,py+84,px,py,r); x.arcTo(px,py,px+pw,py,r); x.closePath(); x.fill(); }
+  x.fillStyle = '#0a0a00'; x.fillText(label, W/2, ye+99);
+  const pts = [[110,1110],[250,990],[190,830],[400,730],[560,850],[760,690],[900,790],[970,970],[820,1080],[930,1170]].map(([px, py]) => [px, 760 + (py-690)*.85]);
+  x.strokeStyle = col; x.lineWidth = 16; x.lineCap = x.lineJoin = 'round'; x.shadowColor = rgba(col,.7); x.shadowBlur = 34; x.beginPath(); x.moveTo(...pts[0]);
+  for (let i = 1; i < pts.length-1; i++) x.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0]+pts[i+1][0])/2, (pts[i][1]+pts[i+1][1])/2);
+  x.lineTo(...pts[pts.length-1]); x.stroke(); x.shadowBlur = 0; x.fillStyle = '#fff'; [pts[0], pts[pts.length-1]].forEach(p => { x.beginPath(); x.arc(p[0], p[1], 20, 0, 7); x.fill(); });
+  const fit = (t, mk, maxW, sz) => { do { x.font = mk(sz); sz -= 4; } while (x.measureText(t).width > maxW && sz > 40); };
+  const big = mtKm(a.total), sub = 'QUILÔMETROS' + (done ? ` · META ${mtKm(goal)} KM` : '');
+  x.fillStyle = col; fit(big, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 330); x.fillText(big, W/2, 1470);
+  x.fillStyle = '#fff'; fit(sub, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 92); x.fillText(sub, W/2, 1585);
+  const dur = t0 ? mtDur((end || Date.now()) - t0) : '—';
+  [['PESSOAS', String(a.list.length), 300], ['TEMPO', dur, 780]].forEach(([l,v,cx]) => { x.fillStyle = '#9a9a92'; x.font = '800 34px Outfit,Arial,sans-serif'; x.fillText(l, cx, 1690); x.fillStyle = '#fff'; x.font = '120px "Bebas Neue",Impact,sans-serif'; x.fillText(v, cx, 1800); });
+  const me = localStorage.getItem('mt_me'), mine = me && mtMine(me, g.id);
+  x.fillStyle = '#9a9a92'; x.font = '700 34px Outfit,Arial,sans-serif'; x.fillText(mine ? `Eu fiz ${mtKm(mine.km)} km  ·  #DesafioCantil` : '#DesafioCantil  ·  cantilfitness', W/2, 1880);
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
+async function mtShowImage(gid) {
+  if (!MT_CFG) return; toast('⏳ Gerando imagem...'); mtBlob = await mtMakeImage(gid);
+  document.getElementById('meta-img').src = URL.createObjectURL(mtBlob); document.getElementById('meta-img-ov').classList.add('open');
+}
+function mtDownload() { const a = document.createElement('a'); a.href = URL.createObjectURL(mtBlob); a.download = 'desafio-cantil.png'; document.body.appendChild(a); a.click(); a.remove(); }
+async function mtShare() {
+  const f = new File([mtBlob], 'desafio-cantil.png', { type:'image/png' });
+  if (navigator.canShare && navigator.canShare({ files:[f] })) { try { await navigator.share({ files:[f], title:MT_CFG.title }); } catch (e) {} } else mtDownload();
+}
+// — admin —
+function mtaCollect() {
+  MTA_GROUPS = MTA_GROUPS.map((g, i) => { const v = id => (document.getElementById(id + i) || {}).value;
+    return v('mtg-n') === undefined ? g : { ...g, name:v('mtg-n').trim(), color:v('mtg-c'), goal:v('mtg-g'), names:v('mtg-p').split('\n').map(s => s.trim()).filter(Boolean) }; });
+  return MTA_GROUPS;
+}
+function mtaRenderGroups() {
+  document.getElementById('mta-groups').innerHTML = MTA_GROUPS.map((g, i) => `<div class="mt-card" style="padding:12px;margin-bottom:10px;border-color:${g.color}66">
+    <div style="display:flex;gap:8px;margin-bottom:8px"><input type="text" id="mtg-n${i}" value="${listaEsc(g.name)}" placeholder="Nome (ex: Grupo Verde)"><input type="color" id="mtg-c${i}" value="${g.color}" style="width:64px;padding:2px"><span style="color:var(--red);cursor:pointer;align-self:center;padding:0 6px" onclick="mtaDelGroup(${i})">✕</span></div>
+    <input type="text" id="mtg-g${i}" inputmode="decimal" value="${g.goal||''}" placeholder="Meta em km (ex: 38)" style="margin-bottom:8px">
+    <textarea id="mtg-p${i}" rows="3" placeholder="Pessoas deste grupo (opcional) — um nome por linha. Quem não estiver aqui escolhe o grupo ao registrar.">${listaEsc((g.names||[]).join('\n'))}</textarea></div>`).join('');
+}
+function mtaAddGroup() {
+  mtaCollect(); if (MTA_GROUPS.length >= 4) return toast('⚠️ Máximo de 4 grupos');
+  const n = MTA_GROUPS.length; MTA_GROUPS.push({ id:'g' + Date.now().toString(36) + n, name:'Grupo ' + ['Verde','Laranja','Azul','Roxo'][n], color:['#3de89a','#ff9f43','#5b9dff','#b07cff'][n], goal:document.getElementById('mta-goal').value || 38, names:[] });
+  mtaRenderGroups();
+}
+function mtaDelGroup(i) { mtaCollect(); MTA_GROUPS.splice(i, 1); mtaRenderGroups(); }
+function mtResolve(line) { const n = listaNorm(line); let best = null, bs = 0; mtNames().forEach(nm => { const sc = listaScore(n, listaNorm(nm)); if (sc > bs) { bs = sc; best = nm; } }); return bs >= .8 ? best : line.trim(); }
+async function mtAdminInit() {
+  await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
+  try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
+  const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
+  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento');
+  MTA_GROUPS = (c.groups || []).map(g => ({ ...g })); mtaRenderGroups();
+  const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
+  v('mta-link', location.origin + location.pathname + '?meta=1');
+  document.getElementById('mta-close').textContent = c.closed ? '▶ Reabrir registros' : '⏹ Encerrar registros';
+  const ok = await mtLoadEntries(); document.getElementById('mt-sql-warn').style.display = ok ? 'none' : 'block'; mtAdminList();
+}
+function mtAdminList() {
+  const gn = id => { const g = ((MT_CFG && MT_CFG.groups) || []).find(x => x.id === id); return g ? ` <span class="bd-chip" style="margin:0;border-color:${g.color};color:${g.color}">${listaEsc(g.name)}</span>` : ''; };
+  document.getElementById('mta-list').innerHTML = MT_ENTRIES.slice(-40).reverse().map(e => `<div class="bd-mem" style="justify-content:space-between"><span>${listaEsc(e.name)} · <b>${mtKm(e.km)} km</b>${e.seconds ? ' · '+mtClock(e.seconds) : ''}${gn(e.grp)}</span><span style="cursor:pointer;color:var(--red)" onclick="mtDel(${e.id})">✕</span></div>`).join('') || '<div style="color:var(--muted);font-size:13px">Sem registros.</div>';
+}
+async function mtDel(id) { if (!confirm('Remover este registro?')) return; await sb.from('relay_entries').delete().eq('id', id); await mtLoadEntries(); mtAdminList(); }
+async function mtSaveCfg(extra) {
+  const num = id => parseFloat(document.getElementById(id).value.replace(',', '.'));
+  const groups = mtaCollect().map(g => ({ id:g.id, name:g.name || 'Grupo', color:g.color, goal:parseFloat(String(g.goal).replace(',', '.')), names:(g.names||[]).map(mtResolve) }));
+  if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta (km) de cada grupo');
+  const goal = num('mta-goal') || (groups[0] && groups[0].goal);
+  if (!(goal > 0)) return toast('⚠️ Informe a meta em km');
+  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, ...(extra||{}) };
+  if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
+}
+const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString() });
+const mtToggleClosed = () => mtSaveCfg({ closed:!(MT_CFG && MT_CFG.closed) });
+const mtNewChallenge = () => confirm('Criar um novo desafio? Os registros atuais deixam de aparecer no link.') && (MT_CFG = null, mtSaveCfg());
+function mtCopyLink() { const i = document.getElementById('mta-link'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand('copy'))).then(() => toast('📋 Link copiado!')); }
+function mtLogoPick(inp) {
+  const f = inp.files[0]; if (!f) return; const fr = new FileReader();
+  fr.onload = () => { const im = new Image(); im.onload = async () => { const k = Math.min(1, 600/im.width), c = document.createElement('canvas'); c.width = im.width*k; c.height = im.height*k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    MT_LOGO = c.toDataURL('image/png'); await setSetting('relay_logo', MT_LOGO); const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = 'block'; toast('✅ Logo salva!'); }; im.src = fr.result; };
+  fr.readAsDataURL(f);
+}
+
 // ── DISTINTIVOS (guardados em app_settings: "badges" e "badge_awards") ──
 let BADGES = [], BADGE_AWARDS = {}, bdShape = 'shield', bdEditId = null, bdUid = 0;
 const BD_SEL = new Set();
@@ -4050,7 +4371,7 @@ async function checkPass() {
 
 async function admTab(name) {
   document.querySelectorAll('.adm-tab').forEach((b,i)=>{
-    b.classList.toggle('active',['quick','pts','historico','members','challenges','distintivos','evento','arquivados','subscribers','settings'][i]===name);
+    b.classList.toggle('active',['quick','pts','historico','members','challenges','distintivos','meta','evento','arquivados','subscribers','settings'][i]===name);
   });
   document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -4061,6 +4382,7 @@ async function admTab(name) {
   if(name==='quick'){renderQuickTap();}
   if(name==='challenges'){loadChallengeVideos().then(renderChallengesAdminList);}
   if(name==='distintivos'){loadBadges().then(bdInit);}
+  if(name==='meta'){mtAdminInit();}
   if(name==='evento'){await renderEventAdminView();}
   if(name==='subscribers'){
     loadSubscriberVideos().then(renderSubscriberVideosAdminList);
@@ -4581,6 +4903,13 @@ async function start() {
       if (el.id !== 'archived-results-view') el.style.display = 'none';
     });
     await renderArchivedResults(archiveId);
+    return;
+  }
+
+  if (params0.get('meta') !== null) {
+    // Link direto da meta coletiva: mostra só essa tela
+    document.querySelectorAll('body > *').forEach(el => { if (el.id !== 'meta-view' && el.tagName !== 'SCRIPT') el.style.display = 'none'; });
+    await mtStartPublic();
     return;
   }
 
