@@ -753,10 +753,12 @@ textarea { resize:vertical;min-height:72px; }
   </div></div>
   <div class="bd-ov" id="meta-img-ov" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="padding:14px;text-align:left">
     <div style="font-weight:800;font-size:17px">📲 Sua imagem para as redes</div>
-    <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">Fundo transparente: baixe e coloque por cima da sua foto ou vídeo. Escolha a cor da letra:</div>
+    <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">O quadriculado mostra que o fundo é transparente. Escolha a cor da letra:</div>
     <div style="display:flex;gap:8px;margin-bottom:10px"><button class="bd-opt on" id="mt-c-white" style="flex:1;padding:12px" onclick="mtImgColor('white')">⚪ Letra branca</button><button class="bd-opt" id="mt-c-black" style="flex:1;padding:12px" onclick="mtImgColor('black')">⚫ Letra preta</button></div>
     <div id="meta-img-wrap" style="background:#4a4a4a;border-radius:12px;padding:8px"><img id="meta-img" alt="" style="width:100%;display:block"></div>
-    <button class="btn btn-blue" style="margin-top:12px" onclick="mtDownload()">⬇️ Baixar PNG transparente</button>
+    <button class="btn btn-blue" style="margin-top:12px" onclick="mtCopy()">📋 Copiar para colar nos stories</button>
+    <div style="font-size:11px;color:var(--muted);margin:6px 0 2px">Nos stories: toque em <b>Aa</b>, segure e escolha <b>Colar</b> — vira figurinha com fundo transparente. Salvar em Fotos costuma preencher o fundo de preto; para guardar o PNG transparente use <b>Baixar</b> e salve em <b>Arquivos</b>.</div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtDownload()">⬇️ Baixar PNG transparente</button>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtShare()">📤 Compartilhar</button>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-img-ov').classList.remove('open')">Fechar</button>
   </div></div>
@@ -2115,14 +2117,30 @@ async function mtMakeImage(gid, fontColor) {
   x.font = '800 44px Outfit,Arial,sans-serif'; const pw = x.measureText(label).width + 80; x.fillStyle = col;
   { const px = W/2-pw/2, py = ye+40, r = 42; x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+pw,py,px+pw,py+84,r); x.arcTo(px+pw,py+84,px,py+84,r); x.arcTo(px,py+84,px,py,r); x.arcTo(px,py,px+pw,py,r); x.closePath(); x.fill(); }
   x.shadowBlur = 0; x.fillStyle = bdLum(col) > 140 ? '#0a0a0a' : '#ffffff'; x.fillText(label, W/2, ye+99); x.shadowColor = sh; x.shadowBlur = 14;
+  const rows = a.list.slice(), yTop = ye + 124 + 56;
+  if (rows.length) {
+    x.fillStyle = fg; x.globalAlpha = .8; x.font = '800 30px Outfit,Arial,sans-serif'; x.fillText('QUANTO CADA UM FEZ', W/2, yTop); x.globalAlpha = 1;
+    const cols = rows.length <= 9 ? 1 : rows.length <= 22 ? 2 : 3, fs = [0, 44, 34, 28][cols], rh = Math.round(fs*1.38), y0 = yTop + 62, cap = cols * Math.max(1, Math.floor((1280 - y0) / rh));
+    const show = rows.length > cap ? rows.slice(0, cap - 1) : rows, extra = rows.length - show.length, all = show.concat(extra ? [{ name:`+ ${extra} pessoas`, km:null }] : []);
+    const per = Math.ceil(all.length / cols), colW = (W - 140 - 40*(cols-1)) / cols;
+    all.forEach((p, i) => {
+      const cx0 = 70 + Math.floor(i / per) * (colW + 40), yy = y0 + (i % per) * rh, kmT = p.km === null ? '' : mtKm(p.km) + ' km';
+      x.font = `700 ${fs}px Outfit,Arial,sans-serif`; let nm = p.name; const mw = colW - (kmT ? x.measureText(kmT).width + 16 : 0);
+      if (x.measureText(nm).width > mw) { while (nm.length > 1 && x.measureText(nm + '…').width > mw) nm = nm.slice(0, -1); nm += '…'; }
+      x.textAlign = 'left'; x.fillStyle = fg; x.fillText(nm, cx0, yy);
+      if (kmT) { x.textAlign = 'right'; x.fillStyle = col; x.fillText(kmT, cx0 + colW, yy); }
+    });
+    x.textAlign = 'center';
+  } else {
   const pts = [[110,1110],[250,990],[190,830],[400,730],[560,850],[760,690],[900,790],[970,970],[820,1080],[930,1170]].map(([px, py]) => [px, 760 + (py-690)*.85]);
   x.strokeStyle = col; x.lineWidth = 16; x.lineCap = x.lineJoin = 'round'; x.shadowColor = rgba(col,.7); x.shadowBlur = 30; x.beginPath(); x.moveTo(...pts[0]);
   for (let i = 1; i < pts.length-1; i++) x.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0]+pts[i+1][0])/2, (pts[i][1]+pts[i+1][1])/2);
   x.lineTo(...pts[pts.length-1]); x.stroke(); x.shadowColor = sh; x.shadowBlur = 14; x.fillStyle = fg; [pts[0], pts[pts.length-1]].forEach(p => { x.beginPath(); x.arc(p[0], p[1], 20, 0, 7); x.fill(); });
+  }
   const fit = (t, mk, maxW, sz) => { do { x.font = mk(sz); sz -= 4; } while (x.measureText(t).width > maxW && sz > 40); };
   const big = mtKm(a.total), sub = 'QUILÔMETROS' + (done ? ` · META ${mtKm(goal)} KM` : '');
-  x.fillStyle = fg; fit(big, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 330); x.fillText(big, W/2, 1470);
-  fit(sub, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 92); x.fillText(sub, W/2, 1585);
+  x.fillStyle = fg; fit(big, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 280); x.fillText(big, W/2, 1500);
+  fit(sub, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 80); x.fillText(sub, W/2, 1598);
   const pers = gid === '' && !mtMulti() ? a.list.length : mtPersons(a, g), cols = [];
   if (pers > 0) cols.push(['PESSOAS', String(pers)]); if (done && t0) cols.push(['TEMPO', mtDur((end || Date.now()) - t0)]); if (!cols.length) cols.push(['REGISTROS', String(a.n)]);
   cols.forEach(([l, v], i) => { const cx = cols.length === 1 ? W/2 : (i ? 780 : 300); x.fillStyle = fg; x.globalAlpha = .75; x.font = '800 34px Outfit,Arial,sans-serif'; x.fillText(l, cx, 1690); x.globalAlpha = 1; x.font = '120px "Bebas Neue",Impact,sans-serif'; x.fillText(v, cx, 1800); });
@@ -2133,13 +2151,17 @@ async function mtMakeImage(gid, fontColor) {
 async function mtRenderImage() {
   mtBlob = await mtMakeImage(MT_IMG_GID, MT_IMG_COLOR);
   document.getElementById('meta-img').src = URL.createObjectURL(mtBlob);
-  document.getElementById('meta-img-wrap').style.background = MT_IMG_COLOR === 'black' ? '#e4e4e4' : '#4a4a4a';
+  { const dk = MT_IMG_COLOR !== 'black', w = document.getElementById('meta-img-wrap'), c1 = dk ? '#3a3a3a' : '#ffffff', c2 = dk ? '#4f4f4f' : '#d9d9d9'; w.style.backgroundColor = c1; w.style.backgroundImage = `linear-gradient(45deg,${c2} 25%,transparent 25%,transparent 75%,${c2} 75%),linear-gradient(45deg,${c2} 25%,transparent 25%,transparent 75%,${c2} 75%)`; w.style.backgroundSize = '20px 20px'; w.style.backgroundPosition = '0 0,10px 10px'; }
   document.getElementById('mt-c-white').classList.toggle('on', MT_IMG_COLOR === 'white'); document.getElementById('mt-c-black').classList.toggle('on', MT_IMG_COLOR === 'black');
   document.getElementById('meta-img-ov').classList.add('open');
 }
 async function mtShowImage(gid) { if (!MT_CFG) return; MT_IMG_GID = gid || ''; toast('⏳ Gerando imagem...'); await mtRenderImage(); }
 const mtImgColor = c => { MT_IMG_COLOR = c; return mtRenderImage(); };
 const mtFile = () => 'desafio-cantil-' + (mtGroup(MT_IMG_GID).name || 'meta').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + MT_IMG_COLOR + '.png';
+async function mtCopy() {
+  try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': mtBlob })]); toast('📋 Imagem copiada! Nos stories: toque em Aa, segure e cole como figurinha'); }
+  catch (e) { toast('⚠️ Este navegador não permite copiar. Use Baixar PNG.'); }
+}
 function mtDownload() { const a = document.createElement('a'); a.href = URL.createObjectURL(mtBlob); a.download = mtFile(); document.body.appendChild(a); a.click(); a.remove(); }
 async function mtShare() {
   const f = new File([mtBlob], mtFile(), { type:'image/png' });
