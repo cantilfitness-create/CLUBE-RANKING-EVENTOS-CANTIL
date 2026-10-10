@@ -142,6 +142,11 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .mt-tiny{padding:7px 14px;border:1px solid var(--border);background:var(--s2);color:var(--muted);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-tiny.warn{color:var(--red);border-color:rgba(255,95,109,.4)}
 #meta-staff .btn:disabled{opacity:.4;filter:grayscale(.5)}
+.mt-names{margin-top:14px}
+.mt-names-t{font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800;margin-bottom:8px}
+.mt-chip{display:inline-block;margin:0 6px 6px 0;padding:5px 10px;border:1px solid;border-radius:14px;font-size:12px;font-weight:600;background:var(--s2)}
+.mt-chip i{font-style:normal;font-weight:800}
+.mt-foot{margin-top:14px;text-align:center;font-size:9.5px;letter-spacing:1.2px;color:var(--muted);opacity:.75}
 .mt-lock{padding:8px 14px;border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-gchips{display:flex;flex-wrap:wrap;gap:10px}
 .mt-gchip{flex:1;min-width:110px;padding:16px 10px;border:3px solid;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
@@ -724,6 +729,8 @@ textarea { resize:vertical;min-height:72px; }
       <div id="meta-pct" style="font-size:13px;font-weight:700">0%</div>
       <div id="meta-leftbox"></div>
       <div class="mt-stats" id="meta-stats"></div>
+      <div id="meta-names"></div>
+      <div class="mt-foot">TIRE PRINT E POSTE NAS REDES SOCIAIS, MARQUE A CANTIL</div>
     </div>
     <div id="meta-img-single" style="margin:0 0 18px"></div>
     <div class="mt-card"><div class="section-label" style="margin-top:0">🏃 Quanto cada um fez</div><div id="meta-report"></div></div>
@@ -1909,9 +1916,18 @@ function mtRows(a, g) {
 const mtLeft = (done, rem, over, c) => `<div class="mt-left" style="border-color:${c};background:${c}1c">` + (done
   ? `<span>🎉 META SUPERADA</span><b style="color:${c}">+${mtKm(over)}<small> km</small></b><span>além da meta</span>`
   : `<span>FALTAM</span><b style="color:${c}">${mtKm(rem)}<small> km</small></b><span>para bater a meta</span>`) + '</div>';
-const mtShareBtn = (gid, c) => `<button class="mt-share" style="background:linear-gradient(135deg,${c},${bdShade(c,.3)});color:${bdLum(c) > 140 ? '#0a0a0a' : '#fff'}" onclick="mtShowImage('${gid}')"><span>📲 BAIXAR IMAGEM PARA SEUS STORIES</span><small>Fundo transparente · letra branca ou preta · poste nas suas redes</small></button>`;
+const MT_IMG_ON = false;   // download de imagem SUSPENSO: o pessoal tira print do quadro. Troque para true para reativar.
+const MT_FOOT = 'TIRE PRINT E POSTE NAS REDES SOCIAIS, MARQUE A CANTIL';
+const mtShareBtn = (gid, c) => !MT_IMG_ON ? '' : `<button class="mt-share" style="background:linear-gradient(135deg,${c},${bdShade(c,.3)});color:${bdLum(c) > 140 ? '#0a0a0a' : '#fff'}" onclick="mtShowImage('${gid}')"><span>📲 BAIXAR IMAGEM PARA SEUS STORIES</span><small>Fundo transparente · letra branca ou preta · poste nas suas redes</small></button>`;
 const mtStatCells = (persons, regs) => (persons > 0 ? `<div><b>${persons}</b><span>pessoas</span></div>` : '') + `<div><b>${regs}</b><span>registros</span></div>`;
 const mtPersons = (a, g) => a.list.filter(p => listaNorm(p.name) !== listaNorm(g.name || '§')).length;
+function mtNamesBox(g, a) {   // quem está na equipe: atletas cadastrados (com nº) + quem já registrou km
+  const c = g.color || '#e8ff00', seen = new Set(), items = [];
+  (g.roster || []).forEach(r => { seen.add(listaNorm(r.name)); items.push({ n:r.n, name:r.name }); });
+  a.list.forEach(p => { const k = listaNorm(p.name); if (!seen.has(k) && k !== listaNorm(g.name || '§')) { seen.add(k); items.push({ n:null, name:p.name }); } });
+  const chips = items.map(i => `<span class="mt-chip" style="border-color:${c}66">${i.n != null ? `<i style="color:${c}">#${i.n}</i> ` : ''}${listaEsc(i.name)}</span>`).join('');
+  return `<div class="mt-names"><div class="mt-names-t">QUEM ESTÁ NA EQUIPE${items.length ? ' · ' + items.length : ''}</div>${chips || '<div style="font-size:12px;color:var(--muted)">Nenhum atleta cadastrado ainda.</div>'}</div>`;
+}
 function mtGroupCard(g) {
   const T = mtTimes(g.id), a = T.a, pct = Math.min(100, a.total/g.goal*100), c = g.color, pers = mtPersons(a, g);
   const badge = T.done ? '🎉 SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
@@ -1922,7 +1938,8 @@ function mtGroupCard(g) {
     <div style="font-size:13px;font-weight:700">${Math.floor(pct)}% da meta</div>
     ${mtLeft(T.done, g.goal-a.total, a.total-g.goal, c)}
     <div class="mt-stats" style="grid-template-columns:repeat(${pers > 0 ? 2 : 1},1fr)">${mtStatCells(pers, a.n)}</div>
-    ${mtShareBtn(g.id, c)}</div>`;
+    ${mtNamesBox(g, a)}
+    <div class="mt-foot">${MT_FOOT}</div></div>`;
 }
 const mtUnlocked = () => { if (!MT_CFG || !MT_CFG.staffPw) return true; try { const u = JSON.parse(localStorage.getItem('mt_unlock') || 'null'); return !!u && u.h === MT_CFG.staffPw && u.c === MT_CFG.id && u.e > Date.now(); } catch (e) { return false; } };
 // — controle da prova (largada / fim) e tempo de prova = fim − largada —
@@ -2033,7 +2050,7 @@ function mtRender() {
     el('meta-leftbox').innerHTML = mtLeft(T.done, g.goal-a.total, a.total-g.goal, c);
     el('meta-stats').style.gridTemplateColumns = `repeat(${a.list.length > 0 ? 2 : 1},1fr)`; el('meta-stats').innerHTML = mtStatCells(a.list.length, a.n);
     el('meta-badge').innerHTML = T.done ? '🎉 META SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
-    el('meta-report').innerHTML = mtRows(a, g); el('meta-img-single').innerHTML = mtShareBtn('', c);
+    el('meta-report').innerHTML = mtRows(a, g); el('meta-img-single').innerHTML = mtShareBtn('', c); el('meta-names').innerHTML = mtNamesBox(g, a);
   } else {
     el('meta-groups').innerHTML = mtGroups().map(mtGroupCard).join('');
     el('meta-report').innerHTML = mtGroups().map(g => `<div class="section-label" style="color:${g.color};margin-top:6px">${listaEsc(g.name)}</div>` + mtRows(mtAgg(g.id), g)).join('');
