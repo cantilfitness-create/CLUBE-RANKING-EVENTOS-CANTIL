@@ -135,6 +135,7 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .mt-share{display:block;width:100%;margin-top:14px;padding:16px 12px;border:none;border-radius:16px;font-family:'Outfit',sans-serif;cursor:pointer;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.35)}
 .mt-share span{display:block;font-weight:900;font-size:15px;letter-spacing:.5px}
 .mt-share small{display:block;font-weight:600;font-size:11px;opacity:.75;margin-top:3px}
+.mt-lock{padding:8px 14px;border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-gchips{display:flex;flex-wrap:wrap;gap:10px}
 .mt-gchip{flex:1;min-width:110px;padding:16px 10px;border:3px solid;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
 .mt-wrap{max-width:520px;margin:0 auto;padding:22px 18px 70px}
@@ -701,10 +702,13 @@ textarea { resize:vertical;min-height:72px; }
 <!-- Admin trigger: small gear icon, discreet -->
 <div id="meta-view" style="display:none;min-height:100vh;background:var(--bg);">
   <div class="mt-wrap">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="meta-lock-btn" class="mt-lock" onclick="mtLockClick()" style="display:none">🔒 Acesso da equipe</button></div>
     <div style="text-align:center;margin-bottom:18px">
       <img id="meta-logo" alt="" style="display:none;max-height:70px;max-width:60%;margin:0 auto 10px">
       <div id="meta-title" style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.05">Meta coletiva</div>
     </div>
+    <div id="meta-pub" style="display:none"></div>
+    <div class="mt-card" id="meta-staff" style="display:none"></div>
     <div id="meta-groups" style="display:none"></div>
     <div class="mt-card" id="meta-single">
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="mt-live" id="meta-badge"><i></i>AO VIVO</span><span id="meta-upd" style="font-size:11px;color:var(--muted)"></span></div>
@@ -714,10 +718,19 @@ textarea { resize:vertical;min-height:72px; }
       <div id="meta-leftbox"></div>
       <div class="mt-stats" id="meta-stats"></div>
     </div>
-    <button class="btn btn-blue" id="meta-add-btn" onclick="mtOpenSheet()" style="font-size:17px;padding:18px">➕ Registrar meu km</button>
     <div id="meta-img-single" style="margin:0 0 18px"></div>
     <div class="mt-card"><div class="section-label" style="margin-top:0">🏃 Quanto cada um fez</div><div id="meta-report"></div></div>
   </div>
+  <div class="bd-ov" id="meta-cad" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+    <div style="font-weight:800;font-size:18px;margin-bottom:4px">🙋 Cadastrar atleta</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Nome, cor da equipe e número da pulseira. O atleta já entra na lista da equipe.</div>
+    <div class="field-group"><label class="field-label">Nome</label><select id="cad-name" onchange="cadNameChange()"></select><input type="text" id="cad-free" placeholder="Digite o nome completo" style="display:none;margin-top:8px"></div>
+    <div class="field-group"><label class="field-label">Cor da equipe</label><div id="cad-chips" class="mt-gchips"></div></div>
+    <div class="field-group"><label class="field-label">Número da pulseira</label><input type="text" id="cad-num" inputmode="numeric" placeholder="ex: 12" oninput="cadCheck()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="cad-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
+    <button class="btn btn-blue" onclick="cadSave()">✅ Cadastrar atleta</button>
+    <div id="cad-last" style="margin-top:10px;font-size:13px;color:var(--green);font-weight:700;text-align:center"></div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-cad').classList.remove('open')">Fechar</button>
+  </div></div>
   <div class="bd-ov" id="meta-pw-ov" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
     <div style="font-weight:800;font-size:18px;margin-bottom:4px">🔒 Área de registro</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Digite a senha de quem registra os km.</div>
@@ -960,7 +973,7 @@ textarea { resize:vertical;min-height:72px; }
           <div class="field-group"><label class="field-label">🔒 Senha de quem registra (libera só o registro, não o painel admin)</label>
             <input type="text" id="mta-pw" placeholder="digite para definir ou trocar" autocomplete="off" autocapitalize="off"><div id="mta-pw-state" style="font-size:12px;margin-top:6px"></div>
             <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="mtClearPw()">Remover senha</button></div>
-          <div class="section-label" style="margin-top:18px">👥 Equipes / grupos</div>
+                    <div class="section-label" style="margin-top:18px">👥 Equipes / grupos</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Cada equipe tem nome, cor, meta e barra próprios. Para equipe <b>sem números</b>, deixe a lista de atletas vazia: quem registra escolhe só a cor da equipe e informa os km. Com atletas numerados, digite o nº da pulseira. Durante o evento, quem registra também pode cadastrar e editar atletas na própria tela de registro. Sem equipes, vale a meta única.</div>
           <div id="mta-groups"></div>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="mtaAddGroup()">➕ Adicionar equipe (até 8)</button>
@@ -1903,9 +1916,94 @@ function mtGroupCard(g) {
     ${mtShareBtn(g.id, c)}</div>`;
 }
 const mtUnlocked = () => { if (!MT_CFG || !MT_CFG.staffPw) return true; try { const u = JSON.parse(localStorage.getItem('mt_unlock') || 'null'); return !!u && u.h === MT_CFG.staffPw && u.c === MT_CFG.id && u.e > Date.now(); } catch (e) { return false; } };
+// — controle da prova (largada / fim) e tempo de prova = fim − largada —
+function mtRaceMs() {
+  if (!MT_CFG || !MT_CFG.startedAt) return null;
+  const t0 = new Date(MT_CFG.startedAt).getTime(), last = MT_ENTRIES.length ? new Date(MT_ENTRIES[MT_ENTRIES.length-1].created_at).getTime() : Date.now();
+  const end = MT_CFG.endedAt ? new Date(MT_CFG.endedAt).getTime() : MT_CFG.closed ? last : Date.now();
+  return Math.max(0, end - t0);
+}
+async function mtCfgPatch(patch) {   // relê a configuração antes de gravar
+  if (!mtUnlocked() || !MT_CFG.staffPw) { toast('🔒 Entre com a senha da equipe'); return false; }
+  await mtLoadCfg(); if (!MT_CFG) return false;
+  MT_CFG = { ...MT_CFG, ...patch }; return await setSetting('relay_challenge', MT_CFG);
+}
+async function mtRaceStart() { if (!confirm('Dar a largada agora? O cronômetro da prova começa a contar a partir deste momento.')) return; if (await mtCfgPatch({ startedAt:new Date().toISOString(), endedAt:null, closed:false })) { toast('🏁 Largada dada!'); mtRefresh(); } }
+async function mtRaceEnd() { if (!confirm('Encerrar a prova agora? Os registros fecham e o tempo final fica gravado.')) return; if (await mtCfgPatch({ closed:true, endedAt:new Date().toISOString() })) { toast('⏹ Prova encerrada'); mtRefresh(); } }
+async function mtRaceReopen() { if (await mtCfgPatch({ closed:false, endedAt:null })) { toast('▶ Prova reaberta'); mtRefresh(); } }
+function mtLogout() { localStorage.removeItem('mt_unlock'); mtRender(); }
+function mtLockClick() { document.getElementById('mt-pw').value = ''; document.getElementById('meta-pw-ov').classList.add('open'); setTimeout(() => document.getElementById('mt-pw').focus(), 100); }
+function mtRenderStaff() {
+  const el = document.getElementById('meta-staff'), pub = document.getElementById('meta-pub'), lockBtn = document.getElementById('meta-lock-btn');
+  const hasPw = !!(MT_CFG && MT_CFG.staffPw), un = mtUnlocked(), multi = mtMulti();
+  lockBtn.style.display = hasPw && !un ? 'inline-block' : 'none';
+  const showPub = !!MT_CFG && multi;   // cadastro de atleta (nome, cor e nº) é livre: não pede senha
+  pub.style.display = showPub ? 'block' : 'none';
+  pub.innerHTML = showPub ? '<button class="btn btn-blue" style="margin-bottom:16px" onclick="cadOpen()">🙋 Sou atleta: cadastrar minha pulseira</button>' : '';
+  if (!MT_CFG || !un) { el.style.display = 'none'; return; }
+  const c = MT_CFG, ms = mtRaceMs(), hm = t => new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  const running = !!c.startedAt && !c.closed;
+  const status = `Largada: <b>${c.startedAt ? hm(c.startedAt) : '—'}</b> · Fim: <b>${c.endedAt ? hm(c.endedAt) : '—'}</b>` + (ms !== null ? ` · Duração: <b>${mtDur(ms)}</b>${running ? ' (em andamento)' : ''}` : '');
+  const ctrl = !hasPw ? '<div style="font-size:12px;color:var(--gold)">⚠️ Defina uma senha no admin (🏁 Meta) para liberar a largada e o fim da prova.</div>'
+    : !c.startedAt ? '<button class="btn btn-blue" onclick="mtRaceStart()">🏁 DAR A LARGADA</button>'
+    : running ? '<button class="btn-sm-danger" style="width:100%;padding:14px" onclick="mtRaceEnd()">⏹ ENCERRAR PROVA</button>'
+    : '<button class="btn-sm-danger" style="width:100%;padding:14px" onclick="mtRaceReopen()">▶ Reabrir prova</button><button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtRaceStart()">🏁 Nova largada (zera o tempo)</button>';
+  el.style.display = 'block';
+  el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:var(--green)">✅ Acesso liberado</b>${hasPw ? '<button class="btn-sm-danger" style="padding:6px 12px" onclick="mtLogout()">Sair</button>' : ''}</div>
+    <button class="btn btn-blue" ${c.closed ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${c.closed ? '🔒 Prova encerrada' : '➕ Registrar km'}</button>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800">CONTROLE DA PROVA</div><div style="font-size:13px;margin:6px 0 10px">${status}</div>${ctrl}</div>`;
+}
+// — cadastro de atleta: nome + cor da equipe + nº da pulseira (entra direto na lista) —
+let cadGrp = '';
+async function mtRosterAdd(gid, name, want) {
+  let finalN = null;
+  const ok = await mtRosterSave(gid, list => {
+    const used = new Set(list.map(r => r.n)), dup = list.find(r => listaNorm(r.name) === listaNorm(name));
+    if (dup) throw new Error(`${dup.name} já está nesta cor (nº ${dup.n})`);
+    if (used.has(want)) throw new Error(`O nº ${want} já é de ${list.find(r => r.n === want).name}`);
+    finalN = want; list.push({ n:want, name }); return list.sort((a, b) => a.n - b.n);
+  });
+  if (!ok) throw new Error('Não foi possível salvar');
+  return finalN;
+}
+function cadNames() {   // só nomes que ainda não estão em nenhuma equipe: menos erro e sem duplicar
+  const taken = new Set(mtGroups().flatMap(g => (g.roster || []).map(r => listaNorm(r.name))));
+  document.getElementById('cad-name').innerHTML = '<option value="">— escolha o nome —</option>' + mtNames().filter(n => !taken.has(listaNorm(n))).map(n => `<option>${listaEsc(n)}</option>`).join('') + '<option value="__free">✏️ Meu nome não está na lista</option>';
+  document.getElementById('cad-free').style.display = 'none';
+}
+function cadChips() {
+  document.getElementById('cad-chips').innerHTML = mtGroups().map(g => { const on = g.id === cadGrp;
+    return `<button class="mt-gchip" style="border-color:${g.color};color:${on ? (bdLum(g.color) > 140 ? '#0a0a0a' : '#fff') : g.color};background:${on ? g.color : 'transparent'}" onclick="cadPick('${g.id}')">${listaEsc(g.name)}</button>`; }).join('');
+}
+function cadPick(id) { cadGrp = id; cadChips(); cadCheck(); document.getElementById('cad-num').focus(); }
+function cadNameChange() { document.getElementById('cad-free').style.display = document.getElementById('cad-name').value === '__free' ? 'block' : 'none'; }
+function cadCheck() {
+  const el = document.getElementById('cad-who'), n = parseInt(document.getElementById('cad-num').value);
+  if (!n) { el.textContent = ''; return; }
+  if (!cadGrp) { el.style.color = 'var(--gold)'; el.textContent = 'Escolha a cor da equipe'; return; }
+  const r = mtRoster(cadGrp).find(x => x.n === n);
+  el.style.color = r ? 'var(--red)' : 'var(--green)'; el.textContent = r ? `⚠️ Nº ${n} já é de ${r.name}` : `✅ Nº ${n} livre no ${mtGroup(cadGrp).name}`;
+}
+function cadOpen() {
+  if (!MT_CFG || !mtMulti()) return toast('⚠️ As equipes ainda não foram criadas');
+  const sv = localStorage.getItem('mt_cadgrp'); cadGrp = mtGroups().some(g => g.id === sv) ? sv : '';
+  cadNames(); cadChips(); document.getElementById('cad-num').value = ''; document.getElementById('cad-who').textContent = ''; document.getElementById('cad-last').textContent = '';
+  document.getElementById('meta-cad').classList.add('open');
+}
+async function cadSave() {
+  const sel = document.getElementById('cad-name').value, name0 = (sel === '__free' ? document.getElementById('cad-free').value : sel).trim(), want = parseInt(document.getElementById('cad-num').value);
+  if (!name0) return toast('⚠️ Escolha ou digite o nome'); if (!cadGrp) return toast('⚠️ Escolha a cor da equipe'); if (!(want > 0)) return toast('⚠️ Digite o número da pulseira');
+  const name = mtResolve(name0), other = mtGroups().find(g => g.id !== cadGrp && (g.roster || []).some(r => listaNorm(r.name) === listaNorm(name)));
+  if (other && !confirm(`${name} já está no ${other.name}. Cadastrar também nesta equipe?`)) return;
+  let n; try { n = await mtRosterAdd(cadGrp, name, want); } catch (e) { return toast('⚠️ ' + e.message); }
+  localStorage.setItem('mt_cadgrp', cadGrp);
+  const msg = `✅ ${name} — ${mtGroup(cadGrp).name} nº ${n}`; document.getElementById('cad-last').textContent = msg;
+  document.getElementById('cad-num').value = ''; document.getElementById('cad-free').value = ''; document.getElementById('cad-who').textContent = ''; cadNames();
+  await mtRefresh(); toast(msg);
+}
 function mtRender() {
   const el = id => document.getElementById(id);
-  if (!MT_CFG) { el('meta-title').textContent = 'Nenhum desafio ativo'; el('meta-add-btn').style.display = 'none'; return; }
+  if (!MT_CFG) { el('meta-title').textContent = 'Nenhum desafio ativo'; mtRenderStaff(); return; }
   el('meta-title').textContent = MT_CFG.title || 'Meta coletiva';
   if (MT_LOGO) { el('meta-logo').src = MT_LOGO; el('meta-logo').style.display = 'block'; }
   const multi = mtMulti(); el('meta-single').style.display = multi ? 'none' : 'block'; el('meta-groups').style.display = multi ? 'block' : 'none';
@@ -1922,9 +2020,7 @@ function mtRender() {
     el('meta-groups').innerHTML = mtGroups().map(mtGroupCard).join('');
     el('meta-report').innerHTML = mtGroups().map(g => `<div class="section-label" style="color:${g.color};margin-top:6px">${listaEsc(g.name)}</div>` + mtRows(mtAgg(g.id), g)).join('');
   }
-  el('meta-add-btn').style.display = MT_CFG.closed ? 'none' : 'block';
-  const me0 = localStorage.getItem('mt_me'), mine0 = !multi && me0 && mtMine(me0), lock = mtUnlocked() ? '' : '🔒 ';
-  el('meta-add-btn').textContent = lock + (multi ? (lock ? 'Área de registro (senha)' : '➕ Registrar km') : mine0 ? `➕ Registrar mais km (você já fez ${mtKm(mine0.km)} km)` : '➕ Registrar meu km');
+  mtRenderStaff();
   el('meta-upd').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 async function mtRefresh() {
@@ -2041,7 +2137,7 @@ async function mtPwSubmit() {
   const h = await mtHash(document.getElementById('mt-pw').value.trim());
   if (h !== MT_CFG.staffPw) { document.getElementById('mt-pw').value = ''; return toast('❌ Senha incorreta'); }
   localStorage.setItem('mt_unlock', JSON.stringify({ h, c:MT_CFG.id, e:Date.now() + 12*3600e3 }));
-  document.getElementById('meta-pw-ov').classList.remove('open'); mtRender(); mtOpenSheetNow();
+  document.getElementById('meta-pw-ov').classList.remove('open'); mtRender();
 }
 function mtOpenSheetNow() {
   const multi = mtMulti(), me = localStorage.getItem('mt_me') || '', names = mtNames();
@@ -2108,7 +2204,7 @@ async function mtMakeImage(gid, fontColor) {
   x.textAlign = 'center'; x.shadowColor = sh; x.shadowBlur = 14; x.fillStyle = fg;
   if (MT_LOGO) { const im = new Image(); await new Promise(r => { im.onload = r; im.onerror = r; im.src = MT_LOGO; }); if (im.width) { const k = Math.min(520/im.width, 190/im.height); x.drawImage(im, W/2-im.width*k/2, 90, im.width*k, im.height*k); } }
   else { x.font = '84px "Bebas Neue",Impact,sans-serif'; x.fillText('CANTIL FITNESS', W/2, 190); }
-  const tt = String(MT_CFG.title||'').toUpperCase(); let ts = 92;
+  const tt = String(MT_CFG.title||'').toUpperCase().replace(/\s+/g, ' ').trim(); let ts = 92;
   const lines = () => { x.font = `${ts}px "Bebas Neue",Impact,sans-serif`; let n = 1, l = ''; tt.split(' ').forEach(w => { const t = l ? l+' '+w : w; if (x.measureText(t).width > 920 && l) { n++; l = w; } else l = t; }); return n; };
   while (lines() > 2 && ts > 52) ts -= 4;
   x.font = `${ts}px "Bebas Neue",Impact,sans-serif`; let ye = mtWrap(x, tt, W/2, 380, 920, ts + 4);
@@ -2142,7 +2238,7 @@ async function mtMakeImage(gid, fontColor) {
   x.fillStyle = fg; fit(big, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 280); x.fillText(big, W/2, 1500);
   fit(sub, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 80); x.fillText(sub, W/2, 1598);
   const pers = gid === '' && !mtMulti() ? a.list.length : mtPersons(a, g), cols = [];
-  if (pers > 0) cols.push(['PESSOAS', String(pers)]); if (done && t0) cols.push(['TEMPO', mtDur((end || Date.now()) - t0)]); if (!cols.length) cols.push(['REGISTROS', String(a.n)]);
+  if (pers > 0) cols.push(['PESSOAS', String(pers)]); { const rms = mtRaceMs(); if (rms !== null) cols.push([MT_CFG.endedAt || MT_CFG.closed ? 'TEMPO DE PROVA' : 'TEMPO ATÉ AGORA', mtDur(rms)]); } if (!cols.length) cols.push(['REGISTROS', String(a.n)]);
   cols.forEach(([l, v], i) => { const cx = cols.length === 1 ? W/2 : (i ? 780 : 300); x.fillStyle = fg; x.globalAlpha = .75; x.font = '800 34px Outfit,Arial,sans-serif'; x.fillText(l, cx, 1690); x.globalAlpha = 1; x.font = '120px "Bebas Neue",Impact,sans-serif'; x.fillText(v, cx, 1800); });
   const me = localStorage.getItem('mt_me'), mine = !mtMulti() && me && mtMine(me, g.id);
   x.fillStyle = fg; x.globalAlpha = .8; x.font = '700 34px Outfit,Arial,sans-serif'; x.fillText(mine ? `Eu fiz ${mtKm(mine.km)} km  ·  #DesafioCantil` : '#DesafioCantil', W/2, 1880); x.globalAlpha = 1;
@@ -2223,8 +2319,8 @@ async function mtSaveCfg(extra) {
   if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
 }
 const mtClearPw = () => confirm('Remover a senha? Qualquer pessoa com o link poderá registrar.') && mtSaveCfg({ staffPw:'' });
-const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString() });
-const mtToggleClosed = () => mtSaveCfg({ closed:!(MT_CFG && MT_CFG.closed) });
+const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString(), endedAt:null, closed:false });
+const mtToggleClosed = () => mtSaveCfg(MT_CFG && MT_CFG.closed ? { closed:false, endedAt:null } : { closed:true, endedAt:new Date().toISOString() });
 const mtNewChallenge = () => confirm('Criar um novo desafio? Os registros atuais deixam de aparecer no link.') && (MT_CFG = null, mtSaveCfg());
 function mtCopyLink() { const i = document.getElementById('mta-link'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand('copy'))).then(() => toast('📋 Link copiado!')); }
 function mtLogoPick(inp) {
