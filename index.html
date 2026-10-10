@@ -135,6 +135,13 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .mt-share{display:block;width:100%;margin-top:14px;padding:16px 12px;border:none;border-radius:16px;font-family:'Outfit',sans-serif;cursor:pointer;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.35)}
 .mt-share span{display:block;font-weight:900;font-size:15px;letter-spacing:.5px}
 .mt-share small{display:block;font-weight:600;font-size:11px;opacity:.75;margin-top:3px}
+.cad-up, .cad-up * { text-transform:uppercase; }
+.cad-sug{max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--s2);margin-top:6px}
+.cad-sug div{padding:12px 14px;border-top:1px solid var(--border);font-size:14px;font-weight:600;cursor:pointer}
+.cad-sug div:first-child{border-top:0}
+.mt-tiny{padding:7px 14px;border:1px solid var(--border);background:var(--s2);color:var(--muted);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
+.mt-tiny.warn{color:var(--red);border-color:rgba(255,95,109,.4)}
+#meta-staff .btn:disabled{opacity:.4;filter:grayscale(.5)}
 .mt-lock{padding:8px 14px;border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-gchips{display:flex;flex-wrap:wrap;gap:10px}
 .mt-gchip{flex:1;min-width:110px;padding:16px 10px;border:3px solid;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
@@ -721,10 +728,12 @@ textarea { resize:vertical;min-height:72px; }
     <div id="meta-img-single" style="margin:0 0 18px"></div>
     <div class="mt-card"><div class="section-label" style="margin-top:0">🏃 Quanto cada um fez</div><div id="meta-report"></div></div>
   </div>
-  <div class="bd-ov" id="meta-cad" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+  <div class="bd-ov" id="meta-cad" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box cad-up" style="text-align:left">
     <div style="font-weight:800;font-size:18px;margin-bottom:4px">🙋 Cadastrar atleta</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Nome, cor da equipe e número da pulseira. O atleta já entra na lista da equipe.</div>
-    <div class="field-group"><label class="field-label">Nome</label><select id="cad-name" onchange="cadNameChange()"></select><input type="text" id="cad-free" placeholder="Digite o nome completo" style="display:none;margin-top:8px"></div>
+    <div class="field-group"><label class="field-label">Nome</label>
+      <div style="display:flex;gap:8px"><input type="text" id="cad-name" placeholder="Digite o nome ou toque na seta" autocomplete="off" autocorrect="off" oninput="cadType()"><button class="mt-tiny" style="flex:0 0 56px;padding:0;font-size:20px" onclick="cadToggleList()">▾</button></div>
+      <div id="cad-sug" class="cad-sug" style="display:none"></div></div>
     <div class="field-group"><label class="field-label">Cor da equipe</label><div id="cad-chips" class="mt-gchips"></div></div>
     <div class="field-group"><label class="field-label">Número da pulseira</label><input type="text" id="cad-num" inputmode="numeric" placeholder="ex: 12" oninput="cadCheck()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="cad-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
     <button class="btn btn-blue" onclick="cadSave()">✅ Cadastrar atleta</button>
@@ -1939,22 +1948,22 @@ function mtRenderStaff() {
   lockBtn.style.display = hasPw && !un ? 'inline-block' : 'none';
   const showPub = !!MT_CFG && multi;   // cadastro de atleta (nome, cor e nº) é livre: não pede senha
   pub.style.display = showPub ? 'block' : 'none';
-  pub.innerHTML = showPub ? '<button class="btn btn-blue" style="margin-bottom:16px" onclick="cadOpen()">🙋 Sou atleta: cadastrar minha pulseira</button>' : '';
+  pub.innerHTML = showPub ? '<button class="btn btn-blue" style="margin-bottom:16px" onclick="cadOpen()">🙋 SOU ATLETA: CADASTRAR MINHA PULSEIRA</button>' : '';
   if (!MT_CFG || !un) { el.style.display = 'none'; return; }
   const c = MT_CFG, ms = mtRaceMs(), hm = t => new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
   const running = !!c.startedAt && !c.closed;
   const status = `Largada: <b>${c.startedAt ? hm(c.startedAt) : '—'}</b> · Fim: <b>${c.endedAt ? hm(c.endedAt) : '—'}</b>` + (ms !== null ? ` · Duração: <b>${mtDur(ms)}</b>${running ? ' (em andamento)' : ''}` : '');
   const ctrl = !hasPw ? '<div style="font-size:12px;color:var(--gold)">⚠️ Defina uma senha no admin (🏁 Meta) para liberar a largada e o fim da prova.</div>'
     : !c.startedAt ? '<button class="btn btn-blue" onclick="mtRaceStart()">🏁 DAR A LARGADA</button>'
-    : running ? '<button class="btn-sm-danger" style="width:100%;padding:14px" onclick="mtRaceEnd()">⏹ ENCERRAR PROVA</button>'
-    : '<button class="btn-sm-danger" style="width:100%;padding:14px" onclick="mtRaceReopen()">▶ Reabrir prova</button><button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtRaceStart()">🏁 Nova largada (zera o tempo)</button>';
+    : running ? '<button class="mt-tiny warn" onclick="mtRaceEnd()">⏹ Encerrar prova</button>'
+    : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mt-tiny" onclick="mtRaceReopen()">▶ Reabrir</button><button class="mt-tiny warn" onclick="mtRaceStart()">🏁 Nova largada (zera o tempo)</button></div>';
   el.style.display = 'block';
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:var(--green)">✅ Acesso liberado</b>${hasPw ? '<button class="btn-sm-danger" style="padding:6px 12px" onclick="mtLogout()">Sair</button>' : ''}</div>
     <button class="btn btn-blue" ${c.closed ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${c.closed ? '🔒 Prova encerrada' : '➕ Registrar km'}</button>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800">CONTROLE DA PROVA</div><div style="font-size:13px;margin:6px 0 10px">${status}</div>${ctrl}</div>`;
 }
 // — cadastro de atleta: nome + cor da equipe + nº da pulseira (entra direto na lista) —
-let cadGrp = '';
+let cadGrp = '', CAD_NAMES = [], CAD_SHOWN = [];
 async function mtRosterAdd(gid, name, want) {
   let finalN = null;
   const ok = await mtRosterSave(gid, list => {
@@ -1966,17 +1975,26 @@ async function mtRosterAdd(gid, name, want) {
   if (!ok) throw new Error('Não foi possível salvar');
   return finalN;
 }
-function cadNames() {   // só nomes que ainda não estão em nenhuma equipe: menos erro e sem duplicar
+// nome: digite livremente ou use a seta ▾ / as sugestões (só aparecem nomes que ainda não estão em nenhuma equipe)
+function cadNames() {
   const taken = new Set(mtGroups().flatMap(g => (g.roster || []).map(r => listaNorm(r.name))));
-  document.getElementById('cad-name').innerHTML = '<option value="">— escolha o nome —</option>' + mtNames().filter(n => !taken.has(listaNorm(n))).map(n => `<option>${listaEsc(n)}</option>`).join('') + '<option value="__free">✏️ Meu nome não está na lista</option>';
-  document.getElementById('cad-free').style.display = 'none';
+  CAD_NAMES = mtNames().filter(n => !taken.has(listaNorm(n))); cadHide();
 }
+const cadHide = () => { document.getElementById('cad-sug').style.display = 'none'; };
+function cadSuggest(all) {
+  const q = listaNorm(document.getElementById('cad-name').value), box = document.getElementById('cad-sug');
+  CAD_SHOWN = (all ? CAD_NAMES : q ? CAD_NAMES.filter(n => listaNorm(n).includes(q)) : []).slice(0, all ? 300 : 6);
+  box.style.display = CAD_SHOWN.length ? 'block' : 'none';
+  box.innerHTML = CAD_SHOWN.map((n, i) => `<div onclick="cadChoose(${i})">${listaEsc(n)}</div>`).join('');
+}
+const cadType = () => cadSuggest(false);
+function cadToggleList() { const b = document.getElementById('cad-sug'); if (b.style.display === 'block') cadHide(); else cadSuggest(true); }
+function cadChoose(i) { if (!CAD_SHOWN[i]) return; document.getElementById('cad-name').value = CAD_SHOWN[i]; cadHide(); document.getElementById('cad-num').focus(); }
 function cadChips() {
   document.getElementById('cad-chips').innerHTML = mtGroups().map(g => { const on = g.id === cadGrp;
     return `<button class="mt-gchip" style="border-color:${g.color};color:${on ? (bdLum(g.color) > 140 ? '#0a0a0a' : '#fff') : g.color};background:${on ? g.color : 'transparent'}" onclick="cadPick('${g.id}')">${listaEsc(g.name)}</button>`; }).join('');
 }
 function cadPick(id) { cadGrp = id; cadChips(); cadCheck(); document.getElementById('cad-num').focus(); }
-function cadNameChange() { document.getElementById('cad-free').style.display = document.getElementById('cad-name').value === '__free' ? 'block' : 'none'; }
 function cadCheck() {
   const el = document.getElementById('cad-who'), n = parseInt(document.getElementById('cad-num').value);
   if (!n) { el.textContent = ''; return; }
@@ -1987,18 +2005,18 @@ function cadCheck() {
 function cadOpen() {
   if (!MT_CFG || !mtMulti()) return toast('⚠️ As equipes ainda não foram criadas');
   const sv = localStorage.getItem('mt_cadgrp'); cadGrp = mtGroups().some(g => g.id === sv) ? sv : '';
-  cadNames(); cadChips(); document.getElementById('cad-num').value = ''; document.getElementById('cad-who').textContent = ''; document.getElementById('cad-last').textContent = '';
+  cadNames(); cadChips(); document.getElementById('cad-name').value = ''; document.getElementById('cad-num').value = ''; document.getElementById('cad-who').textContent = ''; document.getElementById('cad-last').textContent = '';
   document.getElementById('meta-cad').classList.add('open');
 }
 async function cadSave() {
-  const sel = document.getElementById('cad-name').value, name0 = (sel === '__free' ? document.getElementById('cad-free').value : sel).trim(), want = parseInt(document.getElementById('cad-num').value);
-  if (!name0) return toast('⚠️ Escolha ou digite o nome'); if (!cadGrp) return toast('⚠️ Escolha a cor da equipe'); if (!(want > 0)) return toast('⚠️ Digite o número da pulseira');
-  const name = mtResolve(name0), other = mtGroups().find(g => g.id !== cadGrp && (g.roster || []).some(r => listaNorm(r.name) === listaNorm(name)));
+  const name0 = document.getElementById('cad-name').value.trim(), want = parseInt(document.getElementById('cad-num').value);
+  if (!name0) return toast('⚠️ Digite ou escolha o nome'); if (!cadGrp) return toast('⚠️ Escolha a cor da equipe'); if (!(want > 0)) return toast('⚠️ Digite o número da pulseira');
+  const name = mtResolve(name0).toUpperCase(), other = mtGroups().find(g => g.id !== cadGrp && (g.roster || []).some(r => listaNorm(r.name) === listaNorm(name)));
   if (other && !confirm(`${name} já está no ${other.name}. Cadastrar também nesta equipe?`)) return;
   let n; try { n = await mtRosterAdd(cadGrp, name, want); } catch (e) { return toast('⚠️ ' + e.message); }
   localStorage.setItem('mt_cadgrp', cadGrp);
-  const msg = `✅ ${name} — ${mtGroup(cadGrp).name} nº ${n}`; document.getElementById('cad-last').textContent = msg;
-  document.getElementById('cad-num').value = ''; document.getElementById('cad-free').value = ''; document.getElementById('cad-who').textContent = ''; cadNames();
+  const msg = `✅ ${name} — ${mtGroup(cadGrp).name.toUpperCase()} Nº ${n}`; document.getElementById('cad-last').textContent = msg;
+  document.getElementById('cad-num').value = ''; document.getElementById('cad-name').value = ''; document.getElementById('cad-who').textContent = ''; cadNames();
   await mtRefresh(); toast(msg);
 }
 function mtRender() {
