@@ -132,13 +132,13 @@ body::before {
 .mt-pct{font-size:13px;font-weight:700}
 #meta-groups{display:block}
 @media (orientation:landscape) and (min-width:640px){
-  .mt-wrap{max-width:1700px;padding:12px 18px 40px}
-  .mt-head{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px !important}
+  body .mt-wrap{max-width:1700px;padding:12px 18px 40px}
+  body .mt-head{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px !important}
   .mt-head img{margin:0 !important;max-height:46px !important;max-width:18% !important}
   #meta-title{font-size:clamp(22px,3.2vw,56px) !important}
   #meta-groups{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:14px;align-items:start}
   #meta-groups .mt-card{margin-bottom:0;padding:clamp(10px,1.3vw,24px)}
-  #meta-single,#meta-clock,#meta-final,#meta-staff{max-width:900px;margin-left:auto;margin-right:auto}
+  #meta-single,#meta-clock,#meta-final,#meta-staff,#meta-pub{max-width:900px;margin-left:auto;margin-right:auto}
   .mt-gname{font-size:clamp(17px,2.3vw,44px)}
   .mt-gtotal{font-size:clamp(38px,6.4vw,124px)}
   .mt-ggoal{font-size:clamp(15px,2.2vw,42px)}
@@ -154,9 +154,15 @@ body::before {
   #meta-groups .mt-chip{font-size:clamp(9px,1.1vw,17px)}
   #meta-clock div:nth-child(2){font-size:clamp(40px,7vw,110px) !important}
 }
-@media (orientation:landscape) and (max-height:520px){   /* celular deitado: só o essencial para comparar */
-  #meta-groups .mt-names,#meta-groups .mt-foot{display:none}
-  #meta-groups svg{height:clamp(60px,10vw,110px) !important}
+@media (orientation:landscape) and (max-height:520px){   /* celular deitado: só o essencial para comparar de relance */
+  #meta-groups .mt-names,#meta-groups .mt-foot,#meta-groups svg,#meta-groups .mt-stats,#meta-pub,.mt-lockrow{display:none !important}
+  body .mt-wrap{padding:6px 14px 20px}
+  body .mt-head{margin-bottom:6px !important}
+  #meta-groups .mt-card{padding:10px 12px}
+  #meta-groups .mt-live{white-space:nowrap}
+  #meta-groups .mt-left{margin:8px 0 0}
+  #meta-groups .mt-left b{font-size:clamp(28px,5vw,64px)}
+}
 }
 .meta-tv #meta-pub,.meta-tv #meta-staff,.meta-tv #meta-lock-btn,.meta-tv .mt-lockrow,.meta-tv .mt-foot{display:none !important}
 .meta-tv .mt-wrap{max-width:none;padding:18px 32px}
