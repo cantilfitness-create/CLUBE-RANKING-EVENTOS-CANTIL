@@ -125,6 +125,41 @@ body::before {
 .rank-item.ghost .rank-num { font-size:20px; opacity:.85; filter:none; }
 .rank-item.ghost .rank-bar-fill { background:#5a5a5a; }
 .ghost-divider { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:14px 24px 10px;border-top:1px solid var(--border);background:rgba(0,0,0,0.25);opacity:.85; }
+/* 📺 Modo painel: celular na horizontal / TV → equipes lado a lado */
+.mt-gname{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px}
+.mt-gtotal{font-family:'Bebas Neue',sans-serif;font-size:62px;line-height:1}
+.mt-ggoal{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--muted)}
+.mt-pct{font-size:13px;font-weight:700}
+#meta-groups{display:block}
+@media (orientation:landscape) and (min-width:640px){
+  .mt-wrap{max-width:1700px;padding:12px 18px 40px}
+  .mt-head{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px !important}
+  .mt-head img{margin:0 !important;max-height:46px !important;max-width:18% !important}
+  #meta-title{font-size:clamp(22px,3.2vw,56px) !important}
+  #meta-groups{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:14px;align-items:start}
+  #meta-groups .mt-card{margin-bottom:0;padding:clamp(10px,1.3vw,24px)}
+  #meta-single,#meta-clock,#meta-final,#meta-staff{max-width:900px;margin-left:auto;margin-right:auto}
+  .mt-gname{font-size:clamp(17px,2.3vw,44px)}
+  .mt-gtotal{font-size:clamp(38px,6.4vw,124px)}
+  .mt-ggoal{font-size:clamp(15px,2.2vw,42px)}
+  .mt-pct{font-size:clamp(10px,1.2vw,22px)}
+  #meta-groups .mt-live{font-size:clamp(9px,1vw,16px);padding:4px 8px}
+  #meta-groups .mt-bar{height:clamp(16px,2.2vw,36px);margin:8px 0 6px}
+  #meta-groups svg{height:clamp(70px,12vw,200px) !important}
+  #meta-groups .mt-left{padding:clamp(6px,.9vw,16px)}
+  #meta-groups .mt-left b{font-size:clamp(34px,5.4vw,100px)}
+  #meta-groups .mt-left span{font-size:clamp(9px,1vw,16px)}
+  #meta-groups .mt-stats b{font-size:clamp(20px,2.8vw,50px)}
+  #meta-groups .mt-stats span{font-size:clamp(9px,1vw,16px)}
+  #meta-groups .mt-chip{font-size:clamp(9px,1.1vw,17px)}
+  #meta-clock div:nth-child(2){font-size:clamp(40px,7vw,110px) !important}
+}
+@media (orientation:landscape) and (max-height:520px){   /* celular deitado: só o essencial para comparar */
+  #meta-groups .mt-names,#meta-groups .mt-foot{display:none}
+  #meta-groups svg{height:clamp(60px,10vw,110px) !important}
+}
+.meta-tv #meta-pub,.meta-tv #meta-staff,.meta-tv #meta-lock-btn,.meta-tv .mt-lockrow,.meta-tv .mt-foot{display:none !important}
+.meta-tv .mt-wrap{max-width:none;padding:18px 32px}
 /* 🏁 Meta coletiva */
 body.meta-mode{background:#0b0b0b !important;padding:0 !important}
 body.meta-mode::before,body.meta-mode::after{display:none !important}
@@ -714,17 +749,20 @@ textarea { resize:vertical;min-height:72px; }
 <!-- Admin trigger: small gear icon, discreet -->
 <div id="meta-view" style="display:none;min-height:100vh;background:var(--bg);">
   <div class="mt-wrap">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="meta-lock-btn" class="mt-lock" onclick="mtLockClick()" style="display:none">🔒 Acesso da equipe</button></div>
-    <div style="text-align:center;margin-bottom:18px">
+    <div class="mt-lockrow" style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="meta-lock-btn" class="mt-lock" onclick="mtLockClick()" style="display:none">🔒 Acesso da equipe</button></div>
+    <div class="mt-head" style="text-align:center;margin-bottom:18px">
       <img id="meta-logo" alt="" style="display:none;max-height:70px;max-width:60%;margin:0 auto 10px">
       <div id="meta-title" style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.05">Meta coletiva</div>
     </div>
     <div id="meta-pub" style="display:none"></div>
     <div class="mt-card" id="meta-staff" style="display:none"></div>
+    <div class="mt-card" id="meta-clock" style="display:none;text-align:center"></div>
+    <div class="mt-card" id="meta-final" style="display:none"></div>
     <div id="meta-groups" style="display:none"></div>
     <div class="mt-card" id="meta-single">
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="mt-live" id="meta-badge"><i></i>AO VIVO</span><span id="meta-upd" style="font-size:11px;color:var(--muted)"></span></div>
       <div style="text-align:center;margin-top:16px"><span id="meta-total" style="font-family:'Bebas Neue',sans-serif;font-size:76px;line-height:1;color:var(--accent)">0</span><span id="meta-goal" style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--muted)"> / 38 km</span></div>
+      <div id="meta-route"></div>
       <div class="mt-bar"><div class="mt-fill" id="meta-fill"></div></div>
       <div id="meta-pct" style="font-size:13px;font-weight:700">0%</div>
       <div id="meta-leftbox"></div>
@@ -773,7 +811,7 @@ textarea { resize:vertical;min-height:72px; }
     <div id="mt-name-block"><div class="field-group"><label class="field-label" id="mt-name-label">Nome</label><select id="mt-name" onchange="mtNameChange()"></select>
       <input type="text" id="mt-name-free" placeholder="Digite seu nome completo" oninput="mtShowMine()" style="display:none;margin-top:8px">
       <div id="mt-mine" style="display:none;margin-top:8px;font-size:13px;color:var(--accent);font-weight:700"></div></div></div>
-        <div class="field-group"><label class="field-label">Km percorridos agora</label><input type="text" id="mt-km" inputmode="decimal" placeholder="ex: 2,4" oninput="mtChipSync()">
+        <div class="field-group"><label class="field-label" id="mt-km-label">Km percorridos agora</label><input type="text" id="mt-km" inputmode="decimal" placeholder="ex: 2,4" oninput="mtChipSync()">
       <div id="mt-chips" class="bd-opts" style="margin-top:8px"></div></div>
         <button class="btn btn-blue" id="mt-send" onclick="mtSubmit()">✅ Somar na meta</button>
     <div id="mt-last" style="margin-top:10px;font-size:13px;color:var(--green);font-weight:700;text-align:center"></div>
@@ -983,13 +1021,17 @@ textarea { resize:vertical;min-height:72px; }
           <div class="section-label">🏁 Meta coletiva (link ao vivo)</div>
           <div id="mt-sql-warn" style="display:none;background:rgba(255,95,109,.12);border:1px solid var(--red);border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px">⚠️ A tabela <b>relay_entries</b> ainda não existe no Supabase. Rode o arquivo <b>supabase-meta.sql</b> no SQL Editor.</div>
           <div class="field-group"><label class="field-label">Título</label><input type="text" id="mta-title" placeholder="ex: Desafio 38 km — Aniversário do Coach"></div>
-          <div class="field-group"><label class="field-label">Meta única (km) — usada quando não há grupos</label><input type="text" id="mta-goal" inputmode="decimal" placeholder="38"></div>
+          <div class="field-group"><label class="field-label">Meta única (km ou rounds) — usada quando não há equipes</label><input type="text" id="mta-goal" inputmode="decimal" placeholder="38"></div>
           <div class="field-group"><label class="field-label">Km de cada volta (opcional)</label><input type="text" id="mta-lap" inputmode="decimal" placeholder="ex: 0,4 — cria botões de 1, 2, 3 voltas"></div>
+          <div class="field-group"><label class="field-label">Tipo de meta</label><select id="mta-unit"><option value="km">📏 Quilômetros (km)</option><option value="rounds">🔁 Número de rounds</option></select></div>
+          <div class="field-group"><label class="field-label">⏱ Time cap: tempo máximo de prova (opcional)</label><input type="text" id="mta-cap" placeholder="ex: 45:00 (minutos:segundos). Vazio = sem limite">
+            <select id="mta-capmode" style="margin-top:8px"><option value="down">⏳ Decrescente: conta de trás para frente</option><option value="up">⏱ Crescente: conta até o limite</option></select></div>
           <div class="field-group"><label class="field-label">Lista de nomes para escolher</label><select id="mta-src"><option value="evento">Inscritos do evento atual</option><option value="membros">Membros do clube</option><option value="ambos">Inscritos + membros</option></select></div>
           <div class="field-group"><label class="field-label">🔒 Senha de quem registra (libera só o registro, não o painel admin)</label>
             <input type="text" id="mta-pw" placeholder="digite para definir ou trocar" autocomplete="off" autocapitalize="off"><div id="mta-pw-state" style="font-size:12px;margin-top:6px"></div>
             <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="mtClearPw()">Remover senha</button></div>
-                    <div class="section-label" style="margin-top:18px">👥 Equipes / grupos</div>
+                    <div class="field-group"><label class="field-label">Percurso desenhado nos quadros</label><div id="mta-routes"></div></div>
+          <div class="section-label" style="margin-top:18px">👥 Equipes / grupos</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Cada equipe tem nome, cor, meta e barra próprios. Para equipe <b>sem números</b>, deixe a lista de atletas vazia: quem registra escolhe só a cor da equipe e informa os km. Com atletas numerados, digite o nº da pulseira. Durante o evento, quem registra também pode cadastrar e editar atletas na própria tela de registro. Sem equipes, vale a meta única.</div>
           <div id="mta-groups"></div>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="mtaAddGroup()">➕ Adicionar equipe (até 8)</button>
@@ -998,9 +1040,12 @@ textarea { resize:vertical;min-height:72px; }
           <div class="section-label" style="margin-top:22px">🔗 Link público</div>
           <input type="text" id="mta-link" readonly style="margin-bottom:8px">
           <button class="btn btn-blue" onclick="mtCopyLink()">📋 Copiar link</button>
+          <div class="field-group" style="margin-top:14px"><label class="field-label">📺 Link para TV (equipes lado a lado, sem botões, tela sempre ligada)</label>
+            <input type="text" id="mta-link-tv" readonly style="margin-bottom:8px"><button class="btn-sm-danger" style="width:100%;padding:12px" onclick="mtCopyLink('mta-link-tv')">📋 Copiar link da TV</button></div>
           <div class="section-label" style="margin-top:22px">Controle</div>
           <button class="btn btn-blue" onclick="mtStart()">🏁 Dar a largada (inicia o cronômetro)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtToggleClosed()" id="mta-close">⏹ Encerrar registros</button>
+          <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtPrintFinal()">📄 Relatório por equipe (imprimir / PDF)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtNewChallenge()">🔄 Novo desafio (zera tudo)</button>
           <div class="section-label" style="margin-top:22px">Últimos registros</div>
           <div id="mta-list"></div>
@@ -1907,20 +1952,178 @@ function mtRows(a, g) {
   const c = (g && g.color) || 'var(--accent)';
   const num = p => { const r = g && (g.roster||[]).find(x => listaNorm(x.name) === listaNorm(p.name)); return r ? `<span style="color:var(--muted);font-weight:600">#${r.n}</span> ` : ''; };
   return a.list.length ? a.list.map((p,i) => `<div class="mt-row">
-    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${num(p)}${listaEsc(p.name)}</b><b style="color:${c}">${mtKm(p.km)} km</b></div>
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${num(p)}${listaEsc(p.name)}</b><b style="color:${c}">${mtKm(p.km)} ${mtUnit()}</b></div>
     <div class="mt-mini"><div style="width:${Math.min(100, p.km/(a.total||1)*100).toFixed(1)}%;background:${c}"></div></div>
     <div style="font-size:11px;color:var(--muted)">${(p.km/(a.total||1)*100).toFixed(1).replace('.',',')}% do total do grupo · ${p.n} registro${p.n>1?'s':''}</div></div>`).join('')
     : '<div style="color:var(--muted);font-size:13px">Ninguém registrou ainda.</div>';
 }
 // destaque do "quanto falta"
 const mtLeft = (done, rem, over, c) => `<div class="mt-left" style="border-color:${c};background:${c}1c">` + (done
-  ? `<span>🎉 META SUPERADA</span><b style="color:${c}">+${mtKm(over)}<small> km</small></b><span>além da meta</span>`
-  : `<span>FALTAM</span><b style="color:${c}">${mtKm(rem)}<small> km</small></b><span>para bater a meta</span>`) + '</div>';
+  ? `<span>🎉 META SUPERADA</span><b style="color:${c}">+${mtKm(over)}<small> ${mtUnit()}</small></b><span>além da meta</span>`
+  : `<span>FALTAM</span><b style="color:${c}">${mtKm(rem)}<small> ${mtUnit()}</small></b><span>para bater a meta</span>`) + '</div>';
 const MT_IMG_ON = false;   // download de imagem SUSPENSO: o pessoal tira print do quadro. Troque para true para reativar.
 const MT_FOOT = 'TIRE PRINT E POSTE NAS REDES SOCIAIS, MARQUE A CANTIL';
 const mtShareBtn = (gid, c) => !MT_IMG_ON ? '' : `<button class="mt-share" style="background:linear-gradient(135deg,${c},${bdShade(c,.3)});color:${bdLum(c) > 140 ? '#0a0a0a' : '#fff'}" onclick="mtShowImage('${gid}')"><span>📲 BAIXAR IMAGEM PARA SEUS STORIES</span><small>Fundo transparente · letra branca ou preta · poste nas suas redes</small></button>`;
 const mtStatCells = (persons, regs) => (persons > 0 ? `<div><b>${persons}</b><span>pessoas</span></div>` : '') + `<div><b>${regs}</b><span>registros</span></div>`;
 const mtPersons = (a, g) => a.list.filter(p => listaNorm(p.name) !== listaNorm(g.name || '§')).length;
+// — percursos desenhados em cada quadro: 6 modelos, com progresso ao vivo, marcos de km e bandeira de chegada —
+const MT_ROUTES = { onda:'🌊 Ondulado', circuito:'🔁 Circuito (volta ao ponto de partida)', elevacao:'⛰️ Subidas e descidas', serpentina:'🛣️ Serpentina (estrada de serra)', pista:'🏟️ Pista de atletismo (voltas)', ruas:'🏙️ Ruas da cidade', none:'🚫 Sem percurso' };
+let mtRid = 0;
+const mtRInfo = (total, goal) => ({ total, goal, lapKm:parseFloat(String((MT_CFG && MT_CFG.lapKm) || '').replace(',', '.')) || 0 });
+function mtStadium(off) {   // contorno de uma pista: duas retas e duas curvas (off = deslocamento da raia)
+  const R = 17 + off, out = [], cx1 = 68, cx2 = 32, cy = 25;
+  for (let x = 50; x <= cx1; x += 2) out.push([x, cy + R]);
+  for (let i = 1; i < 28; i++) { const t = Math.PI/2 - i/28*Math.PI; out.push([cx1 + R*Math.cos(t), cy + R*Math.sin(t)]); }
+  for (let x = cx1; x >= cx2; x -= 2) out.push([x, cy - R]);
+  for (let i = 1; i < 28; i++) { const t = -Math.PI/2 - i/28*Math.PI; out.push([cx2 + R*Math.cos(t), cy + R*Math.sin(t)]); }
+  for (let x = cx2; x <= 50; x += 2) out.push([x, cy + R]);
+  return out;
+}
+function mtRoutePts(kind) {   // pontos do percurso numa caixa de 100 x 50
+  const out = [];
+  if (kind === 'circuito') {
+    for (let i = 0; i <= 180; i++) { const t = -Math.PI/2 + i/180*2*Math.PI, r = 1 + .16*Math.sin(2*t + 1) + .09*Math.cos(3*t); out.push([50 + 41*r*Math.cos(t), 25 + 19.5*r*Math.sin(t)]); }
+    return out;
+  }
+  if (kind === 'elevacao') {
+    for (let i = 0; i <= 180; i++) { const x = i/180, sm = x*x*(3 - 2*x); out.push([x*100, 40 - 30*sm + 3.4*Math.sin(x*17) * (1 - .4*x)]); }
+    return out;
+  }
+  if (kind === 'pista') return mtStadium(0);
+  if (kind === 'serpentina') {
+    const L = 6, rr = 3.8, x0 = 10, x1 = 90, y0 = 44, dy = 7.6;
+    for (let i = 0; i < L; i++) {
+      const y = y0 - i*dy, dir = i % 2 ? -1 : 1, xs = i === 0 ? x0 : (dir > 0 ? x0 + rr : x1 - rr), xe = i === L-1 ? (dir > 0 ? x1 : x0) : (dir > 0 ? x1 - rr : x0 + rr);
+      for (let x = xs; dir > 0 ? x <= xe : x >= xe; x += dir*2) out.push([x, y]);
+      if (i < L-1) { const cx = dir > 0 ? x1 - rr : x0 + rr, cy = y - dy/2; for (let k = 1; k <= 14; k++) { const t = k/14*Math.PI; out.push([cx + dir*rr*Math.sin(t), cy + rr*Math.cos(t)]); } }
+    }
+    return out;
+  }
+  if (kind === 'ruas') {
+    const W = [[8,42],[8,26],[26,26],[26,42],[44,42],[44,18],[62,18],[62,34],[80,34],[80,10],[89,10]], r = 3; out.push(W[0]);
+    for (let i = 1; i < W.length-1; i++) {
+      const a = W[i-1], b = W[i], c = W[i+1], ua = Math.hypot(a[0]-b[0], a[1]-b[1]), uc = Math.hypot(c[0]-b[0], c[1]-b[1]);
+      const p1 = [b[0] + (a[0]-b[0])/ua*r, b[1] + (a[1]-b[1])/ua*r], p2 = [b[0] + (c[0]-b[0])/uc*r, b[1] + (c[1]-b[1])/uc*r]; out.push(p1);
+      for (let k = 1; k <= 8; k++) { const t = k/8, u = 1 - t; out.push([u*u*p1[0] + 2*u*t*b[0] + t*t*p2[0], u*u*p1[1] + 2*u*t*b[1] + t*t*p2[1]]); }
+    }
+    out.push(W[W.length-1]); return out;
+  }
+  const P = [[110,1110],[250,990],[190,830],[400,730],[560,850],[760,690],[900,790],[970,970],[820,1080],[930,1170]].map(([x, y]) => [(x-110)/860*100, (y-690)/480*50]);   // ondulado
+  const mid = (a, b) => [(a[0]+b[0])/2, (a[1]+b[1])/2]; let cur = P[0]; out.push(P[0]);
+  for (let i = 1; i < P.length-1; i++) { const c = P[i], e = mid(P[i], P[i+1]); for (let k = 1; k <= 14; k++) { const t = k/14, u = 1 - t; out.push([u*u*cur[0] + 2*u*t*c[0] + t*t*e[0], u*u*cur[1] + 2*u*t*c[1] + t*t*e[1]]); } cur = e; }
+  out.push(P[P.length-1]); return out;
+}
+function mtRouteCum(pts) { const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i-1] + Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1])); return cum; }
+function mtRouteSplit(pts, pct) {   // trecho já percorrido (por distância) e posição atual
+  const cum = mtRouteCum(pts), goal = cum[cum.length-1] * Math.min(100, Math.max(0, pct)) / 100; let k = 0; while (k < pts.length-1 && cum[k] < goal) k++;
+  return { done:pts.slice(0, k + 1), head:pts[k] };
+}
+function mtRouteSVG(kind, pct, c, h, info) {
+  if (!kind || kind === 'none' || !MT_ROUTES[kind]) return '';
+  const id = 'rt' + (++mtRid), pts = mtRoutePts(kind), cum = mtRouteCum(pts), tot = cum[cum.length-1], P = Math.min(100, Math.max(0, pct)), ink = bdLum(c) > 140 ? '#0a0a0a' : '#ffffff';
+  const poly = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const at = f => { const t = tot*f; let k = 1; while (k < cum.length-1 && cum[k] < t) k++; const a = pts[k-1], b = pts[k], d = (cum[k]-cum[k-1]) || 1, u = (t-cum[k-1])/d; return [a[0] + (b[0]-a[0])*u, a[1] + (b[1]-a[1])*u]; };
+  let frac = P/100, cap = '', extra = '';
+  if (kind === 'pista') {   // progresso = volta atual; no centro, o contador de voltas
+    const laps = info && info.lapKm > 0 ? info.total/info.lapKm : null;
+    if (laps !== null) { const d = Math.floor(laps); frac = P >= 100 && laps - d < .001 ? 1 : laps - d; cap = `<text x="50" y="26" text-anchor="middle" font-size="10" font-weight="800" fill="${c}">${d}</text><text x="50" y="32" text-anchor="middle" font-size="3.4" fill="#9a9a92">de ${Math.round(info.goal/info.lapKm)} voltas</text>`; }
+    else cap = `<text x="50" y="28" text-anchor="middle" font-size="10" font-weight="800" fill="${c}">${Math.floor(P)}%</text>`;
+    extra = [-3.4, 3.4, 6.8].map(o => `<polyline points="${poly(mtStadium(o).concat([mtStadium(o)[0]]))}" fill="none" stroke="#fff" stroke-opacity=".09" stroke-width=".7"/>`).join('');
+  }
+  if (kind === 'ruas') {
+    let g = ''; for (let k = 0; k < 10; k++) g += `<line x1="${8 + 9*k}" y1="2" x2="${8 + 9*k}" y2="48"/>`; for (let k = 0; k < 5; k++) g += `<line x1="0" y1="${10 + 8*k}" x2="100" y2="${10 + 8*k}"/>`;
+    extra = `<g stroke="#fff" stroke-opacity=".07" stroke-width="1.5">${g}</g><rect x="28" y="28" width="14" height="12" rx="1.5" fill="#3de89a" fill-opacity=".07"/><rect x="64" y="20" width="14" height="12" rx="1.5" fill="#5b9dff" fill-opacity=".07"/>`;
+  }
+  const sp = mtRouteSplit(pts, frac*100), st = pts[0], fin = pts[pts.length-1], same = kind === 'circuito' || kind === 'pista', fl = same ? st : fin;
+  if (kind === 'elevacao') extra = `<line x1="0" y1="46" x2="100" y2="46" stroke="#fff" stroke-opacity=".15" stroke-width=".5"/><polygon points="${poly(pts)} 100,46 0,46" fill="${c}" fill-opacity=".07"/><polygon points="${poly(sp.done)} ${sp.head[0].toFixed(1)},46 0,46" fill="${c}" fill-opacity=".22"/>`;
+  let marks = '';
+  if (info && info.goal > 0 && kind !== 'pista') {   // marcos de km ao longo do percurso
+    const step = [1,2,5,10,20,25,50,100,200].find(s => info.goal/s <= 4) || 200;
+    for (let km = step; km < info.goal; km += step) { const q = at(km/info.goal), on = P/100 >= km/info.goal;
+      marks += kind === 'elevacao' ? `<line x1="${q[0].toFixed(1)}" y1="${(q[1]+1.5).toFixed(1)}" x2="${q[0].toFixed(1)}" y2="46" stroke="#fff" stroke-opacity=".18" stroke-dasharray="1 1.2" stroke-width=".5"/><text x="${q[0].toFixed(1)}" y="50" text-anchor="middle" font-size="3.2" fill="#9a9a92">${km}${mtUnit() === 'km' ? ' km' : ''}</text>`
+        : `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="1.4" fill="${on ? c : '#0e0e0e'}" stroke="${on ? '#fff' : '#888'}" stroke-width=".55"/><text x="${q[0].toFixed(1)}" y="${(q[1]-2.8).toFixed(1)}" text-anchor="middle" font-size="3.1" font-weight="700" fill="#cfcfc8" stroke="#0e0e0e" stroke-width=".8" paint-order="stroke">${km}${mtUnit() === 'km' ? ' km' : ''}</text>`; }
+  }
+  const flag = `<g transform="translate(${(fl[0]+1).toFixed(1)} ${fl[1].toFixed(1)})"><line x1="0" y1="0" x2="0" y2="-9" stroke="#fff" stroke-width=".7"/>` + [0,1,2,3].map(i => [0,1].map(j => `<rect x="${(.35 + i*2.1).toFixed(2)}" y="${(-9 + j*2.1).toFixed(2)}" width="2.1" height="2.1" fill="${(i + j) % 2 ? '#111' : '#fff'}"/>`).join('')).join('') + '</g>';
+  const hd = sp.head, by = hd[1] < 12 ? hd[1] + 8 : hd[1] - 8, bx = Math.min(93, Math.max(7, hd[0]));
+  const bubble = kind === 'pista' ? '' : `<rect x="${(bx-6.5).toFixed(1)}" y="${(by-3.1).toFixed(1)}" width="13" height="6.2" rx="2.2" fill="${c}"/><text x="${bx.toFixed(1)}" y="${(by+1.4).toFixed(1)}" text-anchor="middle" font-size="3.9" font-weight="800" fill="${ink}">${Math.floor(P)}%</text>`;
+  const bgp = `linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/20px 20px,radial-gradient(120% 90% at 15% 0%,${c}22,transparent 62%),#0e0e0e`;
+  return `<div style="margin-top:12px;border-radius:14px;overflow:hidden;border:1px solid ${c}33;background:${bgp}"><svg viewBox="-6 -9 112 66" style="width:100%;height:${h || 150}px;display:block" xmlns="http://www.w3.org/2000/svg">
+<defs><filter id="${id}g" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+${extra}${cap}
+<polyline points="${poly(pts)}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="${poly(pts)}" fill="none" stroke="${c}" stroke-opacity=".3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="${poly(sp.done)}" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#${id}g)"/>
+${marks}<circle cx="${st[0].toFixed(1)}" cy="${st[1].toFixed(1)}" r="2.3" fill="#0e0e0e" stroke="#fff" stroke-width="1"/>${flag}
+<circle cx="${hd[0].toFixed(1)}" cy="${hd[1].toFixed(1)}" r="3" fill="${c}" opacity=".4"><animate attributeName="r" values="3;7.5;3" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values=".45;0;.45" dur="1.8s" repeatCount="indefinite"/></circle>
+<circle cx="${hd[0].toFixed(1)}" cy="${hd[1].toFixed(1)}" r="3.1" fill="${c}" stroke="#fff" stroke-width="1.2"/>${bubble}</svg></div>`;
+}
+// — metas extras: tipo (km ou rounds), time cap crescente/decrescente e relatório final por equipe —
+let MT_CAP_SEEN = false;
+function mtUnit() { return MT_CFG && MT_CFG.unit === 'rounds' ? 'rounds' : 'km'; }
+const mtCapSec = () => (MT_CFG && +MT_CFG.capSec > 0) ? +MT_CFG.capSec : 0;
+function mtCapReached() { const cs = mtCapSec(); return !!(cs && MT_CFG.startedAt && Date.now() - new Date(MT_CFG.startedAt).getTime() >= cs*1000); }
+const mtEffClosed = () => !!MT_CFG && (!!MT_CFG.closed || mtCapReached());
+const mtEnded = () => mtEffClosed() && !!MT_CFG.startedAt;
+function mtParseTime(t) {   // "45", "45:00" ou "1:30:00" → segundos
+  const p = String(t || '').trim().split(':').map(Number); if (!p[0] && p.length === 1 || p.some(isNaN)) return 0;
+  return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p.length === 2 ? p[0]*60 + p[1] : p[0]*60;
+}
+function mtEndMs() {   // momento do fim da prova (para o relatório)
+  if (!MT_CFG || !MT_CFG.startedAt) return null;
+  const t0 = new Date(MT_CFG.startedAt).getTime(), cs = mtCapSec()*1000;
+  if (MT_CFG.endedAt) return Math.min(new Date(MT_CFG.endedAt).getTime(), cs ? t0 + cs : Infinity);
+  if (cs && Date.now() >= t0 + cs) return t0 + cs;
+  return MT_ENTRIES.length ? new Date(MT_ENTRIES[MT_ENTRIES.length-1].created_at).getTime() : Date.now();
+}
+function mtRenderClock() {
+  const el = document.getElementById('meta-clock'), cs = mtCapSec();
+  if (!mtCapReached()) MT_CAP_SEEN = false;
+  if (!MT_CFG || !cs) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const mode = MT_CFG.capMode === 'up' ? 'up' : 'down', ms = mtRaceMs(), over = ms !== null && ms >= cs*1000, ended = mtEffClosed(); let big, sub, col = 'var(--accent)';
+  if (ms === null) { big = mtClock(cs); sub = '⏱ TIME CAP · AGUARDANDO LARGADA'; }
+  else { const sec = Math.floor(ms/1000); big = mode === 'down' ? mtClock(Math.max(0, cs - sec)) : mtClock(Math.min(sec, cs));
+    sub = over ? '⏰ TEMPO ESGOTADO' : ended ? '⏹ PROVA ENCERRADA' : mode === 'down' ? 'RESTAM · TIME CAP ' + mtClock(cs) : 'TEMPO DE PROVA · LIMITE ' + mtClock(cs);
+    if (mode === 'down' && !ended && cs - sec <= 60) col = 'var(--red)'; if (over) col = 'var(--red)'; }
+  el.innerHTML = `<div style="font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:800">${sub}</div><div style="font-family:'Bebas Neue',sans-serif;font-size:76px;line-height:1.05;color:${col}">${big}</div>`;
+}
+// — relatório final: quanto cada equipe fez —
+const mtTeamStats = () => mtGroups().map(g => { const a = mtAgg(g.id); return { g, a, pers:mtPersons(a, g), pct:g.goal > 0 ? a.total/g.goal*100 : 0 }; });
+function mtFinalData() {
+  const hm = t => t ? new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '—', ms = mtRaceMs();
+  return { unit:mtUnit(), st:mtTeamStats().sort((x, y) => y.pct - x.pct || y.a.total - x.a.total), title:(MT_CFG.title || 'Desafio').replace(/\s+/g, ' ').trim(),
+    when:`Largada ${hm(MT_CFG.startedAt && new Date(MT_CFG.startedAt).getTime())} · Fim ${hm(mtEndMs())} · Duração ${ms !== null ? mtDur(ms) : '—'}` + (mtCapSec() ? ` · Time cap ${mtClock(mtCapSec())}` : '') };
+}
+function mtRenderFinal() {
+  const el = document.getElementById('meta-final');
+  if (!MT_CFG || !mtEnded()) { el.style.display = 'none'; return; }
+  const d = mtFinalData();
+  el.style.display = 'block';
+  el.innerHTML = `<div style="font-weight:800;font-size:18px">📄 RELATÓRIO FINAL</div><div style="font-size:12px;color:var(--muted);margin:4px 0 12px">${d.when}</div>` + d.st.map((t, i) => `<div class="mt-row">
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} <span style="color:${t.g.color}">${listaEsc(t.g.name || 'Total')}</span></b><b>${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</b></div>
+    <div class="mt-mini"><div style="width:${Math.min(100, t.pct).toFixed(1)}%;background:${t.g.color}"></div></div>
+    <div style="font-size:11px;color:var(--muted)">${Math.floor(t.pct)}% da meta${t.pct >= 100 ? ' · 🎉 superada' : ''}${t.pers ? ' · ' + t.pers + ' pessoa' + (t.pers === 1 ? '' : 's') : ''} · ${t.a.n} registro${t.a.n === 1 ? '' : 's'}</div></div>`).join('')
+    + `<div style="display:flex;gap:8px;margin-top:12px"><button class="btn-sm-danger" style="flex:1;padding:12px" onclick="mtPrintFinal()">🖨️ Imprimir / PDF</button><button class="btn-sm-danger" style="flex:1;padding:12px" onclick="mtCopyFinal()">📋 Copiar resumo</button></div>`;
+}
+function mtFinalText() {
+  const d = mtFinalData();
+  return `🏁 ${d.title.toUpperCase()} — ${mtEnded() ? 'RELATÓRIO FINAL' : 'RELATÓRIO PARCIAL'}\n${d.when}\n\n` + d.st.map((t, i) => `${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${t.g.name || 'Total'} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit} (${Math.floor(t.pct)}%)${t.pers ? ' · ' + t.pers + ' pessoas' : ''}`).join('\n');
+}
+function mtCopyFinal() {
+  const t = mtFinalText(), done = () => toast('📋 Resumo copiado!');
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, () => toast('⚠️ Não foi possível copiar')); else { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); done(); }
+}
+function mtPrintFinal() {
+  if (!MT_CFG) return; const d = mtFinalData(), e = listaEsc;
+  const rank = d.st.map((t, i) => `<tr><td>${i+1}º</td><td>${e(t.g.name || 'Total')}</td><td>${mtKm(t.a.total)} ${d.unit}</td><td>${mtKm(t.g.goal)} ${d.unit}</td><td>${Math.floor(t.pct)}%</td><td>${t.pers}</td><td>${t.a.n}</td></tr>`).join('');
+  const teams = d.st.map(t => `<h2 style="border-left:6px solid ${t.g.color};padding-left:8px">${e(t.g.name || 'Total')} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</h2><table><thead><tr><th>Nº</th><th>Atleta</th><th>Total (${d.unit})</th><th>Registros</th><th>% da equipe</th></tr></thead><tbody>` +
+    (t.a.list.map(p => { const r = (t.g.roster || []).find(x => listaNorm(x.name) === listaNorm(p.name)); return `<tr><td>${r ? r.n : '—'}</td><td>${e(p.name)}</td><td>${mtKm(p.km)}</td><td>${p.n}</td><td>${(p.km/(t.a.total||1)*100).toFixed(1).replace('.', ',')}%</td></tr>`; }).join('') || '<tr><td colspan="5">Sem registros</td></tr>') + '</tbody></table>').join('');
+  const html = `<html><head><meta charset="utf-8"><title>${e(d.title)} — Relatório</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:22px 0 8px}.m{color:#555;font-size:13px;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}@media print{button{display:none}}</style></head><body>
+    <h1>${e(d.title)} — ${mtEnded() ? 'Relatório final' : 'Relatório parcial'}</h1><div class="m">${d.when} · gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</div>
+    <h2>Quanto cada equipe fez</h2><table><thead><tr><th>Pos.</th><th>Equipe</th><th>Total</th><th>Meta</th><th>% da meta</th><th>Pessoas</th><th>Registros</th></tr></thead><tbody>${rank}</tbody></table>${teams}
+    <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button></body></html>`;
+  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+}
 function mtNamesBox(g, a) {   // quem está na equipe: atletas cadastrados (com nº) + quem já registrou km
   const c = g.color || '#e8ff00', seen = new Set(), items = [];
   (g.roster || []).forEach(r => { seen.add(listaNorm(r.name)); items.push({ n:r.n, name:r.name }); });
@@ -1930,12 +2133,13 @@ function mtNamesBox(g, a) {   // quem está na equipe: atletas cadastrados (com 
 }
 function mtGroupCard(g) {
   const T = mtTimes(g.id), a = T.a, pct = Math.min(100, a.total/g.goal*100), c = g.color, pers = mtPersons(a, g);
-  const badge = T.done ? '🎉 SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
+  const badge = T.done ? '🎉 SUPERADA' : mtEffClosed() ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
   return `<div class="mt-card" style="border-color:${c}66">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:${c}">${listaEsc(g.name)}</b><span class="mt-live" style="color:${c};background:${c}22">${badge}</span></div>
-    <div style="text-align:center;margin-top:8px"><span style="font-family:'Bebas Neue',sans-serif;font-size:62px;line-height:1;color:${c}">${mtKm(a.total)}</span><span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--muted)"> / ${mtKm(g.goal)} km</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b class="mt-gname" style="color:${c}">${listaEsc(g.name)}</b><span class="mt-live" style="color:${c};background:${c}22">${badge}</span></div>
+    <div style="text-align:center;margin-top:8px"><span class="mt-gtotal" style="color:${c}">${mtKm(a.total)}</span><span class="mt-ggoal"> / ${mtKm(g.goal)} ${mtUnit()}</span></div>
+    ${mtRouteSVG(MT_CFG.route || 'onda', pct, c, 150, mtRInfo(a.total, g.goal))}
     <div class="mt-bar"><div class="mt-fill" style="width:${pct}%;background:${c}"></div></div>
-    <div style="font-size:13px;font-weight:700">${Math.floor(pct)}% da meta</div>
+    <div class="mt-pct">${Math.floor(pct)}% da meta</div>
     ${mtLeft(T.done, g.goal-a.total, a.total-g.goal, c)}
     <div class="mt-stats" style="grid-template-columns:repeat(${pers > 0 ? 2 : 1},1fr)">${mtStatCells(pers, a.n)}</div>
     ${mtNamesBox(g, a)}
@@ -1945,9 +2149,9 @@ const mtUnlocked = () => { if (!MT_CFG || !MT_CFG.staffPw) return true; try { co
 // — controle da prova (largada / fim) e tempo de prova = fim − largada —
 function mtRaceMs() {
   if (!MT_CFG || !MT_CFG.startedAt) return null;
-  const t0 = new Date(MT_CFG.startedAt).getTime(), last = MT_ENTRIES.length ? new Date(MT_ENTRIES[MT_ENTRIES.length-1].created_at).getTime() : Date.now();
-  const end = MT_CFG.endedAt ? new Date(MT_CFG.endedAt).getTime() : MT_CFG.closed ? last : Date.now();
-  return Math.max(0, end - t0);
+  const t0 = new Date(MT_CFG.startedAt).getTime(), cs = mtCapSec()*1000, last = MT_ENTRIES.length ? new Date(MT_ENTRIES[MT_ENTRIES.length-1].created_at).getTime() : Date.now();
+  const end = MT_CFG.endedAt ? new Date(MT_CFG.endedAt).getTime() : MT_CFG.closed ? last : Date.now(), ms = Math.max(0, end - t0);
+  return cs && ms > cs ? cs : ms;
 }
 async function mtCfgPatch(patch) {   // relê a configuração antes de gravar
   if (!mtUnlocked() || !MT_CFG.staffPw) { toast('🔒 Entre com a senha da equipe'); return false; }
@@ -1955,7 +2159,7 @@ async function mtCfgPatch(patch) {   // relê a configuração antes de gravar
   MT_CFG = { ...MT_CFG, ...patch }; return await setSetting('relay_challenge', MT_CFG);
 }
 async function mtRaceStart() { if (!confirm('Dar a largada agora? O cronômetro da prova começa a contar a partir deste momento.')) return; if (await mtCfgPatch({ startedAt:new Date().toISOString(), endedAt:null, closed:false })) { toast('🏁 Largada dada!'); mtRefresh(); } }
-async function mtRaceEnd() { if (!confirm('Encerrar a prova agora? Os registros fecham e o tempo final fica gravado.')) return; if (await mtCfgPatch({ closed:true, endedAt:new Date().toISOString() })) { toast('⏹ Prova encerrada'); mtRefresh(); } }
+async function mtRaceEnd() { if (!confirm('Encerrar a prova agora? Os registros fecham e o tempo final fica gravado.')) return; if (await mtCfgPatch({ closed:true, endedAt:new Date().toISOString() })) { toast('⏹ Prova encerrada'); mtRefresh().then(() => { const f = document.getElementById('meta-final'); if (f && f.style.display !== 'none' && f.scrollIntoView) f.scrollIntoView({ behavior:'smooth', block:'start' }); }); } }
 async function mtRaceReopen() { if (await mtCfgPatch({ closed:false, endedAt:null })) { toast('▶ Prova reaberta'); mtRefresh(); } }
 function mtLogout() { localStorage.removeItem('mt_unlock'); mtRender(); }
 function mtLockClick() { document.getElementById('mt-pw').value = ''; document.getElementById('meta-pw-ov').classList.add('open'); setTimeout(() => document.getElementById('mt-pw').focus(), 100); }
@@ -1968,15 +2172,15 @@ function mtRenderStaff() {
   pub.innerHTML = showPub ? '<button class="btn btn-blue" style="margin-bottom:16px" onclick="cadOpen()">🙋 SOU ATLETA: CADASTRAR MINHA PULSEIRA</button>' : '';
   if (!MT_CFG || !un) { el.style.display = 'none'; return; }
   const c = MT_CFG, ms = mtRaceMs(), hm = t => new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-  const running = !!c.startedAt && !c.closed;
+  const eff = mtEffClosed(), running = !!c.startedAt && !eff;
   const status = `Largada: <b>${c.startedAt ? hm(c.startedAt) : '—'}</b> · Fim: <b>${c.endedAt ? hm(c.endedAt) : '—'}</b>` + (ms !== null ? ` · Duração: <b>${mtDur(ms)}</b>${running ? ' (em andamento)' : ''}` : '');
   const ctrl = !hasPw ? '<div style="font-size:12px;color:var(--gold)">⚠️ Defina uma senha no admin (🏁 Meta) para liberar a largada e o fim da prova.</div>'
     : !c.startedAt ? '<button class="btn btn-blue" onclick="mtRaceStart()">🏁 DAR A LARGADA</button>'
     : running ? '<button class="mt-tiny warn" onclick="mtRaceEnd()">⏹ Encerrar prova</button>'
-    : '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="mt-tiny" onclick="mtRaceReopen()">▶ Reabrir</button><button class="mt-tiny warn" onclick="mtRaceStart()">🏁 Nova largada (zera o tempo)</button></div>';
+    : `<div style="display:flex;gap:8px;flex-wrap:wrap">${mtCapReached() ? '' : '<button class="mt-tiny" onclick="mtRaceReopen()">▶ Reabrir</button>'}<button class="mt-tiny warn" onclick="mtRaceStart()">🏁 Nova largada (zera o tempo)</button></div>`;
   el.style.display = 'block';
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:var(--green)">✅ Acesso liberado</b>${hasPw ? '<button class="btn-sm-danger" style="padding:6px 12px" onclick="mtLogout()">Sair</button>' : ''}</div>
-    <button class="btn btn-blue" ${c.closed ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${c.closed ? '🔒 Prova encerrada' : '➕ Registrar km'}</button>
+    <button class="btn btn-blue" ${eff ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${eff ? '🔒 Prova encerrada' : '➕ Registrar ' + (mtUnit() === 'km' ? 'km' : 'rounds')}</button>
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800">CONTROLE DA PROVA</div><div style="font-size:13px;margin:6px 0 10px">${status}</div>${ctrl}</div>`;
 }
 // — cadastro de atleta: nome + cor da equipe + nº da pulseira (entra direto na lista) —
@@ -2041,21 +2245,23 @@ function mtRender() {
   if (!MT_CFG) { el('meta-title').textContent = 'Nenhum desafio ativo'; mtRenderStaff(); return; }
   el('meta-title').textContent = MT_CFG.title || 'Meta coletiva';
   if (MT_LOGO) { el('meta-logo').src = MT_LOGO; el('meta-logo').style.display = 'block'; }
-  const multi = mtMulti(); el('meta-single').style.display = multi ? 'none' : 'block'; el('meta-groups').style.display = multi ? 'block' : 'none';
+  const multi = mtMulti(); el('meta-single').style.display = multi ? 'none' : 'block'; el('meta-groups').style.display = multi ? '' : 'none'; el('meta-groups').style.setProperty('--cols', Math.min(4, Math.max(1, mtGroups().length)));
   el('meta-img-single').style.display = multi ? 'none' : 'block';
   if (!multi) {
     const g = mtGroups()[0], T = mtTimes(''), a = T.a, pct = Math.min(100, a.total/g.goal*100), c = g.color;
-    el('meta-total').textContent = mtKm(a.total); el('meta-goal').textContent = ' / ' + mtKm(g.goal) + ' km';
+    el('meta-total').textContent = mtKm(a.total); el('meta-goal').textContent = ' / ' + mtKm(g.goal) + ' ' + mtUnit();
     el('meta-fill').style.width = pct + '%'; el('meta-pct').textContent = Math.floor(pct) + '% da meta';
     el('meta-leftbox').innerHTML = mtLeft(T.done, g.goal-a.total, a.total-g.goal, c);
     el('meta-stats').style.gridTemplateColumns = `repeat(${a.list.length > 0 ? 2 : 1},1fr)`; el('meta-stats').innerHTML = mtStatCells(a.list.length, a.n);
-    el('meta-badge').innerHTML = T.done ? '🎉 META SUPERADA' : MT_CFG.closed ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
-    el('meta-report').innerHTML = mtRows(a, g); el('meta-img-single').innerHTML = mtShareBtn('', c); el('meta-names').innerHTML = mtNamesBox(g, a);
+    el('meta-badge').innerHTML = T.done ? '🎉 META SUPERADA' : mtEffClosed() ? '⏹ ENCERRADO' : '<i></i>AO VIVO';
+    el('meta-report').innerHTML = mtRows(a, g); el('meta-img-single').innerHTML = mtShareBtn('', c); el('meta-names').innerHTML = mtNamesBox(g, a); el('meta-route').innerHTML = mtRouteSVG(MT_CFG.route || 'onda', pct, c, 150, mtRInfo(a.total, g.goal));
   } else {
     el('meta-groups').innerHTML = mtGroups().map(mtGroupCard).join('');
     el('meta-report').innerHTML = mtGroups().map(g => `<div class="section-label" style="color:${g.color};margin-top:6px">${listaEsc(g.name)}</div>` + mtRows(mtAgg(g.id), g)).join('');
   }
   mtRenderStaff();
+  mtRenderClock(); mtRenderFinal();
+  if (mtEffClosed()) document.getElementById('meta-sheet').classList.remove('open');   // prova encerrada ou tempo esgotado: fecha o formulário de registro
   el('meta-upd').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 async function mtRefresh() {
@@ -2069,6 +2275,7 @@ async function mtStartPublic() {
   if (MT_CFG && /membros|ambos/.test(MT_CFG.source||'')) await loadMembers();
   await mtLoadEntries(); mtRender();
   mtPoll = setInterval(() => { if (!document.hidden) mtRefresh(); }, 6000);
+  setInterval(() => { mtRenderClock(); if (mtCapReached() && !MT_CAP_SEEN) { MT_CAP_SEEN = true; mtRender(); } }, 1000);
 }
 function mtNames() {
   const src = (MT_CFG && MT_CFG.source) || 'evento', m = new Map(), add = n => { n = String(n||'').trim(); if (n) m.set(listaNorm(n), n); };
@@ -2157,14 +2364,14 @@ function mtWho() {
   if (!n) { el.textContent = ''; return; }
   if (!mtSelGrp) { el.style.color = 'var(--gold)'; el.textContent = 'Escolha a cor da pulseira'; return; }
   const r = mtRoster(mtSelGrp).find(x => x.n === n), g = mtGroup(mtSelGrp);
-  if (r) { const m = mtMine(r.name, mtSelGrp); el.style.color = 'var(--green)'; el.textContent = `✅ ${r.name}` + (m ? ` — já fez ${mtKm(m.km)} km` : ''); }
+  if (r) { const m = mtMine(r.name, mtSelGrp); el.style.color = 'var(--green)'; el.textContent = `✅ ${r.name}` + (m ? ` — já fez ${mtKm(m.km)} ${mtUnit()}` : ''); }
   else { el.style.color = 'var(--red)'; el.textContent = `⚠️ Nº ${n} não está cadastrado no ${g.name}`; }
 }
 function mtToggleName() { const b = document.getElementById('mt-name-block'); b.dataset.open = b.dataset.open === '1' ? '0' : '1'; mtApplyMode(); }
 // acesso ao registro: senha própria (não dá acesso ao painel admin)
 async function mtHash(t) { try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cantil:' + t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); } catch (e) { return 'p:' + t; } }
 function mtOpenSheet() {
-  if (!MT_CFG || MT_CFG.closed) return;
+  if (!MT_CFG || mtEffClosed()) return;
   if (mtUnlocked()) return mtOpenSheetNow();
   document.getElementById('mt-pw').value = ''; document.getElementById('meta-pw-ov').classList.add('open'); setTimeout(() => document.getElementById('mt-pw').focus(), 100);
 }
@@ -2182,30 +2389,33 @@ function mtOpenSheetNow() {
   if (multi) { const sv = localStorage.getItem('mt_grp'); mtSelGrp = mtGroups().some(g => g.id === sv) ? sv : ''; mtGchips(); } else mtSelGrp = '';
   document.getElementById('mt-num').value = ''; document.getElementById('mt-who').textContent = ''; document.getElementById('mt-last').textContent = '';
   mtApplyMode(); mtNameChange(); document.getElementById('mt-km').value = ''; mtUndoBtn();
-  const lap = mtLapKm();
-  document.getElementById('mt-chips').innerHTML = lap > 0 ? [1,2,3,4,5].map(n => `<button class="bd-opt" onclick="mtSetKm('${mtFmtKm(n*lap)}')">${n} volta${n>1?'s':''}</button>`).join('') : '';
+  const lap = mtLapKm(), rnd = mtUnit() === 'rounds';
+  document.getElementById('mt-km-label').textContent = rnd ? 'Rounds feitos agora' : 'Km percorridos agora'; document.getElementById('mt-km').placeholder = rnd ? 'ex: 1' : 'ex: 2,4';
+  document.getElementById('mt-chips').innerHTML = rnd ? [1,2,3,4,5].map(n => `<button class="bd-opt" data-v="${n}" onclick="mtSetKm('${n}')">${n} round${n>1?'s':''}</button>`).join('')
+    : lap > 0 ? [1,2,3,4,5].map(n => `<button class="bd-opt" data-v="${n*lap}" onclick="mtSetKm('${mtFmtKm(n*lap)}')">${n} volta${n>1?'s':''}</button>`).join('') : '';
   mtDefaultKm();   // já vem preenchido com 1 volta
   document.getElementById('meta-sheet').classList.add('open');
 }
 const mtFmtKm = v => String(+(+v).toFixed(2)).replace('.', ',');
 const mtLapKm = () => parseFloat(String((MT_CFG && MT_CFG.lapKm) || '').replace(',', '.')) || 0;
-function mtChipSync() { const lap = mtLapKm(), cur = parseFloat(document.getElementById('mt-km').value.replace(',', '.')); document.querySelectorAll('#mt-chips .bd-opt').forEach((b, i) => b.classList.toggle('on', lap > 0 && Math.abs(cur - (i+1)*lap) < 0.001)); }
+function mtChipSync() { const cur = parseFloat(document.getElementById('mt-km').value.replace(',', '.')); document.querySelectorAll('#mt-chips .bd-opt').forEach(b => b.classList.toggle('on', Math.abs(cur - parseFloat(b.dataset.v)) < 0.001)); }
 function mtSetKm(v) { document.getElementById('mt-km').value = v; mtChipSync(); }
-function mtDefaultKm() { const l = mtLapKm(); mtSetKm(l > 0 ? mtFmtKm(l) : ''); }
+function mtDefaultKm() { if (mtUnit() === 'rounds') return mtSetKm('1'); const l = mtLapKm(); mtSetKm(l > 0 ? mtFmtKm(l) : ''); }
 function mtNameChange() { document.getElementById('mt-name-free').style.display = document.getElementById('mt-name').value === '__free' ? 'block' : 'none'; mtShowMine(); }
 function mtShowMine() {
   const m = mtMine(mtCurName(), mtMulti() ? (mtSelGrp || undefined) : ''), el = document.getElementById('mt-mine');
   el.style.display = m ? 'block' : 'none'; el.textContent = '';
-  if (m) el.textContent = `Já registrou ${mtKm(m.km)} km (${m.n} vez${m.n>1?'es':''}). Este novo registro vai somar.`;
+  if (m) el.textContent = `Já registrou ${mtKm(m.km)} ${mtUnit()} (${m.n} vez${m.n>1?'es':''}). Este novo registro vai somar.`;
 }
-function mtUndoBtn() { const b = document.getElementById('mt-undo'); b.style.display = MT_LAST ? 'block' : 'none'; if (MT_LAST) b.textContent = `↩ Desfazer último: ${MT_LAST.name} · ${mtKm(MT_LAST.km)} km`; }
+function mtUndoBtn() { const b = document.getElementById('mt-undo'); b.style.display = MT_LAST ? 'block' : 'none'; if (MT_LAST) b.textContent = `↩ Desfazer último: ${MT_LAST.name} · ${mtKm(MT_LAST.km)} ${mtUnit()}`; }
 async function mtUndo() {
-  if (!MT_LAST || !confirm(`Desfazer o registro de ${MT_LAST.name} (${mtKm(MT_LAST.km)} km)?`)) return;
+  if (!MT_LAST || !confirm(`Desfazer o registro de ${MT_LAST.name} (${mtKm(MT_LAST.km)} ${mtUnit()})?`)) return;
   const { error } = await sb.from('relay_entries').delete().eq('id', MT_LAST.id);
   if (error) return toast('❌ Não foi possível desfazer');
   MT_LAST = null; mtUndoBtn(); document.getElementById('mt-last').textContent = ''; toast('↩ Registro desfeito'); mtRefresh();
 }
 async function mtSubmit() {
+  if (mtEffClosed()) return toast(mtCapReached() ? '⏰ Tempo esgotado: registros encerrados' : '🔒 Prova encerrada');
   const multi = mtMulti(), grp = multi ? mtSelGrp : '', team = mtTeamMode(), num = parseInt(document.getElementById('mt-num').value); let name = '';
   if (multi && !grp) return toast('⚠️ Escolha a cor da equipe');
   if (team) name = mtCurName() || mtGroup(grp).name;
@@ -2213,14 +2423,14 @@ async function mtSubmit() {
   else name = mtCurName();
   if (!name) return toast(multi ? '⚠️ Digite o número da pulseira (ou busque pelo nome)' : '⚠️ Escolha ou digite seu nome');
   const km = parseFloat(document.getElementById('mt-km').value.replace(',', '.'));
-  if (!(km > 0) || km > 60) return toast('⚠️ Informe os km (entre 0,1 e 60)');
-  if (km > 15 && !confirm(`Confirma ${mtKm(km)} km de uma vez?`)) return;
+  if (!(km > 0) || km > 60) return toast(`⚠️ Informe ${mtUnit() === 'km' ? 'os km' : 'os rounds'} (entre 0,1 e 60)`);
+  if (km > 15 && !confirm(`Confirma ${mtKm(km)} ${mtUnit()} de uma vez?`)) return;
   const btn = document.getElementById('mt-send'); btn.disabled = true;
   const { data, error } = await sb.from('relay_entries').insert({ challenge_id:MT_CFG.id, name, km, ...(multi ? { grp } : {}) }).select().single();
   btn.disabled = false;
   if (error) return toast('❌ Não foi possível registrar. Tente de novo.');
   const id = Array.isArray(data) ? (data[0] || {}).id : (data || {}).id; MT_LAST = id ? { id, name, km } : null;
-  await mtRefresh(); const mm = mtMine(name, multi ? grp : ''), msg = `✅ ${name} +${mtKm(km)} km` + (mm ? ` · total ${mtKm(mm.km)} km` : '');
+  await mtRefresh(); const mm = mtMine(name, multi ? grp : ''), msg = `✅ ${name} +${mtKm(km)} ${mtUnit()}` + (mm ? ` · total ${mtKm(mm.km)} ${mtUnit()}` : '');
   if (multi) {  // registro rápido: a tela fica aberta para o próximo
     document.getElementById('mt-num').value = ''; mtDefaultKm(); document.getElementById('mt-who').textContent = ''; document.getElementById('mt-name').value = '';
     document.getElementById('mt-last').textContent = msg; mtUndoBtn(); mtNameChange(); if (!team) document.getElementById('mt-num').focus();
@@ -2244,7 +2454,7 @@ async function mtMakeImage(gid, fontColor) {
   while (lines() > 2 && ts > 52) ts -= 4;
   x.font = `${ts}px "Bebas Neue",Impact,sans-serif`; let ye = mtWrap(x, tt, W/2, 380, 920, ts + 4);
   if (g.name) { let gs = 84; do { x.font = `${gs}px "Bebas Neue",Impact,sans-serif`; gs -= 4; } while (x.measureText(g.name.toUpperCase()).width > 920 && gs > 40); x.fillStyle = col; ye += 92; x.fillText(g.name.toUpperCase(), W/2, ye); }
-  const label = done ? 'SUPERADO' : MT_CFG.closed ? 'ENCERRADO' : `EM ANDAMENTO  ${pct}%`;
+  const label = done ? 'SUPERADO' : mtEffClosed() ? 'ENCERRADO' : `EM ANDAMENTO  ${pct}%`;
   x.font = '800 44px Outfit,Arial,sans-serif'; const pw = x.measureText(label).width + 80; x.fillStyle = col;
   { const px = W/2-pw/2, py = ye+40, r = 42; x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+pw,py,px+pw,py+84,r); x.arcTo(px+pw,py+84,px,py+84,r); x.arcTo(px,py+84,px,py,r); x.arcTo(px,py,px+pw,py,r); x.closePath(); x.fill(); }
   x.shadowBlur = 0; x.fillStyle = bdLum(col) > 140 ? '#0a0a0a' : '#ffffff'; x.fillText(label, W/2, ye+99); x.shadowColor = sh; x.shadowBlur = 14;
@@ -2255,7 +2465,7 @@ async function mtMakeImage(gid, fontColor) {
     const show = rows.length > cap ? rows.slice(0, cap - 1) : rows, extra = rows.length - show.length, all = show.concat(extra ? [{ name:`+ ${extra} pessoas`, km:null }] : []);
     const per = Math.ceil(all.length / cols), colW = (W - 140 - 40*(cols-1)) / cols;
     all.forEach((p, i) => {
-      const cx0 = 70 + Math.floor(i / per) * (colW + 40), yy = y0 + (i % per) * rh, kmT = p.km === null ? '' : mtKm(p.km) + ' km';
+      const cx0 = 70 + Math.floor(i / per) * (colW + 40), yy = y0 + (i % per) * rh, kmT = p.km === null ? '' : mtKm(p.km) + ' ' + mtUnit();
       x.font = `700 ${fs}px Outfit,Arial,sans-serif`; let nm = p.name; const mw = colW - (kmT ? x.measureText(kmT).width + 16 : 0);
       if (x.measureText(nm).width > mw) { while (nm.length > 1 && x.measureText(nm + '…').width > mw) nm = nm.slice(0, -1); nm += '…'; }
       x.textAlign = 'left'; x.fillStyle = fg; x.fillText(nm, cx0, yy);
@@ -2263,20 +2473,23 @@ async function mtMakeImage(gid, fontColor) {
     });
     x.textAlign = 'center';
   } else {
-  const pts = [[110,1110],[250,990],[190,830],[400,730],[560,850],[760,690],[900,790],[970,970],[820,1080],[930,1170]].map(([px, py]) => [px, 760 + (py-690)*.85]);
-  x.strokeStyle = col; x.lineWidth = 16; x.lineCap = x.lineJoin = 'round'; x.shadowColor = rgba(col,.7); x.shadowBlur = 30; x.beginPath(); x.moveTo(...pts[0]);
-  for (let i = 1; i < pts.length-1; i++) x.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0]+pts[i+1][0])/2, (pts[i][1]+pts[i+1][1])/2);
-  x.lineTo(...pts[pts.length-1]); x.stroke(); x.shadowColor = sh; x.shadowBlur = 14; x.fillStyle = fg; [pts[0], pts[pts.length-1]].forEach(p => { x.beginPath(); x.arc(p[0], p[1], 20, 0, 7); x.fill(); });
+  const kind = MT_CFG.route || 'onda';
+  if (kind !== 'none') {
+    const rp = mtRoutePts(kind).map(([px, py]) => [90 + px*9, 760 + py*9]), sp = mtRouteSplit(rp, pct);
+    const draw = (arr, alpha) => { x.globalAlpha = alpha; x.strokeStyle = col; x.lineWidth = 16; x.lineCap = x.lineJoin = 'round'; x.beginPath(); arr.forEach((q, i) => i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1])); x.stroke(); x.globalAlpha = 1; };
+    x.shadowColor = rgba(col,.7); x.shadowBlur = 30; draw(rp, .25); draw(sp.done, 1); x.shadowColor = sh; x.shadowBlur = 14;
+    x.fillStyle = fg; x.beginPath(); x.arc(rp[0][0], rp[0][1], 20, 0, 7); x.fill(); x.fillStyle = col; x.beginPath(); x.arc(sp.head[0], sp.head[1], 26, 0, 7); x.fill(); x.lineWidth = 6; x.strokeStyle = fg; x.stroke();
+  }
   }
   const fit = (t, mk, maxW, sz) => { do { x.font = mk(sz); sz -= 4; } while (x.measureText(t).width > maxW && sz > 40); };
-  const big = mtKm(a.total), sub = 'QUILÔMETROS' + (done ? ` · META ${mtKm(goal)} KM` : '');
+  const big = mtKm(a.total), sub = (mtUnit() === 'km' ? 'QUILÔMETROS' : 'ROUNDS') + (done ? ` · META ${mtKm(goal)} ${mtUnit().toUpperCase()}` : '');
   x.fillStyle = fg; fit(big, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 280); x.fillText(big, W/2, 1500);
   fit(sub, s => `${s}px "Bebas Neue",Impact,sans-serif`, 940, 80); x.fillText(sub, W/2, 1598);
   const pers = gid === '' && !mtMulti() ? a.list.length : mtPersons(a, g), cols = [];
   if (pers > 0) cols.push(['PESSOAS', String(pers)]); { const rms = mtRaceMs(); if (rms !== null) cols.push([MT_CFG.endedAt || MT_CFG.closed ? 'TEMPO DE PROVA' : 'TEMPO ATÉ AGORA', mtDur(rms)]); } if (!cols.length) cols.push(['REGISTROS', String(a.n)]);
   cols.forEach(([l, v], i) => { const cx = cols.length === 1 ? W/2 : (i ? 780 : 300); x.fillStyle = fg; x.globalAlpha = .75; x.font = '800 34px Outfit,Arial,sans-serif'; x.fillText(l, cx, 1690); x.globalAlpha = 1; x.font = '120px "Bebas Neue",Impact,sans-serif'; x.fillText(v, cx, 1800); });
   const me = localStorage.getItem('mt_me'), mine = !mtMulti() && me && mtMine(me, g.id);
-  x.fillStyle = fg; x.globalAlpha = .8; x.font = '700 34px Outfit,Arial,sans-serif'; x.fillText(mine ? `Eu fiz ${mtKm(mine.km)} km  ·  #DesafioCantil` : '#DesafioCantil', W/2, 1880); x.globalAlpha = 1;
+  x.fillStyle = fg; x.globalAlpha = .8; x.font = '700 34px Outfit,Arial,sans-serif'; x.fillText(mine ? `Eu fiz ${mtKm(mine.km)} ${mtUnit()}  ·  #DesafioCantil` : '#DesafioCantil', W/2, 1880); x.globalAlpha = 1;
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
 async function mtRenderImage() {
@@ -2299,6 +2512,11 @@ async function mtShare() {
   if (navigator.canShare && navigator.canShare({ files:[f] })) { try { await navigator.share({ files:[f], title:MT_CFG.title }); } catch (e) {} } else mtDownload();
 }
 // — admin —
+let MTA_ROUTE = 'onda';
+function mtaRenderRoutes() {
+  document.getElementById('mta-routes').innerHTML = Object.keys(MT_ROUTES).map(k => `<button class="bd-opt${k === MTA_ROUTE ? ' on' : ''}" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:10px 12px" onclick="mtaPickRoute('${k}')"><div>${MT_ROUTES[k]}</div>${k === 'none' ? '' : mtRouteSVG(k, 55, '#e8ff00', 96, { total:21, goal:38, lapKm:parseFloat(String(document.getElementById('mta-lap').value).replace(',', '.')) || 0.4 })}</button>`).join('');
+}
+function mtaPickRoute(k) { MTA_ROUTE = k; mtaRenderRoutes(); }
 function mtaCollect() {
   MTA_GROUPS = MTA_GROUPS.map((g, i) => { const v = id => (document.getElementById(id + i) || {}).value;
     return v('mtg-n') === undefined ? g : { ...g, name:v('mtg-n').trim(), color:v('mtg-c'), goal:v('mtg-g'), rosterText:v('mtg-p') }; });
@@ -2307,7 +2525,7 @@ function mtaCollect() {
 function mtaRenderGroups() {
   document.getElementById('mta-groups').innerHTML = MTA_GROUPS.map((g, i) => `<div class="mt-card" style="padding:12px;margin-bottom:10px;border-color:${g.color}66">
     <div style="display:flex;gap:8px;margin-bottom:8px"><input type="text" id="mtg-n${i}" value="${listaEsc(g.name)}" placeholder="Nome (ex: Grupo Verde)"><input type="color" id="mtg-c${i}" value="${g.color}" style="width:64px;padding:2px"><span style="color:var(--red);cursor:pointer;align-self:center;padding:0 6px" onclick="mtaDelGroup(${i})">✕</span></div>
-    <input type="text" id="mtg-g${i}" inputmode="decimal" value="${g.goal||''}" placeholder="Meta em km (ex: 38)" style="margin-bottom:8px">
+    <input type="text" id="mtg-g${i}" inputmode="decimal" value="${g.goal||''}" placeholder="Meta (ex: 38 km ou 40 rounds)" style="margin-bottom:8px">
     <textarea id="mtg-p${i}" rows="5" placeholder="Atletas com nº da pulseira (opcional), um por linha:&#10;1 Ana Souza&#10;2 Bruno Lima&#10;Deixe vazio para equipe sem números.">${listaEsc(g.rosterText || '')}</textarea></div>`).join('');
 }
 function mtaAddGroup() {
@@ -2330,34 +2548,35 @@ async function mtAdminInit() {
   await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
-  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento');
+  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
+  MTA_ROUTE = c.route || 'onda'; mtaRenderRoutes();
   MTA_GROUPS = (c.groups || []).map(g => ({ ...g, rosterText:(g.roster || (g.names||[]).map((n, i) => ({ n:i+1, name:n }))).map(r => r.n + ' ' + r.name).join('\n') })); mtaRenderGroups();
   const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
-  v('mta-link', location.origin + location.pathname + '?meta=1');
+  v('mta-link', location.origin + location.pathname + '?meta=1'); v('mta-link-tv', location.origin + location.pathname + '?meta=1&tv=1');
   document.getElementById('mta-close').textContent = c.closed ? '▶ Reabrir registros' : '⏹ Encerrar registros';
   const ps = document.getElementById('mta-pw-state'); ps.textContent = c.staffPw ? '🔒 Senha definida. Digite uma nova só se quiser trocar.' : '⚠️ Sem senha: qualquer pessoa com o link pode registrar.'; ps.style.color = c.staffPw ? 'var(--green)' : 'var(--gold)'; document.getElementById('mta-pw').value = '';
   const ok = await mtLoadEntries(); document.getElementById('mt-sql-warn').style.display = ok ? 'none' : 'block'; mtAdminList();
 }
 function mtAdminList() {
   const gn = id => { const g = ((MT_CFG && MT_CFG.groups) || []).find(x => x.id === id); return g ? ` <span class="bd-chip" style="margin:0;border-color:${g.color};color:${g.color}">${listaEsc(g.name)}</span>` : ''; };
-  document.getElementById('mta-list').innerHTML = MT_ENTRIES.slice(-40).reverse().map(e => `<div class="bd-mem" style="justify-content:space-between"><span>${listaEsc(e.name)} · <b>${mtKm(e.km)} km</b>${e.seconds ? ' · '+mtClock(e.seconds) : ''}${gn(e.grp)}</span><span style="cursor:pointer;color:var(--red)" onclick="mtDel(${e.id})">✕</span></div>`).join('') || '<div style="color:var(--muted);font-size:13px">Sem registros.</div>';
+  document.getElementById('mta-list').innerHTML = MT_ENTRIES.slice(-40).reverse().map(e => `<div class="bd-mem" style="justify-content:space-between"><span>${listaEsc(e.name)} · <b>${mtKm(e.km)} ${mtUnit()}</b>${e.seconds ? ' · '+mtClock(e.seconds) : ''}${gn(e.grp)}</span><span style="cursor:pointer;color:var(--red)" onclick="mtDel(${e.id})">✕</span></div>`).join('') || '<div style="color:var(--muted);font-size:13px">Sem registros.</div>';
 }
 async function mtDel(id) { if (!confirm('Remover este registro?')) return; await sb.from('relay_entries').delete().eq('id', id); await mtLoadEntries(); mtAdminList(); }
 async function mtSaveCfg(extra) {
   const pw = document.getElementById('mta-pw').value.trim(), staffPw = pw ? await mtHash(pw) : ((MT_CFG && MT_CFG.staffPw) || '');
   const num = id => parseFloat(document.getElementById(id).value.replace(',', '.'));
   const groups = mtaCollect().map(g => ({ id:g.id, name:g.name || 'Grupo', color:g.color, goal:parseFloat(String(g.goal).replace(',', '.')), roster:mtParseRoster(g.rosterText) }));
-  if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta (km) de cada grupo');
+  if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta de cada equipe');
   const goal = num('mta-goal') || (groups[0] && groups[0].goal);
-  if (!(goal > 0)) return toast('⚠️ Informe a meta em km');
-  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, ...(extra||{}) };
+  if (!(goal > 0)) return toast('⚠️ Informe a meta');
+  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
   if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
 }
 const mtClearPw = () => confirm('Remover a senha? Qualquer pessoa com o link poderá registrar.') && mtSaveCfg({ staffPw:'' });
 const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString(), endedAt:null, closed:false });
 const mtToggleClosed = () => mtSaveCfg(MT_CFG && MT_CFG.closed ? { closed:false, endedAt:null } : { closed:true, endedAt:new Date().toISOString() });
 const mtNewChallenge = () => confirm('Criar um novo desafio? Os registros atuais deixam de aparecer no link.') && (MT_CFG = null, mtSaveCfg());
-function mtCopyLink() { const i = document.getElementById('mta-link'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand('copy'))).then(() => toast('📋 Link copiado!')); }
+function mtCopyLink(id) { const i = document.getElementById(id || 'mta-link'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand('copy'))).then(() => toast('📋 Link copiado!')); }
 function mtLogoPick(inp) {
   const f = inp.files[0]; if (!f) return; const fr = new FileReader();
   fr.onload = () => { const im = new Image(); im.onload = async () => { const k = Math.min(1, 600/im.width), c = document.createElement('canvas'); c.width = im.width*k; c.height = im.height*k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
@@ -4376,6 +4595,8 @@ async function printEventReport() {
     headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}<th>Inscrição em</th>`;
   }
 
+  let hiddenPre = []; try { hiddenPre = JSON.parse(localStorage.getItem('rep_hidden_cols') || '[]'); } catch (e) {}
+  const preJson = JSON.stringify(hiddenPre).replace(/</g, '\\u003c');
   const html = `
     <html><head><meta charset="utf-8"><title>Relatório — ${info.name}</title>
     <style>
@@ -4387,7 +4608,11 @@ async function printEventReport() {
       table{width:100%;border-collapse:collapse;font-size:12px}
       th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
       th{background:#f0f0f0}
-      @media print{ button{display:none} }
+      .bar{margin:0 0 14px;padding:10px 12px;border:1px solid #ccc;border-radius:8px;background:#fafafa;font-size:12px}
+      .bar-t{font-weight:bold;margin-bottom:6px}
+      .bar label{display:inline-block;margin:0 14px 6px 0;cursor:pointer}
+      .bar button{margin:4px 8px 0 0;padding:5px 10px;font-size:12px}
+      @media print{ button,.bar{display:none} }
     </style></head>
     <body>
       <h1>${info.name}</h1>
@@ -4398,11 +4623,32 @@ async function printEventReport() {
         <div><b>${noShowCount}</b>Faltantes</div>
         <div><b>${pendingCount}</b>Sem marcação</div>
       </div>
+      <div class="bar"><div class="bar-t">Colunas que vão sair no documento (impressão e PDF)</div><div id="collist"></div>
+        <button onclick="colAll()">Mostrar tudo</button><button onclick="colPrivacy()">🔒 Ocultar dados pessoais (telefone, idade, como soube)</button></div>
+      <style id="colstyle"></style>
       <table>
         <thead><tr>${headerCols}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button>
+      <script>
+      (function(){
+        var PRE=${preJson}, PERSONAL=['Telefone','Idade','Como soube'], hidden={};
+        var ths=[].slice.call(document.querySelectorAll('thead th')), list=document.getElementById('collist'), st=document.getElementById('colstyle');
+        PRE.forEach(function(l){hidden[l]=1;});
+        function apply(){
+          var css=''; ths.forEach(function(th,i){ if(hidden[th.textContent.trim()]) css+='table tr>*:nth-child('+(i+1)+'){display:none}'; });
+          st.textContent=css;
+          ths.forEach(function(th,i){ var cb=document.getElementById('col'+i); if(cb) cb.checked=!hidden[th.textContent.trim()]; });
+          try{ window.opener.localStorage.setItem('rep_hidden_cols',JSON.stringify(Object.keys(hidden))); }catch(e){}
+        }
+        ths.forEach(function(th,i){ var lab=th.textContent.trim(), l=document.createElement('label'), cb=document.createElement('input'); cb.type='checkbox'; cb.id='col'+i;
+          cb.onchange=function(){ if(cb.checked) delete hidden[lab]; else hidden[lab]=1; apply(); }; l.appendChild(cb); l.appendChild(document.createTextNode(' '+lab)); list.appendChild(l); });
+        window.colAll=function(){ hidden={}; apply(); };
+        window.colPrivacy=function(){ PERSONAL.forEach(function(l){hidden[l]=1;}); apply(); };
+        apply();
+      })();
+      <\/script>
     </body></html>`;
 
   const w = window.open('', '_blank');
@@ -5237,6 +5483,10 @@ async function start() {
   if (params0.get('meta') !== null) {
     // Link direto da meta coletiva: mostra só essa tela
     document.querySelectorAll('body > *').forEach(el => { if (el.id !== 'meta-view' && el.tagName !== 'SCRIPT') el.style.display = 'none'; });
+    if (params0.get('tv') !== null) {   // modo TV: sem botões, tela sempre ligada
+      document.body.classList.add('meta-tv');
+      try { if (navigator.wakeLock) { const wl = () => navigator.wakeLock.request('screen').catch(() => {}); wl(); document.addEventListener('visibilitychange', () => { if (!document.hidden) wl(); }); } } catch (e) {}
+    }
     await mtStartPublic();
     return;
   }
