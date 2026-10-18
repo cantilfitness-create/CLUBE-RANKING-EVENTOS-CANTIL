@@ -188,6 +188,9 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .mt-chip{display:inline-block;margin:0 6px 6px 0;padding:5px 10px;border:1px solid;border-radius:14px;font-size:12px;font-weight:600;background:var(--s2)}
 .mt-chip i{font-style:normal;font-weight:800}
 .mt-foot{margin-top:14px;text-align:center;font-size:9.5px;letter-spacing:1.2px;color:var(--muted);opacity:.75}
+.mt-vb{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;vertical-align:middle}
+.mt-vb.ok{background:rgba(61,232,154,.15);color:var(--green)}
+.mt-vb.warn{background:rgba(255,208,96,.15);color:var(--gold)}
 .mt-lock{padding:8px 14px;border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-gchips{display:flex;flex-wrap:wrap;gap:10px}
 .mt-gchip{flex:1;min-width:110px;padding:16px 10px;border:3px solid;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
@@ -791,6 +794,25 @@ textarea { resize:vertical;min-height:72px; }
     <div id="cad-last" style="margin-top:10px;font-size:13px;color:var(--green);font-weight:700;text-align:center"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-cad').classList.remove('open')">Fechar</button>
   </div></div>
+  <div class="bd-ov" id="meta-val" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+    <div style="font-weight:800;font-size:18px;margin-bottom:4px">📎 Validar minha corrida</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Cole o link da atividade do Strava e o km que o GPS marcou. O painel compara com os km registrados e a equipe confere.</div>
+    <div class="field-group"><label class="field-label">Quem é você</label><select id="val-name"></select></div>
+    <div class="field-group"><label class="field-label">Link da atividade no Strava</label><input type="text" id="val-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off"></div>
+    <div class="field-group"><label class="field-label">Km no GPS</label><input type="text" id="val-km" inputmode="decimal" placeholder="ex: 4,12"></div>
+    <button class="btn btn-blue" onclick="valSave()">✅ Enviar para validação</button>
+    <div id="val-res" style="margin-top:10px;font-size:13px;font-weight:700;text-align:center"></div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-val').classList.remove('open')">Fechar</button>
+  </div></div>
+  <div class="bd-ov" id="meta-lap" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+    <div style="font-weight:800;font-size:18px">📍 REGISTRAR VOLTA POR GPS</div>
+    <div id="lap-info" style="font-size:12px;color:var(--muted);margin:4px 0 12px"></div>
+    <div class="field-group" id="lap-gwrap"><label class="field-label">Cor da pulseira</label><div id="lap-chips" class="mt-gchips"></div></div>
+    <div class="field-group" id="lap-nwrap"><label class="field-label">Número da pulseira</label><input type="text" id="lap-num" inputmode="numeric" placeholder="ex: 12" oninput="lapWho()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="lap-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
+    <button class="btn btn-blue" id="lap-btn" style="font-size:18px;padding:18px" onclick="lapGo()">📍 PASSEI NA LINHA</button>
+    <div id="lap-res" style="margin-top:12px;font-weight:700;text-align:center;min-height:22px"></div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-lap').classList.remove('open')">Fechar</button>
+  </div></div>
   <div class="bd-ov" id="meta-pw-ov" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
     <div style="font-weight:800;font-size:18px;margin-bottom:4px">🔒 Área de registro</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Digite a senha de quem registra os km.</div>
@@ -1048,6 +1070,14 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn btn-blue" onclick="mtCopyLink()">📋 Copiar link</button>
           <div class="field-group" style="margin-top:14px"><label class="field-label">📺 Link para TV (equipes lado a lado, sem botões, tela sempre ligada)</label>
             <input type="text" id="mta-link-tv" readonly style="margin-bottom:8px"><button class="btn-sm-danger" style="width:100%;padding:12px" onclick="mtCopyLink('mta-link-tv')">📋 Copiar link da TV</button></div>
+          <div class="section-label" style="margin-top:22px">📍 Check-in por GPS (QR no ponto da volta)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">O atleta lê o QR, escolhe a cor e o número e toca em "Passei na linha". O painel só aceita se o GPS do celular estiver perto do ponto e se já passou o tempo mínimo desde a última volta dele.</div>
+          <div style="display:flex;gap:8px"><input type="text" id="mta-cp-lat" inputmode="decimal" placeholder="Latitude"><input type="text" id="mta-cp-lng" inputmode="decimal" placeholder="Longitude"></div>
+          <button class="btn-sm-danger" style="width:100%;padding:12px;margin:8px 0" onclick="mtCpHere()">📍 Usar minha localização agora como ponto da volta</button>
+          <div style="display:flex;gap:8px"><input type="text" id="mta-cp-r" inputmode="numeric" placeholder="Raio em metros (ex: 40)"><input type="text" id="mta-cp-min" inputmode="numeric" placeholder="Mín. entre voltas, s (ex: 60)"></div>
+          <div class="field-group" style="margin-top:10px"><label class="field-label">Link do check-in (para o QR)</label><input type="text" id="mta-cp-link" readonly style="margin-bottom:8px"><button class="btn-sm-danger" style="width:100%;padding:12px" onclick="mtCopyLink('mta-cp-link')">📋 Copiar link do check-in</button>
+            <img id="mta-cp-qr" alt="QR do check-in" style="display:none;width:200px;margin:12px auto 0;border-radius:10px;background:#fff;padding:8px"></div>
+          <div style="font-size:11px;color:var(--muted)">Salve a configuração para valer. A imagem do QR vem do serviço qrserver.com. Imprima e cole no ponto da volta.</div>
           <div class="section-label" style="margin-top:22px">Controle</div>
           <button class="btn btn-blue" onclick="mtStart()">🏁 Dar a largada (inicia o cronômetro)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtToggleClosed()" id="mta-close">⏹ Encerrar registros</button>
@@ -1958,7 +1988,7 @@ function mtRows(a, g) {
   const c = (g && g.color) || 'var(--accent)';
   const num = p => { const r = g && (g.roster||[]).find(x => listaNorm(x.name) === listaNorm(p.name)); return r ? `<span style="color:var(--muted);font-weight:600">#${r.n}</span> ` : ''; };
   return a.list.length ? a.list.map((p,i) => `<div class="mt-row">
-    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${num(p)}${listaEsc(p.name)}</b><b style="color:${c}">${mtKm(p.km)} ${mtUnit()}</b></div>
+    <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${num(p)}${listaEsc(p.name)}${mtValBadge(p.name)}</b><b style="color:${c}">${mtKm(p.km)} ${mtUnit()}</b></div>
     <div class="mt-mini"><div style="width:${Math.min(100, p.km/(a.total||1)*100).toFixed(1)}%;background:${c}"></div></div>
     <div style="font-size:11px;color:var(--muted)">${(p.km/(a.total||1)*100).toFixed(1).replace('.',',')}% do total do grupo · ${p.n} registro${p.n>1?'s':''}</div></div>`).join('')
     : '<div style="color:var(--muted);font-size:13px">Ninguém registrou ainda.</div>';
@@ -2122,13 +2152,103 @@ function mtCopyFinal() {
 function mtPrintFinal() {
   if (!MT_CFG) return; const d = mtFinalData(), e = listaEsc;
   const rank = d.st.map((t, i) => `<tr><td>${i+1}º</td><td>${e(t.g.name || 'Total')}</td><td>${mtKm(t.a.total)} ${d.unit}</td><td>${mtKm(t.g.goal)} ${d.unit}</td><td>${Math.floor(t.pct)}%</td><td>${t.pers}</td><td>${t.a.n}</td></tr>`).join('');
-  const teams = d.st.map(t => `<h2 style="border-left:6px solid ${t.g.color};padding-left:8px">${e(t.g.name || 'Total')} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</h2><table><thead><tr><th>Nº</th><th>Atleta</th><th>Total (${d.unit})</th><th>Registros</th><th>% da equipe</th></tr></thead><tbody>` +
-    (t.a.list.map(p => { const r = (t.g.roster || []).find(x => listaNorm(x.name) === listaNorm(p.name)); return `<tr><td>${r ? r.n : '—'}</td><td>${e(p.name)}</td><td>${mtKm(p.km)}</td><td>${p.n}</td><td>${(p.km/(t.a.total||1)*100).toFixed(1).replace('.', ',')}%</td></tr>`; }).join('') || '<tr><td colspan="5">Sem registros</td></tr>') + '</tbody></table>').join('');
+  const teams = d.st.map(t => `<h2 style="border-left:6px solid ${t.g.color};padding-left:8px">${e(t.g.name || 'Total')} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</h2><table><thead><tr><th>Nº</th><th>Atleta</th><th>Total (${d.unit})</th><th>Registros</th><th>% da equipe</th><th>GPS (Strava)</th></tr></thead><tbody>` +
+    (t.a.list.map(p => { const r = (t.g.roster || []).find(x => listaNorm(x.name) === listaNorm(p.name)); return `<tr><td>${r ? r.n : '—'}</td><td>${e(p.name)}</td><td>${mtKm(p.km)}</td><td>${p.n}</td><td>${(p.km/(t.a.total||1)*100).toFixed(1).replace('.', ',')}%</td><td>${(() => { const v = mtValState(p.name); return v ? (v.ok ? '✓ ' : '⚠ ') + mtKm(v.v.km) + ' km' : '—'; })()}</td></tr>`; }).join('') || '<tr><td colspan="6">Sem registros</td></tr>') + '</tbody></table>').join('');
   const html = `<html><head><meta charset="utf-8"><title>${e(d.title)} — Relatório</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:22px 0 8px}.m{color:#555;font-size:13px;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}@media print{button{display:none}}</style></head><body>
     <h1>${e(d.title)} — ${mtEnded() ? 'Relatório final' : 'Relatório parcial'}</h1><div class="m">${d.when} · gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</div>
     <h2>Quanto cada equipe fez</h2><table><thead><tr><th>Pos.</th><th>Equipe</th><th>Total</th><th>Meta</th><th>% da meta</th><th>Pessoas</th><th>Registros</th></tr></thead><tbody>${rank}</tbody></table>${teams}
     <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button></body></html>`;
   const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+}
+// — validação da corrida: link do Strava + km do GPS comparados com os km registrados; check-in por GPS no ponto da volta —
+let MT_VAL = {}, MT_OPEN_LAP = false, lapGrp = '';
+async function mtLoadVal() { const v = await getSetting('relay_validations', {}); MT_VAL = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; }
+function mtValState(name) {   // compara o km do GPS informado com o total registrado da pessoa
+  const k = listaNorm(name), v = MT_VAL[k]; if (!v) return null;
+  const reg = MT_ENTRIES.filter(e => listaNorm(e.name) === k).reduce((s, e) => s + (+e.km), 0), tol = Math.max(.2, .1 * Math.max(reg, +v.km));
+  return { v, reg, ok:Math.abs(reg - v.km) <= tol };
+}
+function mtValBadge(name) {
+  if (mtUnit() !== 'km') return ''; const s = mtValState(name); if (!s) return '';
+  const link = mtUnlocked() && MT_CFG.staffPw ? ` <a href="${listaEsc(s.v.link)}" target="_blank" rel="noopener" style="text-decoration:none">🔗</a>` : '';
+  return ` <span class="mt-vb ${s.ok ? 'ok' : 'warn'}">${s.ok ? '✓' : '⚠️'} GPS ${mtKm(s.v.km)} km</span>${link}`;
+}
+function valOpen() {
+  if (!MT_CFG) return;
+  const set = new Map(); MT_ENTRIES.forEach(e => set.set(listaNorm(e.name), e.name)); mtGroups().forEach(g => (g.roster || []).forEach(r => { if (!set.has(listaNorm(r.name))) set.set(listaNorm(r.name), r.name); }));
+  document.getElementById('val-name').innerHTML = '<option value="">— escolha seu nome —</option>' + [...set.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(n => `<option>${listaEsc(n)}</option>`).join('');
+  document.getElementById('val-link').value = ''; document.getElementById('val-km').value = ''; document.getElementById('val-res').textContent = '';
+  document.getElementById('meta-val').classList.add('open');
+}
+async function valSave() {
+  const name = document.getElementById('val-name').value, link = document.getElementById('val-link').value.trim(), km = parseFloat(document.getElementById('val-km').value.replace(',', '.'));
+  if (!name) return toast('⚠️ Escolha seu nome');
+  if (!/^https?:\/\/([a-z0-9-]+\.)?strava\.(com|app\.link)\//i.test(link)) return toast('⚠️ Cole o link da atividade do Strava');
+  if (!(km > 0) || km > 300) return toast('⚠️ Informe o km que o GPS marcou');
+  await mtLoadVal(); MT_VAL[listaNorm(name)] = { name, link, km, at:new Date().toISOString() };
+  if (!(await setSetting('relay_validations', MT_VAL))) return toast('❌ Não foi possível enviar');
+  const s = mtValState(name), el = document.getElementById('val-res'); el.style.color = s.ok ? 'var(--green)' : 'var(--gold)';
+  el.textContent = s.ok ? `✓ Bate com os ${mtKm(s.reg)} km registrados.` : `⚠️ O GPS marcou ${mtKm(km)} km e o painel tem ${mtKm(s.reg)} km registrados. A equipe vai conferir.`;
+  mtRender(); toast('📎 Enviado para validação!');
+}
+// check-in por GPS no ponto da volta
+const mtHav = (a, b, c, d) => { const t = x => x*Math.PI/180, R = 6371000, h = Math.sin(t(c-a)/2)**2 + Math.cos(t(a))*Math.cos(t(c))*Math.sin(t(d-b)/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+function lapChips() {
+  document.getElementById('lap-chips').innerHTML = mtGroups().map(g => { const on = g.id === lapGrp;
+    return `<button class="mt-gchip" style="border-color:${g.color};color:${on ? (bdLum(g.color) > 140 ? '#0a0a0a' : '#fff') : g.color};background:${on ? g.color : 'transparent'}" onclick="lapPick('${g.id}')">${listaEsc(g.name || 'Total')}</button>`; }).join('');
+}
+function lapApply() {
+  const multi = mtMulti(), numbered = !multi || !!mtRoster(lapGrp).length || !lapGrp;
+  document.getElementById('lap-gwrap').style.display = multi ? 'block' : 'none';
+  document.getElementById('lap-nwrap').style.display = multi && lapGrp && !mtRoster(lapGrp).length ? 'none' : (multi ? 'block' : 'none');
+}
+function lapPick(id) { lapGrp = id; localStorage.setItem('mt_lapgrp', id); lapChips(); lapApply(); lapWho(); }
+function lapWho() {
+  const el = document.getElementById('lap-who'), n = parseInt(document.getElementById('lap-num').value);
+  if (!n || !lapGrp) { el.textContent = ''; return; }
+  const r = mtRoster(lapGrp).find(x => x.n === n); el.style.color = r ? 'var(--green)' : 'var(--red)'; el.textContent = r ? '✅ ' + r.name : `⚠️ Nº ${n} não cadastrado nesta cor`;
+}
+function lapOpen() {
+  if (!MT_CFG) return;
+  const cp = MT_CFG.checkpoint, sv = localStorage.getItem('mt_lapgrp'); lapGrp = mtGroups().some(g => g.id === sv) ? sv : (mtMulti() ? '' : '');
+  document.getElementById('lap-info').textContent = cp ? `Chegue perto da linha (até ${cp.r} m) e toque em "Passei na linha". Intervalo mínimo entre voltas: ${MT_CFG.minLapSec || 60} s.` : '⚠️ O check-in por GPS ainda não foi configurado no painel.';
+  document.getElementById('lap-num').value = ''; document.getElementById('lap-who').textContent = ''; document.getElementById('lap-res').textContent = '';
+  lapChips(); lapApply(); document.getElementById('meta-lap').classList.add('open');
+}
+async function lapGo() {
+  const res = document.getElementById('lap-res'), say = (t, c) => { res.style.color = c || 'var(--red)'; res.textContent = t; };
+  const cp = MT_CFG && MT_CFG.checkpoint, multi = mtMulti(), unit = mtUnit(), lapKm = mtLapKm();
+  if (!cp) return say('⚠️ Check-in por GPS não configurado');
+  if (mtEffClosed()) return say(mtCapReached() ? '⏰ Tempo esgotado' : '🔒 Prova encerrada');
+  if (multi && !lapGrp) return say('⚠️ Escolha a cor da pulseira');
+  let name;
+  if (multi && !mtRoster(lapGrp).length) name = mtGroup(lapGrp).name;
+  else if (multi) { const r = mtRoster(lapGrp).find(x => x.n === parseInt(document.getElementById('lap-num').value)); if (!r) return say('⚠️ Digite um número de pulseira cadastrado'); name = r.name; }
+  else return say('⚠️ O check-in por GPS precisa de equipes cadastradas');
+  if (unit === 'km' && !(lapKm > 0)) return say('⚠️ Defina o km de cada volta no painel');
+  if (!navigator.geolocation) return say('⚠️ Este aparelho não oferece localização');
+  const btn = document.getElementById('lap-btn'); btn.disabled = true; say('📡 Buscando sua localização…', 'var(--muted)');
+  let pos; try { pos = await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { enableHighAccuracy:true, timeout:15000, maximumAge:0 })); }
+  catch (e) { btn.disabled = false; return say(e && e.code === 1 ? '⚠️ Permita a localização no navegador e tente de novo' : '⚠️ Não consegui pegar o GPS. Vá para céu aberto e tente de novo'); }
+  const d = mtHav(pos.coords.latitude, pos.coords.longitude, cp.lat, cp.lng), acc = pos.coords.accuracy || 0;
+  if (acc > Math.max(80, cp.r * 1.5)) { btn.disabled = false; return say(`⚠️ GPS impreciso (±${Math.round(acc)} m). Tente de novo em céu aberto`); }
+  if (d > cp.r + Math.min(acc, 30)) { btn.disabled = false; return say(`📍 Você está a ${Math.round(d)} m da linha (limite ${cp.r} m)`); }
+  await mtLoadEntries();
+  const mine = MT_ENTRIES.filter(e => (e.grp || '') === (multi ? lapGrp : '') && listaNorm(e.name) === listaNorm(name)), last = mine.length ? new Date(mine[mine.length-1].created_at).getTime() : 0, wait = Math.ceil(((MT_CFG.minLapSec || 60) * 1000 - (Date.now() - last)) / 1000);
+  if (wait > 0) { btn.disabled = false; return say(`⏳ Volta recente. Aguarde ${wait} s para registrar outra`); }
+  const { error } = await sb.from('relay_entries').insert({ challenge_id:MT_CFG.id, name, km:unit === 'km' ? lapKm : 1, ...(multi ? { grp:lapGrp } : {}) });
+  btn.disabled = false; if (error) return say('❌ Não foi possível registrar. Tente de novo');
+  await mtRefresh(); const m = mtMine(name, multi ? lapGrp : '');
+  say(`✅ Volta registrada! ${name}: ${mtKm(m.km)} ${unit} (${m.n} volta${m.n === 1 ? '' : 's'})`, 'var(--green)'); if (navigator.vibrate) navigator.vibrate(120);
+}
+function mtCpHere() {
+  if (!navigator.geolocation) return toast('⚠️ Este aparelho não oferece localização');
+  toast('📡 Buscando localização…');
+  navigator.geolocation.getCurrentPosition(p => { document.getElementById('mta-cp-lat').value = p.coords.latitude.toFixed(6); document.getElementById('mta-cp-lng').value = p.coords.longitude.toFixed(6); toast(`📍 Ponto definido (precisão ±${Math.round(p.coords.accuracy)} m). Salve a configuração.`); }, () => toast('⚠️ Permita a localização no navegador'), { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+}
+function mtCpLinks() {
+  const link = location.origin + location.pathname + '?meta=1&volta=1', has = !!(MT_CFG && MT_CFG.checkpoint), q = document.getElementById('mta-cp-qr');
+  document.getElementById('mta-cp-link').value = link; q.style.display = has ? 'block' : 'none'; if (has) q.src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=' + encodeURIComponent(link);
 }
 function mtNamesBox(g, a) {   // quem está na equipe: atletas cadastrados (com nº) + quem já registrou km
   const c = g.color || '#e8ff00', seen = new Set(), items = [];
@@ -2173,9 +2293,9 @@ function mtRenderStaff() {
   const el = document.getElementById('meta-staff'), pub = document.getElementById('meta-pub'), lockBtn = document.getElementById('meta-lock-btn');
   const hasPw = !!(MT_CFG && MT_CFG.staffPw), un = mtUnlocked(), multi = mtMulti();
   lockBtn.style.display = hasPw && !un ? 'inline-block' : 'none';
-  const showPub = !!MT_CFG && multi;   // cadastro de atleta (nome, cor e nº) é livre: não pede senha
+  const kmMode = mtUnit() === 'km', hasCp = !!(MT_CFG && MT_CFG.checkpoint), showPub = !!MT_CFG && (multi || kmMode || hasCp);   // cadastro de atleta, envio do Strava e check-in por GPS: livres, sem senha
   pub.style.display = showPub ? 'block' : 'none';
-  pub.innerHTML = showPub ? '<button class="btn btn-blue" style="margin-bottom:16px" onclick="cadOpen()">🙋 SOU ATLETA: CADASTRAR MINHA PULSEIRA</button>' : '';
+  pub.innerHTML = showPub ? (hasCp && multi ? '<button class="btn btn-blue" style="margin-bottom:10px" onclick="lapOpen()">📍 REGISTRAR VOLTA POR GPS</button>' : '') + (multi ? '<button class="btn btn-blue" style="margin-bottom:10px" onclick="cadOpen()">🙋 SOU ATLETA: CADASTRAR MINHA PULSEIRA</button>' : '') + (kmMode ? '<button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="valOpen()">📎 ENVIAR MEU STRAVA PARA VALIDAÇÃO</button>' : '') : '';
   if (!MT_CFG || !un) { el.style.display = 'none'; return; }
   const c = MT_CFG, ms = mtRaceMs(), hm = t => new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
   const eff = mtEffClosed(), running = !!c.startedAt && !eff;
@@ -2271,7 +2391,7 @@ function mtRender() {
   el('meta-upd').textContent = 'atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 async function mtRefresh() {
-  try { await mtLoadCfg(); await mtLoadEntries(); } catch (e) { console.error(e); }
+  try { await mtLoadCfg(); await mtLoadEntries(); await mtLoadVal(); } catch (e) { console.error(e); }
   mtRender();
 }
 async function mtStartPublic() {
@@ -2279,9 +2399,10 @@ async function mtStartPublic() {
   await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   if (MT_CFG && /membros|ambos/.test(MT_CFG.source||'')) await loadMembers();
-  await mtLoadEntries(); mtRender();
+  await mtLoadEntries(); try { await mtLoadVal(); } catch (e) {} mtRender();
   mtPoll = setInterval(() => { if (!document.hidden) mtRefresh(); }, 6000);
   setInterval(() => { mtRenderClock(); if (mtCapReached() && !MT_CAP_SEEN) { MT_CAP_SEEN = true; mtRender(); } }, 1000);
+  if (MT_OPEN_LAP) lapOpen();   // link do QR: abre direto o check-in por GPS
 }
 function mtNames() {
   const src = (MT_CFG && MT_CFG.source) || 'evento', m = new Map(), add = n => { n = String(n||'').trim(); if (n) m.set(listaNorm(n), n); };
@@ -2554,7 +2675,7 @@ async function mtAdminInit() {
   await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
-  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
+  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); mtCpLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
   MTA_ROUTE = c.route || 'onda'; mtaRenderRoutes();
   MTA_GROUPS = (c.groups || []).map(g => ({ ...g, rosterText:(g.roster || (g.names||[]).map((n, i) => ({ n:i+1, name:n }))).map(r => r.n + ' ' + r.name).join('\n') })); mtaRenderGroups();
   const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
@@ -2569,13 +2690,15 @@ function mtAdminList() {
 }
 async function mtDel(id) { if (!confirm('Remover este registro?')) return; await sb.from('relay_entries').delete().eq('id', id); await mtLoadEntries(); mtAdminList(); }
 async function mtSaveCfg(extra) {
+  const cpNum = id => parseFloat(String(document.getElementById(id).value).replace(',', '.')), cpLat = cpNum('mta-cp-lat'), cpLng = cpNum('mta-cp-lng');
+  const checkpoint = isFinite(cpLat) && isFinite(cpLng) ? { lat:cpLat, lng:cpLng, r:Math.max(10, cpNum('mta-cp-r') || 40) } : null, minLapSec = cpNum('mta-cp-min') || 60;
   const pw = document.getElementById('mta-pw').value.trim(), staffPw = pw ? await mtHash(pw) : ((MT_CFG && MT_CFG.staffPw) || '');
   const num = id => parseFloat(document.getElementById(id).value.replace(',', '.'));
   const groups = mtaCollect().map(g => ({ id:g.id, name:g.name || 'Grupo', color:g.color, goal:parseFloat(String(g.goal).replace(',', '.')), roster:mtParseRoster(g.rosterText) }));
   if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta de cada equipe');
   const goal = num('mta-goal') || (groups[0] && groups[0].goal);
   if (!(goal > 0)) return toast('⚠️ Informe a meta');
-  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
+  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, checkpoint, minLapSec, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
   if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
 }
 const mtClearPw = () => confirm('Remover a senha? Qualquer pessoa com o link poderá registrar.') && mtSaveCfg({ staffPw:'' });
@@ -5493,6 +5616,7 @@ async function start() {
       document.body.classList.add('meta-tv');
       try { if (navigator.wakeLock) { const wl = () => navigator.wakeLock.request('screen').catch(() => {}); wl(); document.addEventListener('visibilitychange', () => { if (!document.hidden) wl(); }); } } catch (e) {}
     }
+    MT_OPEN_LAP = params0.get('volta') !== null;
     await mtStartPublic();
     return;
   }
