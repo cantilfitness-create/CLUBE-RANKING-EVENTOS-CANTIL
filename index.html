@@ -191,6 +191,9 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .mt-vb{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;vertical-align:middle}
 .mt-vb.ok{background:rgba(61,232,154,.15);color:var(--green)}
 .mt-vb.warn{background:rgba(255,208,96,.15);color:var(--gold)}
+.mt-linkrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:13px}
+.mt-linkrow:first-child{border-top:0}
+.mt-linkrow .mt-tiny{margin-left:6px}
 .mt-lock{padding:8px 14px;border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer}
 .mt-gchips{display:flex;flex-wrap:wrap;gap:10px}
 .mt-gchip{flex:1;min-width:110px;padding:16px 10px;border:3px solid;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer}
@@ -758,7 +761,7 @@ textarea { resize:vertical;min-height:72px; }
 <!-- Admin trigger: small gear icon, discreet -->
 <div id="meta-view" style="display:none;min-height:100vh;background:var(--bg);">
   <div class="mt-wrap">
-    <div class="mt-lockrow" style="display:flex;justify-content:flex-end;margin-bottom:10px"><button id="meta-lock-btn" class="mt-lock" onclick="mtLockClick()" style="display:none">🔒 Acesso da equipe</button></div>
+    <div class="mt-lockrow" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button id="meta-cad-btn" class="mt-lock" onclick="cadOpen()" style="display:none">🙋 MINHA PULSEIRA</button><button id="meta-val-btn" class="mt-lock" onclick="valOpen()" style="display:none">📎 STRAVA</button><button id="meta-lock-btn" class="mt-lock" onclick="mtLockClick()" style="display:none">🔒 Acesso da equipe</button></div>
     <div class="mt-head" style="text-align:center;margin-bottom:18px">
       <img id="meta-logo" alt="" style="display:none;max-height:70px;max-width:60%;margin:0 auto 10px">
       <div id="meta-title" style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.05">Meta coletiva</div>
@@ -804,6 +807,12 @@ textarea { resize:vertical;min-height:72px; }
     <div id="val-res" style="margin-top:10px;font-size:13px;font-weight:700;text-align:center"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-val').classList.remove('open')">Fechar</button>
   </div></div>
+  <div class="bd-ov" id="meta-vlist" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
+    <div style="font-weight:800;font-size:18px">📎 Validações do Strava</div>
+    <div style="font-size:12px;color:var(--muted);margin:4px 0 12px">As divergências (⚠️) aparecem primeiro. Abra o link, confira a atividade e toque em Conferido.</div>
+    <div id="meta-vlist-body"></div>
+    <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:10px" onclick="document.getElementById('meta-vlist').classList.remove('open')">Fechar</button>
+  </div></div>
   <div class="bd-ov" id="meta-lap" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
     <div style="font-weight:800;font-size:18px">📍 REGISTRAR VOLTA POR GPS</div>
     <div id="lap-info" style="font-size:12px;color:var(--muted);margin:4px 0 12px"></div>
@@ -839,7 +848,9 @@ textarea { resize:vertical;min-height:72px; }
     <div id="mt-name-block"><div class="field-group"><label class="field-label" id="mt-name-label">Nome</label><select id="mt-name" onchange="mtNameChange()"></select>
       <input type="text" id="mt-name-free" placeholder="Digite seu nome completo" oninput="mtShowMine()" style="display:none;margin-top:8px">
       <div id="mt-mine" style="display:none;margin-top:8px;font-size:13px;color:var(--accent);font-weight:700"></div></div></div>
-        <div class="field-group"><label class="field-label" id="mt-km-label">Km percorridos agora</label><input type="text" id="mt-km" inputmode="decimal" placeholder="ex: 2,4" oninput="mtChipSync()">
+        <div class="field-group" id="mt-pt-wrap" style="display:none"><label class="field-label">Ponto de registro</label>
+      <div class="mt-gchips"><button class="mt-gchip" id="mt-pt-a" onclick="mtSetPt('A')">📍 A · LARGADA / CHEGADA</button><button class="mt-gchip" id="mt-pt-b" onclick="mtSetPt('B')">📍 B · MEIA VOLTA</button></div></div>
+    <div class="field-group"><label class="field-label" id="mt-km-label">Km percorridos agora</label><input type="text" id="mt-km" inputmode="decimal" placeholder="ex: 2,4" oninput="mtChipSync()">
       <div id="mt-chips" class="bd-opts" style="margin-top:8px"></div></div>
         <button class="btn btn-blue" id="mt-send" onclick="mtSubmit()">✅ Somar na meta</button>
     <div id="mt-last" style="margin-top:10px;font-size:13px;color:var(--green);font-weight:700;text-align:center"></div>
@@ -1051,6 +1062,7 @@ textarea { resize:vertical;min-height:72px; }
           <div class="field-group"><label class="field-label">Título</label><input type="text" id="mta-title" placeholder="ex: Desafio 38 km — Aniversário do Coach"></div>
           <div class="field-group"><label class="field-label">Meta única (km ou rounds) — usada quando não há equipes</label><input type="text" id="mta-goal" inputmode="decimal" placeholder="38"></div>
           <div class="field-group"><label class="field-label">Km de cada volta (opcional)</label><input type="text" id="mta-lap" inputmode="decimal" placeholder="ex: 0,4 — cria botões de 1, 2, 3 voltas"></div>
+          <div class="field-group"><label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox" id="mta-half" style="width:20px;height:20px"> Usar ponto B (meia volta): o staff no B e o staff no A registram metade da volta cada. Precisa do km da volta.</label></div>
           <div class="field-group"><label class="field-label">Tipo de meta</label><select id="mta-unit"><option value="km">📏 Quilômetros (km)</option><option value="rounds">🔁 Número de rounds</option></select></div>
           <div class="field-group"><label class="field-label">⏱ Time cap: tempo máximo de prova (opcional)</label><input type="text" id="mta-cap" placeholder="ex: 45:00 (minutos:segundos). Vazio = sem limite">
             <select id="mta-capmode" style="margin-top:8px"><option value="down">⏳ Decrescente: conta de trás para frente</option><option value="up">⏱ Crescente: conta até o limite</option></select></div>
@@ -1065,24 +1077,27 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="mtaAddGroup()">➕ Adicionar equipe (até 8)</button>
           <div class="field-group"><label class="field-label">Sua logo (vai na imagem para as redes)</label><input type="file" id="mta-logo" accept="image/*" onchange="mtLogoPick(this)"><img id="mta-logo-prev" alt="" style="display:none;max-height:60px;margin-top:8px;background:#fff;border-radius:8px;padding:4px"></div>
           <button class="btn btn-blue" onclick="mtSaveCfg()">💾 Salvar configuração</button>
-          <div class="section-label" style="margin-top:22px">🔗 Link público</div>
-          <input type="text" id="mta-link" readonly style="margin-bottom:8px">
-          <button class="btn btn-blue" onclick="mtCopyLink()">📋 Copiar link</button>
-          <div class="field-group" style="margin-top:14px"><label class="field-label">📺 Link para TV (equipes lado a lado, sem botões, tela sempre ligada)</label>
-            <input type="text" id="mta-link-tv" readonly style="margin-bottom:8px"><button class="btn-sm-danger" style="width:100%;padding:12px" onclick="mtCopyLink('mta-link-tv')">📋 Copiar link da TV</button></div>
+          <div class="section-label" style="margin-top:22px">🔗 Links</div>
+          <div class="mt-links">
+            <div class="mt-linkrow"><span>📊 Painel ao vivo</span><span><button class="mt-tiny" onclick="mtCopyLink('mta-link')">Copiar</button><button class="mt-tiny" onclick="mtOpenLink('mta-link')">Abrir</button></span></div>
+            <div class="mt-linkrow"><span>📺 TV (lado a lado)</span><span><button class="mt-tiny" onclick="mtCopyLink('mta-link-tv')">Copiar</button><button class="mt-tiny" onclick="mtOpenLink('mta-link-tv')">Abrir</button></span></div>
+            <div class="mt-linkrow"><span>📍 Check-in GPS (QR)</span><span><button class="mt-tiny" onclick="mtCopyLink('mta-cp-link')">Copiar</button><button class="mt-tiny" onclick="mtShowQr()">Ver QR</button></span></div>
+          </div>
+          <input type="text" id="mta-link" style="display:none"><input type="text" id="mta-link-tv" style="display:none"><input type="text" id="mta-cp-link" style="display:none">
+          <img id="mta-cp-qr" alt="QR do check-in" style="display:none;width:200px;margin:12px auto 0;border-radius:10px;background:#fff;padding:8px">
           <div class="section-label" style="margin-top:22px">📍 Check-in por GPS (QR no ponto da volta)</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">O atleta lê o QR, escolhe a cor e o número e toca em "Passei na linha". O painel só aceita se o GPS do celular estiver perto do ponto e se já passou o tempo mínimo desde a última volta dele.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Esta opção não aparece na tela principal: só abre para quem lê o QR. O atleta escolhe a cor e o número e toca em "Passei na linha". O painel só aceita se o GPS do celular estiver perto do ponto e se já passou o tempo mínimo desde a última volta dele.</div>
           <div style="display:flex;gap:8px"><input type="text" id="mta-cp-lat" inputmode="decimal" placeholder="Latitude"><input type="text" id="mta-cp-lng" inputmode="decimal" placeholder="Longitude"></div>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin:8px 0" onclick="mtCpHere()">📍 Usar minha localização agora como ponto da volta</button>
           <div style="display:flex;gap:8px"><input type="text" id="mta-cp-r" inputmode="numeric" placeholder="Raio em metros (ex: 40)"><input type="text" id="mta-cp-min" inputmode="numeric" placeholder="Mín. entre voltas, s (ex: 60)"></div>
-          <div class="field-group" style="margin-top:10px"><label class="field-label">Link do check-in (para o QR)</label><input type="text" id="mta-cp-link" readonly style="margin-bottom:8px"><button class="btn-sm-danger" style="width:100%;padding:12px" onclick="mtCopyLink('mta-cp-link')">📋 Copiar link do check-in</button>
-            <img id="mta-cp-qr" alt="QR do check-in" style="display:none;width:200px;margin:12px auto 0;border-radius:10px;background:#fff;padding:8px"></div>
-          <div style="font-size:11px;color:var(--muted)">Salve a configuração para valer. A imagem do QR vem do serviço qrserver.com. Imprima e cole no ponto da volta.</div>
+                    <div style="font-size:11px;color:var(--muted)">Salve a configuração para valer. A imagem do QR vem do serviço qrserver.com. Imprima e cole no ponto da volta.</div>
           <div class="section-label" style="margin-top:22px">Controle</div>
           <button class="btn btn-blue" onclick="mtStart()">🏁 Dar a largada (inicia o cronômetro)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtToggleClosed()" id="mta-close">⏹ Encerrar registros</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtPrintFinal()">📄 Relatório por equipe (imprimir / PDF)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtNewChallenge()">🔄 Novo desafio (zera tudo)</button>
+          <div class="section-label" style="margin-top:22px">📎 Validações do Strava (divergências primeiro)</div>
+          <div id="mta-val-list"></div>
           <div class="section-label" style="margin-top:22px">Últimos registros</div>
           <div id="mta-list"></div>
         </div>
@@ -1985,12 +2000,12 @@ function mtMine(name, gid) {
   return n ? { km, n } : null;
 }
 function mtRows(a, g) {
-  const c = (g && g.color) || 'var(--accent)';
+  const c = (g && g.color) || 'var(--accent)', lap = mtUnit() === 'km' ? mtLapKm() : 0;
   const num = p => { const r = g && (g.roster||[]).find(x => listaNorm(x.name) === listaNorm(p.name)); return r ? `<span style="color:var(--muted);font-weight:600">#${r.n}</span> ` : ''; };
   return a.list.length ? a.list.map((p,i) => `<div class="mt-row">
     <div style="display:flex;justify-content:space-between;gap:8px"><b>${['🥇','🥈','🥉'][i] || (i+1)+'º'} ${num(p)}${listaEsc(p.name)}${mtValBadge(p.name)}</b><b style="color:${c}">${mtKm(p.km)} ${mtUnit()}</b></div>
     <div class="mt-mini"><div style="width:${Math.min(100, p.km/(a.total||1)*100).toFixed(1)}%;background:${c}"></div></div>
-    <div style="font-size:11px;color:var(--muted)">${(p.km/(a.total||1)*100).toFixed(1).replace('.',',')}% do total do grupo · ${p.n} registro${p.n>1?'s':''}</div></div>`).join('')
+    <div style="font-size:11px;color:var(--muted)">${(p.km/(a.total||1)*100).toFixed(1).replace('.',',')}% do total do grupo · ${p.n} registro${p.n>1?'s':''}${lap ? ' · ≈ ' + Number((p.km/lap).toFixed(1)) + ' voltas' : ''}</div></div>`).join('')
     : '<div style="color:var(--muted);font-size:13px">Ninguém registrou ainda.</div>';
 }
 // destaque do "quanto falta"
@@ -2166,7 +2181,7 @@ async function mtLoadVal() { const v = await getSetting('relay_validations', {})
 function mtValState(name) {   // compara o km do GPS informado com o total registrado da pessoa
   const k = listaNorm(name), v = MT_VAL[k]; if (!v) return null;
   const reg = MT_ENTRIES.filter(e => listaNorm(e.name) === k).reduce((s, e) => s + (+e.km), 0), tol = Math.max(.2, .1 * Math.max(reg, +v.km));
-  return { v, reg, ok:Math.abs(reg - v.km) <= tol };
+  return { v, reg, ok:!!v.approved || Math.abs(reg - v.km) <= tol };
 }
 function mtValBadge(name) {
   if (mtUnit() !== 'km') return ''; const s = mtValState(name); if (!s) return '';
@@ -2191,6 +2206,21 @@ async function valSave() {
   el.textContent = s.ok ? `✓ Bate com os ${mtKm(s.reg)} km registrados.` : `⚠️ O GPS marcou ${mtKm(km)} km e o painel tem ${mtKm(s.reg)} km registrados. A equipe vai conferir.`;
   mtRender(); toast('📎 Enviado para validação!');
 }
+// lista de validações do Strava: divergências primeiro
+function mtValEntries() {
+  return Object.keys(MT_VAL).map(k => { const v = MT_VAL[k], s = mtValState(v.name); return { k, v, reg:s ? s.reg : 0, diff:v.km - (s ? s.reg : 0), ok:!!(s && s.ok) }; }).sort((a, b) => (a.ok - b.ok) || Math.abs(b.diff) - Math.abs(a.diff));
+}
+function mtValListHtml() {
+  const L = mtValEntries(); if (!L.length) return '<div style="color:var(--muted);font-size:13px">Nenhum envio ainda.</div>';
+  return L.map(e => `<div class="mt-row"><div style="display:flex;justify-content:space-between;gap:8px"><b>${e.ok ? '✓' : '⚠️'} ${listaEsc(e.v.name)}</b><b style="color:${e.ok ? 'var(--green)' : 'var(--gold)'}">${e.v.approved ? 'conferido' : (e.diff > 0 ? '+' : '') + mtKm(e.diff) + ' km'}</b></div>
+    <div style="font-size:12px;color:var(--muted);margin:3px 0 6px">Registrado: <b>${mtKm(e.reg)} km</b> · GPS informado: <b>${mtKm(e.v.km)} km</b></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="mt-tiny" style="text-decoration:none" href="${listaEsc(e.v.link)}" target="_blank" rel="noopener">🔗 Abrir no Strava</a>${e.v.approved ? '' : `<button class="mt-tiny" onclick="valApprove('${e.k}')">✓ Conferido</button>`}<button class="mt-tiny warn" onclick="valRemove('${e.k}')">Remover</button></div></div>`).join('');
+}
+function mtValRefreshUI() { const a = document.getElementById('mta-val-list'), b = document.getElementById('meta-vlist-body'); if (a) a.innerHTML = mtValListHtml(); if (b) b.innerHTML = mtValListHtml(); }
+async function mtValPatch(fn) { await mtLoadVal(); fn(MT_VAL); await setSetting('relay_validations', MT_VAL); mtRender(); mtValRefreshUI(); }
+const valApprove = k => mtValPatch(m => { if (m[k]) m[k].approved = true; });
+const valRemove = k => confirm('Remover este envio?') && mtValPatch(m => { delete m[k]; });
+function vlistOpen() { mtValRefreshUI(); document.getElementById('meta-vlist').classList.add('open'); }
 // check-in por GPS no ponto da volta
 const mtHav = (a, b, c, d) => { const t = x => x*Math.PI/180, R = 6371000, h = Math.sin(t(c-a)/2)**2 + Math.cos(t(a))*Math.cos(t(c))*Math.sin(t(d-b)/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
 function lapChips() {
@@ -2248,7 +2278,7 @@ function mtCpHere() {
 }
 function mtCpLinks() {
   const link = location.origin + location.pathname + '?meta=1&volta=1', has = !!(MT_CFG && MT_CFG.checkpoint), q = document.getElementById('mta-cp-qr');
-  document.getElementById('mta-cp-link').value = link; q.style.display = has ? 'block' : 'none'; if (has) q.src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=' + encodeURIComponent(link);
+  document.getElementById('mta-cp-link').value = link; q.style.display = 'none'; if (has) q.src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=' + encodeURIComponent(link);
 }
 function mtNamesBox(g, a) {   // quem está na equipe: atletas cadastrados (com nº) + quem já registrou km
   const c = g.color || '#e8ff00', seen = new Set(), items = [];
@@ -2293,9 +2323,9 @@ function mtRenderStaff() {
   const el = document.getElementById('meta-staff'), pub = document.getElementById('meta-pub'), lockBtn = document.getElementById('meta-lock-btn');
   const hasPw = !!(MT_CFG && MT_CFG.staffPw), un = mtUnlocked(), multi = mtMulti();
   lockBtn.style.display = hasPw && !un ? 'inline-block' : 'none';
-  const kmMode = mtUnit() === 'km', hasCp = !!(MT_CFG && MT_CFG.checkpoint), showPub = !!MT_CFG && (multi || kmMode || hasCp);   // cadastro de atleta, envio do Strava e check-in por GPS: livres, sem senha
-  pub.style.display = showPub ? 'block' : 'none';
-  pub.innerHTML = showPub ? (hasCp && multi ? '<button class="btn btn-blue" style="margin-bottom:10px" onclick="lapOpen()">📍 REGISTRAR VOLTA POR GPS</button>' : '') + (multi ? '<button class="btn btn-blue" style="margin-bottom:10px" onclick="cadOpen()">🙋 SOU ATLETA: CADASTRAR MINHA PULSEIRA</button>' : '') + (kmMode ? '<button class="btn-sm-danger" style="width:100%;padding:12px;margin-bottom:16px" onclick="valOpen()">📎 ENVIAR MEU STRAVA PARA VALIDAÇÃO</button>' : '') : '';
+  pub.style.display = 'none'; pub.innerHTML = '';   // sem botões grandes para o atleta; o check-in por GPS só abre pelo link do QR
+  document.getElementById('meta-cad-btn').style.display = MT_CFG && multi ? 'inline-block' : 'none';
+  document.getElementById('meta-val-btn').style.display = MT_CFG && mtUnit() === 'km' ? 'inline-block' : 'none';
   if (!MT_CFG || !un) { el.style.display = 'none'; return; }
   const c = MT_CFG, ms = mtRaceMs(), hm = t => new Date(t).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
   const eff = mtEffClosed(), running = !!c.startedAt && !eff;
@@ -2307,6 +2337,7 @@ function mtRenderStaff() {
   el.style.display = 'block';
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:var(--green)">✅ Acesso liberado</b>${hasPw ? '<button class="btn-sm-danger" style="padding:6px 12px" onclick="mtLogout()">Sair</button>' : ''}</div>
     <button class="btn btn-blue" ${eff ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${eff ? '🔒 Prova encerrada' : '➕ Registrar ' + (mtUnit() === 'km' ? 'km' : 'rounds')}</button>
+    ${mtUnit() === 'km' ? `<button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="vlistOpen()">📎 Conferir validações do Strava${mtValEntries().filter(e => !e.ok).length ? ' · ' + mtValEntries().filter(e => !e.ok).length + ' ⚠️' : ''}</button>` : ''}
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800">CONTROLE DA PROVA</div><div style="font-size:13px;margin:6px 0 10px">${status}</div>${ctrl}</div>`;
 }
 // — cadastro de atleta: nome + cor da equipe + nº da pulseira (entra direto na lista) —
@@ -2491,7 +2522,7 @@ function mtWho() {
   if (!n) { el.textContent = ''; return; }
   if (!mtSelGrp) { el.style.color = 'var(--gold)'; el.textContent = 'Escolha a cor da pulseira'; return; }
   const r = mtRoster(mtSelGrp).find(x => x.n === n), g = mtGroup(mtSelGrp);
-  if (r) { const m = mtMine(r.name, mtSelGrp); el.style.color = 'var(--green)'; el.textContent = `✅ ${r.name}` + (m ? ` — já fez ${mtKm(m.km)} ${mtUnit()}` : ''); }
+  if (r) { const m = mtMine(r.name, mtSelGrp), last = mtHalf() ? mtLastPt(r.name, mtSelGrp) : null, exp = last === 'B' ? 'A' : 'B', bad = mtHalf() && mtPt !== exp; el.style.color = bad ? 'var(--gold)' : 'var(--green)'; el.textContent = `${bad ? '⚠️' : '✅'} ${r.name}` + (m ? ` — já fez ${mtKm(m.km)} ${mtUnit()}` : '') + (mtHalf() ? (bad ? ` · esperado ponto ${exp}` : ` · ponto ${mtPt} ok`) : ''); }
   else { el.style.color = 'var(--red)'; el.textContent = `⚠️ Nº ${n} não está cadastrado no ${g.name}`; }
 }
 function mtToggleName() { const b = document.getElementById('mt-name-block'); b.dataset.open = b.dataset.open === '1' ? '0' : '1'; mtApplyMode(); }
@@ -2520,14 +2551,26 @@ function mtOpenSheetNow() {
   document.getElementById('mt-km-label').textContent = rnd ? 'Rounds feitos agora' : 'Km percorridos agora'; document.getElementById('mt-km').placeholder = rnd ? 'ex: 1' : 'ex: 2,4';
   document.getElementById('mt-chips').innerHTML = rnd ? [1,2,3,4,5].map(n => `<button class="bd-opt" data-v="${n}" onclick="mtSetKm('${n}')">${n} round${n>1?'s':''}</button>`).join('')
     : lap > 0 ? [1,2,3,4,5].map(n => `<button class="bd-opt" data-v="${n*lap}" onclick="mtSetKm('${mtFmtKm(n*lap)}')">${n} volta${n>1?'s':''}</button>`).join('') : '';
-  mtDefaultKm();   // já vem preenchido com 1 volta
+  const hl = mtHalf(); document.getElementById('mt-pt-wrap').style.display = hl ? 'block' : 'none';
+  if (hl) { document.getElementById('mt-chips').innerHTML = ''; document.getElementById('mt-km-label').textContent = 'Passagem de meia volta (' + (rnd ? 'rounds' : 'km') + ')'; mtSetPt(mtPt); }
+  mtDefaultKm();   // já vem preenchido com 1 volta (ou meia volta, se usar os pontos A e B)
   document.getElementById('meta-sheet').classList.add('open');
 }
 const mtFmtKm = v => String(+(+v).toFixed(2)).replace('.', ',');
 const mtLapKm = () => parseFloat(String((MT_CFG && MT_CFG.lapKm) || '').replace(',', '.')) || 0;
 function mtChipSync() { const cur = parseFloat(document.getElementById('mt-km').value.replace(',', '.')); document.querySelectorAll('#mt-chips .bd-opt').forEach(b => b.classList.toggle('on', Math.abs(cur - parseFloat(b.dataset.v)) < 0.001)); }
 function mtSetKm(v) { document.getElementById('mt-km').value = v; mtChipSync(); }
-function mtDefaultKm() { if (mtUnit() === 'rounds') return mtSetKm('1'); const l = mtLapKm(); mtSetKm(l > 0 ? mtFmtKm(l) : ''); }
+// ponto A (largada/chegada) e ponto B (meia volta): cada passagem soma meia volta; o ponto fica gravado em "seconds" (1 = A, 2 = B)
+const mtHalf = () => !!(MT_CFG && MT_CFG.halfLap);
+const mtHalfVal = () => mtUnit() === 'rounds' ? 0.5 : mtLapKm() / 2;
+let mtPt = localStorage.getItem('mt_pt') === 'B' ? 'B' : 'A';
+function mtLastPt(name, gid) { const k = listaNorm(name); let r = null; MT_ENTRIES.forEach(e => { if ((e.grp || '') === (gid || '') && listaNorm(e.name) === k && (e.seconds === 1 || e.seconds === 2)) r = e.seconds === 1 ? 'A' : 'B'; }); return r; }
+function mtSetPt(pt) {
+  mtPt = pt; localStorage.setItem('mt_pt', pt);
+  [['mt-pt-a', 'A'], ['mt-pt-b', 'B']].forEach(([id, k]) => { const el = document.getElementById(id), on = mtPt === k; el.style.background = on ? 'var(--accent)' : 'transparent'; el.style.color = on ? '#0a0a0a' : 'var(--accent)'; el.style.borderColor = 'var(--accent)'; });
+  mtWho();
+}
+function mtDefaultKm() { if (mtHalf()) { const h = mtHalfVal(); return mtSetKm(h > 0 ? mtFmtKm(h) : ''); } if (mtUnit() === 'rounds') return mtSetKm('1'); const l = mtLapKm(); mtSetKm(l > 0 ? mtFmtKm(l) : ''); }
 function mtNameChange() { document.getElementById('mt-name-free').style.display = document.getElementById('mt-name').value === '__free' ? 'block' : 'none'; mtShowMine(); }
 function mtShowMine() {
   const m = mtMine(mtCurName(), mtMulti() ? (mtSelGrp || undefined) : ''), el = document.getElementById('mt-mine');
@@ -2553,11 +2596,13 @@ async function mtSubmit() {
   if (!(km > 0) || km > 60) return toast(`⚠️ Informe ${mtUnit() === 'km' ? 'os km' : 'os rounds'} (entre 0,1 e 60)`);
   if (km > 15 && !confirm(`Confirma ${mtKm(km)} ${mtUnit()} de uma vez?`)) return;
   const btn = document.getElementById('mt-send'); btn.disabled = true;
-  const { data, error } = await sb.from('relay_entries').insert({ challenge_id:MT_CFG.id, name, km, ...(multi ? { grp } : {}) }).select().single();
+  if (mtHalf()) { await mtLoadEntries(); const last = mtLastPt(name, multi ? grp : ''), exp = last === 'B' ? 'A' : 'B';   // confere a sequência B → A → B → A
+    if (mtPt !== exp && !confirm(`${name}: ${last ? 'o último registro foi no ponto ' + last : 'ainda não passou no ponto B'}. Registrar no ponto ${mtPt} mesmo assim?`)) { btn.disabled = false; return; } }
+  const { data, error } = await sb.from('relay_entries').insert({ challenge_id:MT_CFG.id, name, km, ...(multi ? { grp } : {}), ...(mtHalf() ? { seconds:mtPt === 'A' ? 1 : 2 } : {}) }).select().single();
   btn.disabled = false;
   if (error) return toast('❌ Não foi possível registrar. Tente de novo.');
   const id = Array.isArray(data) ? (data[0] || {}).id : (data || {}).id; MT_LAST = id ? { id, name, km } : null;
-  await mtRefresh(); const mm = mtMine(name, multi ? grp : ''), msg = `✅ ${name} +${mtKm(km)} ${mtUnit()}` + (mm ? ` · total ${mtKm(mm.km)} ${mtUnit()}` : '');
+  await mtRefresh(); const mm = mtMine(name, multi ? grp : ''), msg = `✅ ${name} +${mtKm(km)} ${mtUnit()}` + (mtHalf() ? ` (ponto ${mtPt})` : '') + (mm ? ` · total ${mtKm(mm.km)} ${mtUnit()}` : '');
   if (multi) {  // registro rápido: a tela fica aberta para o próximo
     document.getElementById('mt-num').value = ''; mtDefaultKm(); document.getElementById('mt-who').textContent = ''; document.getElementById('mt-name').value = '';
     document.getElementById('mt-last').textContent = msg; mtUndoBtn(); mtNameChange(); if (!team) document.getElementById('mt-num').focus();
@@ -2675,18 +2720,18 @@ async function mtAdminInit() {
   await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
-  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); mtCpLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
+  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); document.getElementById('mta-half').checked = !!c.halfLap; mtCpLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
   MTA_ROUTE = c.route || 'onda'; mtaRenderRoutes();
   MTA_GROUPS = (c.groups || []).map(g => ({ ...g, rosterText:(g.roster || (g.names||[]).map((n, i) => ({ n:i+1, name:n }))).map(r => r.n + ' ' + r.name).join('\n') })); mtaRenderGroups();
   const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
   v('mta-link', location.origin + location.pathname + '?meta=1'); v('mta-link-tv', location.origin + location.pathname + '?meta=1&tv=1');
   document.getElementById('mta-close').textContent = c.closed ? '▶ Reabrir registros' : '⏹ Encerrar registros';
   const ps = document.getElementById('mta-pw-state'); ps.textContent = c.staffPw ? '🔒 Senha definida. Digite uma nova só se quiser trocar.' : '⚠️ Sem senha: qualquer pessoa com o link pode registrar.'; ps.style.color = c.staffPw ? 'var(--green)' : 'var(--gold)'; document.getElementById('mta-pw').value = '';
-  const ok = await mtLoadEntries(); document.getElementById('mt-sql-warn').style.display = ok ? 'none' : 'block'; mtAdminList();
+  await mtLoadVal().catch(() => {}); const ok = await mtLoadEntries(); document.getElementById('mt-sql-warn').style.display = ok ? 'none' : 'block'; mtAdminList(); mtValRefreshUI();
 }
 function mtAdminList() {
   const gn = id => { const g = ((MT_CFG && MT_CFG.groups) || []).find(x => x.id === id); return g ? ` <span class="bd-chip" style="margin:0;border-color:${g.color};color:${g.color}">${listaEsc(g.name)}</span>` : ''; };
-  document.getElementById('mta-list').innerHTML = MT_ENTRIES.slice(-40).reverse().map(e => `<div class="bd-mem" style="justify-content:space-between"><span>${listaEsc(e.name)} · <b>${mtKm(e.km)} ${mtUnit()}</b>${e.seconds ? ' · '+mtClock(e.seconds) : ''}${gn(e.grp)}</span><span style="cursor:pointer;color:var(--red)" onclick="mtDel(${e.id})">✕</span></div>`).join('') || '<div style="color:var(--muted);font-size:13px">Sem registros.</div>';
+  document.getElementById('mta-list').innerHTML = MT_ENTRIES.slice(-40).reverse().map(e => `<div class="bd-mem" style="justify-content:space-between"><span>${listaEsc(e.name)} · <b>${mtKm(e.km)} ${mtUnit()}</b>${mtHalf() && (e.seconds === 1 || e.seconds === 2) ? ' · ponto ' + (e.seconds === 1 ? 'A' : 'B') : ''}${gn(e.grp)}</span><span style="cursor:pointer;color:var(--red)" onclick="mtDel(${e.id})">✕</span></div>`).join('') || '<div style="color:var(--muted);font-size:13px">Sem registros.</div>';
 }
 async function mtDel(id) { if (!confirm('Remover este registro?')) return; await sb.from('relay_entries').delete().eq('id', id); await mtLoadEntries(); mtAdminList(); }
 async function mtSaveCfg(extra) {
@@ -2698,14 +2743,20 @@ async function mtSaveCfg(extra) {
   if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta de cada equipe');
   const goal = num('mta-goal') || (groups[0] && groups[0].goal);
   if (!(goal > 0)) return toast('⚠️ Informe a meta');
-  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, checkpoint, minLapSec, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
+  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, checkpoint, minLapSec, halfLap:document.getElementById('mta-half').checked, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
   if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
 }
 const mtClearPw = () => confirm('Remover a senha? Qualquer pessoa com o link poderá registrar.') && mtSaveCfg({ staffPw:'' });
 const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString(), endedAt:null, closed:false });
 const mtToggleClosed = () => mtSaveCfg(MT_CFG && MT_CFG.closed ? { closed:false, endedAt:null } : { closed:true, endedAt:new Date().toISOString() });
 const mtNewChallenge = () => confirm('Criar um novo desafio? Os registros atuais deixam de aparecer no link.') && (MT_CFG = null, mtSaveCfg());
-function mtCopyLink(id) { const i = document.getElementById(id || 'mta-link'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand('copy'))).then(() => toast('📋 Link copiado!')); }
+function mtCopyLink(id) {
+  const i = document.getElementById(id || 'mta-link'), ok = () => toast('📋 Link copiado!');
+  if (navigator.clipboard) navigator.clipboard.writeText(i.value).then(ok, () => toast('⚠️ Não foi possível copiar'));
+  else { i.style.display = 'block'; i.select(); document.execCommand('copy'); i.style.display = 'none'; ok(); }
+}
+const mtOpenLink = id => window.open(document.getElementById(id).value, '_blank');
+function mtShowQr() { const q = document.getElementById('mta-cp-qr'); if (!(MT_CFG && MT_CFG.checkpoint)) return toast('⚠️ Defina o ponto da volta e salve a configuração primeiro'); q.style.display = q.style.display === 'block' ? 'none' : 'block'; }
 function mtLogoPick(inp) {
   const f = inp.files[0]; if (!f) return; const fr = new FileReader();
   fr.onload = () => { const im = new Image(); im.onload = async () => { const k = Math.min(1, 600/im.width), c = document.createElement('canvas'); c.width = im.width*k; c.height = im.height*k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
