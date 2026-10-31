@@ -417,6 +417,18 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .tv-fs { position:fixed; top:1.5vh; right:1.5vw; opacity:0; transition:opacity .3s; background:var(--s1); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 14px; font-family:'Outfit',sans-serif; font-weight:700; cursor:pointer; }
 #tv-results-view:hover .tv-fs { opacity:.9; }
 
+/* LANÇAR RESULTADOS (equipe) */
+#lancar-view { display:none; position:relative; z-index:2; min-height:100vh; }
+#lancar-view.on { display:block; }
+.lv-wrap { max-width:520px; margin:0 auto; padding:28px 18px 70px; }
+.lv-head { text-align:center; margin-bottom:20px; }
+.lv-eyebrow { font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--accent); font-weight:600; }
+.lv-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(40px,12vw,60px); letter-spacing:3px; line-height:1; background:linear-gradient(160deg,#fff 30%,#e8ff00 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.lv-event { margin-top:8px; font-size:14px; color:var(--muted); }
+.lv-bar { display:flex; gap:8px; margin-bottom:14px; }
+.lv-bar .btn-sm { flex:1; padding:10px; }
+#lancar-view #result-entry-label { display:none !important; }
+
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
 .mini-row:hover { border-color:var(--accent); }
@@ -579,6 +591,89 @@ textarea { resize:vertical;min-height:72px; }
   <div class="tv-body" id="tv-body"></div>
   <div class="tv-live"><span class="live-dot"></span> ao vivo · atualiza sozinho</div>
   <button class="tv-fs" onclick="(document.documentElement.requestFullscreen||function(){}).call(document.documentElement)">⛶ Tela cheia</button>
+</div>
+
+
+<!-- LANÇAR RESULTADOS (equipe): link ?lancar=resultados — só o lançamento, protegido pela senha da equipe -->
+<div id="lancar-view">
+  <div class="lv-wrap">
+    <div class="lv-head">
+      <div class="lv-eyebrow">🏁 Equipe</div>
+      <div class="lv-title">Lançar resultados</div>
+      <div class="lv-event" id="lancar-event-name">Carregando...</div>
+    </div>
+    <div id="lancar-gate" class="result-panel" style="display:none">
+      <label class="field-label">🔒 Senha da equipe</label>
+      <input type="password" id="lancar-pw" placeholder="Senha" autocomplete="off" onkeydown="if(event.key==='Enter')lancarUnlock()">
+      <button class="btn btn-gold" style="margin-top:12px" onclick="lancarUnlock()">Entrar</button>
+    </div>
+    <div id="lancar-main" style="display:none">
+      <div class="lv-bar">
+        <button class="btn-sm" onclick="lancarLoad()">🔄 Atualizar lista</button>
+        <button class="btn-sm" id="lancar-logout" onclick="lancarLogout()">🔓 Sair</button>
+      </div>
+      <div id="lancar-none" class="result-timecap-note" style="display:none">Este evento ainda não tem tipo de resultado configurado (Tempo ou Rounds/Reps). Peça à administração para configurar.</div>
+          <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
+          <div id="result-panel-wrap" style="display:none">
+
+            <div class="field-group" id="result-subevent-selector-wrap" style="display:none">
+              <label class="field-label">🎯 Lançando resultado de qual evento?</label>
+              <select id="result-subevent-select" onchange="onSubEventContextChange()">
+                <option value="1">Evento 1</option>
+                <option value="2">Evento 2</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">Time Cap (para resultados de tempo)</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>min</span>
+                <input type="number" id="ev-cfg-timecap-sec" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>seg</span>
+                <button class="btn btn-blue" style="padding:12px 16px;margin:0" onclick="saveTimeCap()">💾</button>
+              </div>
+            </div>
+
+
+            <div class="result-panel">
+              <div class="field-group" style="margin-bottom:14px">
+                <label class="field-label">Selecionar inscrito</label>
+                <select id="result-select" onchange="onResultSelectChange()"></select>
+              </div>
+
+              <div class="field-group" id="result-level-wrap" style="display:none;margin-bottom:14px">
+                <label class="field-label">Categoria (pode ajustar no dia do evento)</label>
+                <select id="result-level-select" onchange="updateResultLevel()"></select>
+              </div>
+
+              <div id="result-tempo-helper" style="display:none">
+                <div class="result-timecap-note">TIME CAP deste evento: <strong id="result-timecap-display">—</strong></div>
+                <div class="field-group">
+                  <label class="field-label">Tempo restante no relógio quando terminou (MM:SS)</label>
+                  <input type="text" id="result-remaining-input" class="result-final-input" placeholder="ex: 14:30" style="font-size:18px">
+                </div>
+                <div class="result-actions-row">
+                  <button class="btn-calc" onclick="calcResultFromRemaining()">⏱️ Calcular Tempo Final</button>
+                  <button class="btn-timecap" onclick="markTimeCap()">🚫 MARCAR TIME CAP (não terminou)</button>
+                </div>
+              </div>
+
+              <div class="field-group" style="margin-bottom:10px">
+                <label class="field-label" id="result-final-label">Resultado final (editável — corrige se estiver errado)</label>
+                <input type="text" id="result-final-input" class="result-final-input">
+              </div>
+              <div class="field-group" style="margin-bottom:10px">
+                <label class="field-label">📝 Descrição do participante (opcional)</label>
+                <input type="text" id="result-note-input" maxlength="140" placeholder="ex: Rx · escalado · 3 no-reps · recorde pessoal">
+              </div>
+              <button class="btn btn-gold" onclick="saveSelectedResult()" style="width:100%">💾 Salvar Resultado</button>
+              <button class="btn-sm-danger" id="delete-result-btn" style="width:100%;padding:10px;margin-top:8px;display:none" onclick="deleteSelectedResult()">🗑️ Excluir Resultado deste Participante</button>
+              <div class="result-saved-tag" id="result-saved-tag"></div>
+            </div>
+          </div>
+    </div>
+  </div>
 </div>
 
 <div class="orb orb1"></div>
@@ -1133,9 +1228,9 @@ textarea { resize:vertical;min-height:72px; }
           <div class="field-group"><label class="field-label">⏱ Time cap: tempo máximo de prova (opcional)</label><input type="text" id="mta-cap" placeholder="ex: 45:00 (minutos:segundos). Vazio = sem limite">
             <select id="mta-capmode" style="margin-top:8px"><option value="down">⏳ Decrescente: conta de trás para frente</option><option value="up">⏱ Crescente: conta até o limite</option></select></div>
           <div class="field-group"><label class="field-label">Lista de nomes para escolher</label><select id="mta-src"><option value="evento">Inscritos do evento atual</option><option value="membros">Membros do clube</option><option value="ambos">Inscritos + membros</option></select></div>
-          <div class="field-group"><label class="field-label">🔒 Senha de quem registra (libera só o registro, não o painel admin)</label>
-            <input type="text" id="mta-pw" placeholder="digite para definir ou trocar" autocomplete="off" autocapitalize="off"><div id="mta-pw-state" style="font-size:12px;margin-top:6px"></div>
-            <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="mtClearPw()">Remover senha</button></div>
+          <div class="field-group"><label class="field-label">🔒 Senha de quem registra</label>
+            <div style="font-size:12px;color:var(--muted);line-height:1.45">Agora é uma senha única da equipe, definida na aba <b>Config</b>. Vale para o link da Meta e para o link de Lançar resultados.</div>
+            <button class="btn-sm" style="width:100%;padding:10px;margin-top:8px" onclick="admTab('settings')">Abrir Config →</button></div>
                     <div class="field-group"><label class="field-label">Percurso desenhado nos quadros</label><div id="mta-routes"></div></div>
           <div class="section-label" style="margin-top:18px">👥 Equipes / grupos</div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Cada equipe tem nome, cor, meta e barra próprios. Para equipe <b>sem números</b>, deixe a lista de atletas vazia: quem registra escolhe só a cor da equipe e informa os km. Com atletas numerados, digite o nº da pulseira. Durante o evento, quem registra também pode cadastrar e editar atletas na própria tela de registro. Sem equipes, vale a meta única.</div>
@@ -1363,73 +1458,21 @@ textarea { resize:vertical;min-height:72px; }
           </div>
           <button class="btn btn-blue" onclick="updateEventRules()" style="margin-bottom:20px">💾 Salvar Regras</button>
           <hr class="divider">
-          <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
-          <div id="result-panel-wrap" style="display:none">
-            <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px">
-              <label class="field-label">📺 Link da TV (só resultados, letras grandes)</label>
-              <input type="text" id="tv-link-input" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
-              <div style="display:flex;gap:8px">
-                <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvLink()">📋 Copiar link</button>
-                <button class="btn-sm" style="flex:1;padding:10px" onclick="openTvLink()">📺 Abrir</button>
-              </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4">Abra esse link no navegador da TV. Atualiza sozinho a cada 15 s. Para ordem alfabética em vez de classificação, acrescente <b>&amp;ordem=nome</b> no fim do link.</div>
+          <div class="section-label">🔗 Links do evento</div>
+          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px">
+            <label class="field-label">✏️ Lançar resultados (equipe, pede a senha da equipe)</label>
+            <input type="text" id="ev-launch-link" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="copyLinkOf('ev-launch-link')">📋 Copiar link</button>
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="window.open(document.getElementById('ev-launch-link').value,'_blank')">✏️ Abrir</button>
             </div>
-
-            <div class="field-group" id="result-subevent-selector-wrap" style="display:none">
-              <label class="field-label">🎯 Lançando resultado de qual evento?</label>
-              <select id="result-subevent-select" onchange="onSubEventContextChange()">
-                <option value="1">Evento 1</option>
-                <option value="2">Evento 2</option>
-              </select>
+            <label class="field-label">📺 Link da TV (só resultados, letras grandes)</label>
+            <input type="text" id="tv-link-input" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvLink()">📋 Copiar link</button>
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="openTvLink()">📺 Abrir</button>
             </div>
-
-            <div class="field-group">
-              <label class="field-label">Time Cap (para resultados de tempo)</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
-                <span>min</span>
-                <input type="number" id="ev-cfg-timecap-sec" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
-                <span>seg</span>
-                <button class="btn btn-blue" style="padding:12px 16px;margin:0" onclick="saveTimeCap()">💾</button>
-              </div>
-            </div>
-
-
-            <div class="result-panel">
-              <div class="field-group" style="margin-bottom:14px">
-                <label class="field-label">Selecionar inscrito</label>
-                <select id="result-select" onchange="onResultSelectChange()"></select>
-              </div>
-
-              <div class="field-group" id="result-level-wrap" style="display:none;margin-bottom:14px">
-                <label class="field-label">Categoria (pode ajustar no dia do evento)</label>
-                <select id="result-level-select" onchange="updateResultLevel()"></select>
-              </div>
-
-              <div id="result-tempo-helper" style="display:none">
-                <div class="result-timecap-note">TIME CAP deste evento: <strong id="result-timecap-display">—</strong></div>
-                <div class="field-group">
-                  <label class="field-label">Tempo restante no relógio quando terminou (MM:SS)</label>
-                  <input type="text" id="result-remaining-input" class="result-final-input" placeholder="ex: 14:30" style="font-size:18px">
-                </div>
-                <div class="result-actions-row">
-                  <button class="btn-calc" onclick="calcResultFromRemaining()">⏱️ Calcular Tempo Final</button>
-                  <button class="btn-timecap" onclick="markTimeCap()">🚫 MARCAR TIME CAP (não terminou)</button>
-                </div>
-              </div>
-
-              <div class="field-group" style="margin-bottom:10px">
-                <label class="field-label" id="result-final-label">Resultado final (editável — corrige se estiver errado)</label>
-                <input type="text" id="result-final-input" class="result-final-input">
-              </div>
-              <div class="field-group" style="margin-bottom:10px">
-                <label class="field-label">📝 Descrição do participante (opcional)</label>
-                <input type="text" id="result-note-input" maxlength="140" placeholder="ex: Rx · escalado · 3 no-reps · recorde pessoal">
-              </div>
-              <button class="btn btn-gold" onclick="saveSelectedResult()" style="width:100%">💾 Salvar Resultado</button>
-              <button class="btn-sm-danger" id="delete-result-btn" style="width:100%;padding:10px;margin-top:8px;display:none" onclick="deleteSelectedResult()">🗑️ Excluir Resultado deste Participante</button>
-              <div class="result-saved-tag" id="result-saved-tag"></div>
-            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.4">A senha da equipe (a mesma da Meta) é definida na aba <b>Config</b>. A TV atualiza sozinha a cada 15 s; para ordem alfabética acrescente <b>&amp;ordem=nome</b> no fim do link.</div>
           </div>
           <div class="section-label">📋 Inscritos (<span id="ev-count">0</span>)</div>
           <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
@@ -1490,6 +1533,23 @@ textarea { resize:vertical;min-height:72px; }
 
         <!-- CONFIG -->
         <div class="adm-panel" id="tab-settings">
+          <div class="section-label">🔒 Senha da equipe</div>
+          <div class="field-group"><label class="field-label">🔒 Senha de quem registra (libera só o registro, não o painel admin)</label>
+            <input type="text" id="staff-pw-input" placeholder="digite para definir ou trocar" autocomplete="off" autocapitalize="off">
+            <div id="staff-pw-state" style="font-size:12px;margin-top:6px"></div>
+            <button class="btn btn-blue" style="margin-top:8px" onclick="saveStaffPw()">💾 Salvar senha</button>
+            <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="removeStaffPw()">Remover senha</button>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4">A mesma senha vale para os dois links abaixo: <b>Meta</b> e <b>Lançar resultados</b>.</div>
+          </div>
+          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px">
+            <label class="field-label">🎯 Link da Meta (equipe)</label>
+            <input type="text" id="cfg-link-meta" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+            <button class="btn-sm" style="width:100%;padding:10px;margin-bottom:14px" onclick="copyLinkOf('cfg-link-meta')">📋 Copiar link da Meta</button>
+            <label class="field-label">✏️ Link de Lançar resultados (equipe)</label>
+            <input type="text" id="cfg-link-launch" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+            <button class="btn-sm" style="width:100%;padding:10px" onclick="copyLinkOf('cfg-link-launch')">📋 Copiar link de Resultados</button>
+          </div>
+          <hr class="divider">
           <div class="section-label">💬 WhatsApp de Dúvidas (Evento)</div>
           <div class="field-group">
             <label class="field-label">Número com DDD ou link do WhatsApp</label>
@@ -2267,7 +2327,7 @@ function mtValState(name) {   // envio do Strava de um atleta: pendente ou confe
 }
 function mtValBadge(name) {
   if (mtUnit() !== 'km') return ''; const s = mtValState(name); if (!s) return '';
-  const link = mtUnlocked() && MT_CFG.staffPw ? ` <a href="${listaEsc(s.v.link)}" target="_blank" rel="noopener" style="text-decoration:none">🔗</a>` : '';
+  const link = mtUnlocked() && staffHash() ? ` <a href="${listaEsc(s.v.link)}" target="_blank" rel="noopener" style="text-decoration:none">🔗</a>` : '';
   return ` <span class="mt-vb ${s.ok ? 'ok' : 'warn'}">${s.ok ? '✓ Strava conferido' : '📎 Strava enviado'}</span>${link}`;
 }
 let VAL_SUG = [], VAL_M = [];
@@ -2408,7 +2468,7 @@ function mtGroupCard(g) {
     ${mtNamesBox(g, a)}
     <div class="mt-foot">${MT_FOOT}</div></div>`;
 }
-const mtUnlocked = () => { if (!MT_CFG || !MT_CFG.staffPw) return true; try { const u = JSON.parse(localStorage.getItem('mt_unlock') || 'null'); return !!u && u.h === MT_CFG.staffPw && u.c === MT_CFG.id && u.e > Date.now(); } catch (e) { return false; } };
+const mtUnlocked = () => { const sh = staffHash(); if (!MT_CFG || !sh) return true; try { const u = JSON.parse(localStorage.getItem('mt_unlock') || 'null'); return !!u && u.h === sh && u.c === MT_CFG.id && u.e > Date.now(); } catch (e) { return false; } };
 // — controle da prova (largada / fim) e tempo de prova = fim − largada —
 function mtRaceMs() {
   if (!MT_CFG || !MT_CFG.startedAt) return null;
@@ -2417,7 +2477,7 @@ function mtRaceMs() {
   return cs && ms > cs ? cs : ms;
 }
 async function mtCfgPatch(patch) {   // relê a configuração antes de gravar
-  if (!mtUnlocked() || !MT_CFG.staffPw) { toast('🔒 Entre com a senha da equipe'); return false; }
+  if (!mtUnlocked() || !staffHash()) { toast('🔒 Entre com a senha da equipe'); return false; }
   await mtLoadCfg(); if (!MT_CFG) return false;
   MT_CFG = { ...MT_CFG, ...patch }; return await setSetting('relay_challenge', MT_CFG);
 }
@@ -2428,7 +2488,7 @@ function mtLogout() { localStorage.removeItem('mt_unlock'); mtRender(); }
 function mtLockClick() { document.getElementById('mt-pw').value = ''; document.getElementById('meta-pw-ov').classList.add('open'); setTimeout(() => document.getElementById('mt-pw').focus(), 100); }
 function mtRenderStaff() {
   const el = document.getElementById('meta-staff'), pub = document.getElementById('meta-pub'), lockBtn = document.getElementById('meta-lock-btn');
-  const hasPw = !!(MT_CFG && MT_CFG.staffPw), un = mtUnlocked(), multi = mtMulti();
+  const hasPw = !!staffHash(), un = mtUnlocked(), multi = mtMulti();
   lockBtn.style.display = hasPw && !un ? 'inline-block' : 'none';
   pub.style.display = 'none'; pub.innerHTML = '';   // sem botões grandes para o atleta; o check-in por GPS só abre pelo link do QR
   document.getElementById('meta-cad-btn').style.display = MT_CFG && multi ? 'inline-block' : 'none';
@@ -2535,7 +2595,7 @@ async function mtRefresh() {
 }
 async function mtStartPublic() {
   document.getElementById('meta-view').style.display = 'block'; document.body.classList.add('meta-mode');
-  await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
+  await mtLoadCfg(); await loadStaffPw(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   if (MT_CFG && /membros|ambos/.test(MT_CFG.source||'')) await loadMembers();
   await mtLoadEntries(); try { await mtLoadVal(); } catch (e) {} mtRender();
@@ -2654,7 +2714,7 @@ function mtOpenSheet() {
 }
 async function mtPwSubmit() {
   const h = await mtHash(document.getElementById('mt-pw').value.trim());
-  if (h !== MT_CFG.staffPw) { document.getElementById('mt-pw').value = ''; return toast('❌ Senha incorreta'); }
+  if (h !== staffHash()) { document.getElementById('mt-pw').value = ''; return toast('❌ Senha incorreta'); }
   localStorage.setItem('mt_unlock', JSON.stringify({ h, c:MT_CFG.id, e:Date.now() + 12*3600e3 }));
   document.getElementById('meta-pw-ov').classList.remove('open'); mtRender();
   if (MT_OPEN_REG && !mtEffClosed()) mtOpenSheetNow();
@@ -2875,7 +2935,7 @@ function mtParseRoster(text) {
   return rows.sort((a, b) => a.n - b.n);
 }
 async function mtAdminInit() {
-  await mtLoadCfg(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
+  await mtLoadCfg(); await loadStaffPw(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
   v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); document.getElementById('mta-half').checked = !!c.halfLap; mtCpLinks(); mtRegLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
@@ -2884,7 +2944,7 @@ async function mtAdminInit() {
   const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
   v('mta-link', location.origin + location.pathname + '?meta=1'); v('mta-link-tv', location.origin + location.pathname + '?meta=1&tv=1');
   document.getElementById('mta-close').textContent = c.closed ? '▶ Reabrir registros' : '⏹ Encerrar registros';
-  const ps = document.getElementById('mta-pw-state'); ps.textContent = c.staffPw ? '🔒 Senha definida. Digite uma nova só se quiser trocar.' : '⚠️ Sem senha: qualquer pessoa com o link pode registrar.'; ps.style.color = c.staffPw ? 'var(--green)' : 'var(--gold)'; document.getElementById('mta-pw').value = '';
+  /* senha da equipe: agora na aba Config */
   await mtLoadVal().catch(() => {}); const ok = await mtLoadEntries(); document.getElementById('mt-sql-warn').style.display = ok ? 'none' : 'block'; mtAdminList(); mtValRefreshUI();
 }
 function mtAdminList() {
@@ -2895,7 +2955,7 @@ async function mtDel(id) { if (!confirm('Remover este registro?')) return; await
 async function mtSaveCfg(extra) {
   const cpNum = id => parseFloat(String(document.getElementById(id).value).replace(',', '.')), cpLat = cpNum('mta-cp-lat'), cpLng = cpNum('mta-cp-lng');
   const checkpoint = isFinite(cpLat) && isFinite(cpLng) ? { lat:cpLat, lng:cpLng, r:Math.max(10, cpNum('mta-cp-r') || 40) } : null, minLapSec = cpNum('mta-cp-min') || 60;
-  const pw = document.getElementById('mta-pw').value.trim(), staffPw = pw ? await mtHash(pw) : ((MT_CFG && MT_CFG.staffPw) || '');
+  const staffPw = (MT_CFG && MT_CFG.staffPw) || '';   // senha antiga preservada; a senha atual é a da aba Config
   const num = id => parseFloat(document.getElementById(id).value.replace(',', '.'));
   const groups = mtaCollect().map(g => ({ id:g.id, name:g.name || 'Grupo', color:g.color, goal:parseFloat(String(g.goal).replace(',', '.')), roster:mtParseRoster(g.rosterText) }));
   if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta de cada equipe');
@@ -5329,7 +5389,9 @@ async function admTab(name) {
     document.getElementById('ch-body').value = ch.body || '';
     document.getElementById('ch-sub').value = ch.sub || '';
     await loadWhatsappConfigIntoForm();
+    await mtLoadCfg().catch(() => {}); await loadStaffPw(); renderStaffPwState(); fillTeamLinks();
   }
+  if(name==='evento'){ fillTeamLinks(); }
 }
 
 // ── TOQUE RÁPIDO ──
@@ -5866,7 +5928,6 @@ async function updateArchiveNote(idx, subCtx, newValue) {
 
 // ── Link da TV (admin) ──
 function tvLinkUrl() { return location.href.split('#')[0].split('?')[0] + '?tv=resultados'; }
-(function () { const el = document.getElementById('tv-link-input'); if (el) el.value = tvLinkUrl(); })();
 function copyTvLink() {
   const url = tvLinkUrl();
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => toast('📋 Link da TV copiado!'), () => toast(url));
@@ -5998,6 +6059,114 @@ async function startTvResults(params) {
   tvAutoScroll();
 }
 
+
+// ══════════════════════════════════════════════
+//  SENHA DA EQUIPE (única: vale para Meta e para Lançar resultados) + TELA DE LANÇAMENTO
+// ══════════════════════════════════════════════
+// Guardada em app_settings ('staff_pw' = { h: hash }). Enquanto nunca for definida aqui,
+// continua valendo a senha antiga cadastrada na Meta (mesmo hash), então nada para de funcionar.
+let STAFF_PW = null;
+async function loadStaffPw() {
+  const v = await getSetting('staff_pw', null);
+  STAFF_PW = (v && typeof v === 'object' && 'h' in v) ? v : null;
+}
+function staffHash() {
+  if (STAFF_PW) return STAFF_PW.h || '';
+  return (MT_CFG && MT_CFG.staffPw) || '';
+}
+function renderStaffPwState() {
+  const el = document.getElementById('staff-pw-state'); if (!el) return;
+  const has = !!staffHash();
+  el.textContent = has ? '🔒 Senha definida. Digite uma nova só se quiser trocar.' : '⚠️ Sem senha: qualquer pessoa com os links pode registrar metas e lançar resultados.';
+  el.style.color = has ? 'var(--green)' : 'var(--gold)';
+  const inp = document.getElementById('staff-pw-input'); if (inp) inp.value = '';
+}
+async function saveStaffPw() {
+  const pw = (document.getElementById('staff-pw-input').value || '').trim();
+  if (!pw) return toast('⚠️ Digite a nova senha da equipe');
+  const h = await mtHash(pw);
+  if (!(await setSetting('staff_pw', { h }))) return;
+  STAFF_PW = { h };
+  renderStaffPwState();
+  toast('🔒 Senha da equipe salva! Vale para Meta e Lançar resultados');
+}
+async function removeStaffPw() {
+  if (!confirm('Remover a senha? Qualquer pessoa com os links poderá registrar metas e lançar resultados.')) return;
+  if (!(await setSetting('staff_pw', { h: '' }))) return;
+  STAFF_PW = { h: '' };
+  renderStaffPwState();
+  toast('🔓 Senha da equipe removida');
+}
+function appBaseUrl() { return location.href.split('#')[0].split('?')[0]; }
+function copyLinkOf(id) {
+  const el = document.getElementById(id); if (!el) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).then(() => toast('📋 Link copiado!'), () => toast(el.value));
+  else { el.select(); document.execCommand('copy'); toast('📋 Link copiado!'); }
+}
+function fillTeamLinks() {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  set('cfg-link-meta', appBaseUrl() + '?meta=1');
+  set('cfg-link-launch', appBaseUrl() + '?lancar=resultados');
+  set('ev-launch-link', appBaseUrl() + '?lancar=resultados');
+  set('tv-link-input', appBaseUrl() + '?tv=resultados');
+}
+fillTeamLinks();
+
+// ── Tela de lançamento da equipe ──
+const LANCAR_KEY = 'ev_unlock';
+function lancarUnlocked() {
+  const sh = staffHash();
+  if (!sh) return true;
+  try { if (hasValidAdminSession()) return true; } catch (e) {}      // quem acabou de entrar como admin não precisa digitar de novo
+  try { const u = JSON.parse(localStorage.getItem(LANCAR_KEY) || 'null'); return !!u && u.h === sh && u.e > Date.now(); } catch (e) { return false; }
+}
+async function lancarUnlock() {
+  const inp = document.getElementById('lancar-pw');
+  const h = await mtHash(inp.value.trim());
+  if (h !== staffHash()) { inp.value = ''; return toast('❌ Senha incorreta'); }
+  localStorage.setItem(LANCAR_KEY, JSON.stringify({ h, e: Date.now() + 12 * 3600e3 }));
+  inp.value = '';
+  await lancarShow();
+}
+function lancarLogout() { localStorage.removeItem(LANCAR_KEY); lancarShow(); }
+async function lancarShow() {
+  const ok = lancarUnlocked();
+  document.getElementById('lancar-gate').style.display = ok ? 'none' : '';
+  document.getElementById('lancar-main').style.display = ok ? '' : 'none';
+  document.getElementById('lancar-logout').style.display = (ok && staffHash()) ? '' : 'none';
+  if (ok) await lancarLoad();
+  else setTimeout(() => document.getElementById('lancar-pw')?.focus(), 100);
+}
+async function lancarLoad() {
+  EVENT_INFO = null;
+  const info = await getEventInfo();
+  await loadEventRegistrations();
+  await loadResultNotes();
+  document.getElementById('lancar-event-name').textContent = info.name || 'Nenhum evento no momento';
+  const subSelWrap = document.getElementById('result-subevent-selector-wrap');
+  if (info.is_dual) {
+    if (!info.result_type_1 && info.result_type_2) currentSubEventContext = '2';
+    subSelWrap.style.display = '';
+    const subSel = document.getElementById('result-subevent-select');
+    subSel.innerHTML = `<option value="1">${info.sub1_name || 'Evento 1'}</option><option value="2">${info.sub2_name || 'Evento 2'}</option>`;
+    subSel.value = currentSubEventContext;
+  } else {
+    subSelWrap.style.display = 'none';
+    currentSubEventContext = '1';
+  }
+  refreshResultPanelForContext(info);
+  populateResultSelect();
+  const has = info.is_dual ? (info.result_type_1 || info.result_type_2) : info.result_type;
+  document.getElementById('lancar-none').style.display = has ? 'none' : '';
+}
+async function startLancar() {
+  document.getElementById('lancar-view').classList.add('on');
+  try { await mtLoadCfg(); } catch (e) {}
+  await loadStaffPw();
+  try { await loadMembers(); } catch (e) {}          // necessário para somar os pontos do evento ao ranking
+  await lancarShow();
+}
+
 // ══════════════════════════════════════════════
 //  START
 // ══════════════════════════════════════════════
@@ -6010,6 +6179,15 @@ async function start() {
       if (el.id !== 'archived-results-view') el.style.display = 'none';
     });
     await renderArchivedResults(archiveId);
+    return;
+  }
+
+  if (params0.get('quicklaunch') === '1') { location.replace(appBaseUrl() + '?lancar=resultados'); return; }   // atalho antigo: agora abre a tela de lançamento
+
+  if (params0.get('lancar') === 'resultados' && params0.get('meta') === null) {
+    // Link da equipe: só o lançamento de resultados (pede a senha da equipe)
+    document.querySelectorAll('body > *').forEach(el => { if (el.id !== 'lancar-view' && el.id !== 'toast' && el.tagName !== 'SCRIPT') el.style.display = 'none'; });
+    await startLancar();
     return;
   }
 
