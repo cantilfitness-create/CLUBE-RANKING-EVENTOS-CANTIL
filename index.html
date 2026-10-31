@@ -428,6 +428,7 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-bar { display:flex; gap:8px; margin-bottom:14px; }
 .lv-bar .btn-sm { flex:1; padding:10px; }
 #lancar-view #result-entry-label { display:none !important; }
+#lancar-view #result-subevent-selector-wrap { display:none !important; }
 
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
@@ -624,16 +625,6 @@ textarea { resize:vertical;min-height:72px; }
               </select>
             </div>
 
-            <div class="field-group">
-              <label class="field-label">Time Cap (para resultados de tempo)</label>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
-                <span>min</span>
-                <input type="number" id="ev-cfg-timecap-sec" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
-                <span>seg</span>
-                <button class="btn btn-blue" style="padding:12px 16px;margin:0" onclick="saveTimeCap()">💾</button>
-              </div>
-            </div>
 
 
             <div class="result-panel">
@@ -1310,6 +1301,15 @@ textarea { resize:vertical;min-height:72px; }
                   <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
                 </select>
               </div>
+              <div class="field-group">
+                <label class="field-label">⏱ Time Cap (Evento 1) — só para resultados de tempo</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="number" id="ev-cfg-timecap-min-1" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                  <span>min</span>
+                  <input type="number" id="ev-cfg-timecap-sec-1" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                  <span>seg</span>
+                </div>
+              </div>
               <div class="field-group" style="margin-bottom:0">
                 <label class="field-label">Status (Evento 1)</label>
                 <select id="ev-cfg-active-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
@@ -1348,6 +1348,15 @@ textarea { resize:vertical;min-height:72px; }
                   <option value="tempo">⏱️ Tempo (For Time)</option>
                   <option value="rounds">🔁 Rounds/Reps (AMRAP)</option>
                 </select>
+              </div>
+              <div class="field-group">
+                <label class="field-label">⏱ Time Cap (Evento 2) — só para resultados de tempo</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="number" id="ev-cfg-timecap-min-2" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                  <span>min</span>
+                  <input type="number" id="ev-cfg-timecap-sec-2" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                  <span>seg</span>
+                </div>
               </div>
               <div class="field-group" style="margin-bottom:0">
                 <label class="field-label">Status (Evento 2)</label>
@@ -1399,6 +1408,15 @@ textarea { resize:vertical;min-height:72px; }
               </select>
             </div>
             <div class="field-group">
+              <label class="field-label">⏱ Time Cap — só para resultados de tempo</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="number" id="ev-cfg-timecap-min" placeholder="min" min="0" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>min</span>
+                <input type="number" id="ev-cfg-timecap-sec" placeholder="seg" min="0" max="59" style="width:80px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:var(--text);text-align:center">
+                <span>seg</span>
+              </div>
+            </div>
+            <div class="field-group">
               <label class="field-label">Status</label>
               <select id="ev-cfg-active" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
                 <option value="true">✅ Inscrições abertas</option>
@@ -1428,6 +1446,14 @@ textarea { resize:vertical;min-height:72px; }
 
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
           <div id="ev-dual-config-wrap" style="display:none"></div>
+
+          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px">
+            <label class="field-label">🔴 Evento acontecendo agora (libera o link da equipe)</label>
+            <select id="ev-cfg-live" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;"></select>
+            <button class="btn btn-gold" style="margin-top:10px" onclick="saveLiveRelease()">✅ Aplicar liberação</button>
+            <div id="ev-cfg-live-state" style="font-size:12px;margin-top:8px"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.45">As inscrições podem ficar abertas para os dois eventos, mas só um acontece em tempo real. O link de <b>Lançar resultados</b> da equipe lança sempre no evento liberado aqui, sem a equipe escolher nada. Aplica na hora (não precisa salvar o evento). Deixe <b>Bloqueado</b> fora do dia do evento.</div>
+          </div>
 
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
@@ -3937,6 +3963,8 @@ async function renderEventAdminView() {
     toggleCustomQuestionField();
   }
   toggleDualEventFields();
+  fillTimeCapFields(info);
+  fillLiveSelect(info);
 
   const imgPreviewWrap = document.getElementById('event-image-preview-wrap');
   if (info.image) {
@@ -3990,8 +4018,6 @@ function refreshResultPanelForContext(info) {
     ? 'Resultado final (editável — corrige se estiver errado)'
     : 'Resultado (rounds/reps)';
 
-  document.getElementById('ev-cfg-timecap-min').value = capSec ? Math.floor(capSec/60) : '';
-  document.getElementById('ev-cfg-timecap-sec').value = capSec ? capSec%60 : '';
   document.getElementById('result-timecap-display').textContent = capSec ? formatTime(capSec) : '—';
 }
 
@@ -4115,8 +4141,8 @@ async function updateEventConfig() {
       result_type_1: resultType1, result_type_2: resultType2,
       max_1: max1, max_2: max2,
       active_1: active1, active_2: active2,
-      time_cap_seconds_1: prevInfo.time_cap_seconds_1 || 0,
-      time_cap_seconds_2: prevInfo.time_cap_seconds_2 || 0,
+      time_cap_seconds_1: capFrom('ev-cfg-timecap-min-1', 'ev-cfg-timecap-sec-1'),
+      time_cap_seconds_2: capFrom('ev-cfg-timecap-min-2', 'ev-cfg-timecap-sec-2'),
       // mantém campos únicos zerados/nulos pra não confundir eventos simples antigos
       meta: '', desc: '', points: 0, result_type: null, time_cap_seconds: 0, max: 0, active: active1 || active2
     };
@@ -4133,11 +4159,13 @@ async function updateEventConfig() {
     newInfo = {
       id, name, meta, desc, max, points, active, result_type, allow_visitor: allowVisitor,
       custom_question_enabled: customQEnabled, custom_question_label: customQLabel,
-      time_cap_seconds: prevInfo.time_cap_seconds || 0, image: prevInfo.image || null,
+      time_cap_seconds: capFrom('ev-cfg-timecap-min', 'ev-cfg-timecap-sec'), image: prevInfo.image || null,
       is_dual: false, sub1_name: sub1Name, sub2_name: sub2Name
     };
   }
 
+  // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
+  newInfo.live_sub = (id === prevInfo.id && (prevInfo.live_sub === '1' || (prevInfo.live_sub === '2' && isDual))) ? prevInfo.live_sub : '';
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -4232,8 +4260,7 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-result-type-2').value = '';
   document.getElementById('ev-cfg-active-1').value = 'true';
   document.getElementById('ev-cfg-active-2').value = 'true';
-  document.getElementById('ev-cfg-timecap-min').value = '';
-  document.getElementById('ev-cfg-timecap-sec').value = '';
+  ['', '-1', '-2'].forEach(x => { document.getElementById('ev-cfg-timecap-min' + x).value = ''; document.getElementById('ev-cfg-timecap-sec' + x).value = ''; });
   removeEventImage(true); // limpa a imagem sem pedir confirmação de novo
   toggleDualEventFields();
 
@@ -4618,25 +4645,6 @@ function levelColor(level) {
   return { emoji:'🟢', name:'Verde' };
 }
 
-async function saveTimeCap() {
-  const min = parseInt(document.getElementById('ev-cfg-timecap-min').value) || 0;
-  const sec = parseInt(document.getElementById('ev-cfg-timecap-sec').value) || 0;
-  const seconds = min*60 + sec;
-  const info = await getEventInfo();
-  let newInfo;
-  if (info.is_dual) {
-    const field = currentSubEventContext === '2' ? 'time_cap_seconds_2' : 'time_cap_seconds_1';
-    newInfo = { ...info, [field]: seconds };
-  } else {
-    newInfo = { ...info, time_cap_seconds: seconds };
-  }
-  const ok = await setSetting('event_info', newInfo);
-  if (!ok) return;
-  EVENT_INFO = newInfo;
-  document.getElementById('result-timecap-display').textContent = formatTime(seconds);
-  toast('✅ Time Cap salvo: ' + formatTime(seconds));
-}
-
 async function saveLevelDescriptions() {
   const descs = {
     'Iniciante': document.getElementById('level-desc-Iniciante').value.trim(),
@@ -4790,7 +4798,7 @@ function calcResultFromRemaining() {
   const cap = info.is_dual
     ? (currentSubEventContext === '2' ? (info.time_cap_seconds_2||0) : (info.time_cap_seconds_1||0))
     : (info.time_cap_seconds || 0);
-  if (!cap) return toast('⚠️ Salve o Time Cap primeiro!');
+  if (!cap) return toast('⚠️ Time Cap não definido. Peça à administração para definir na configuração do evento.');
   const remainingSec = parseTimeToSeconds(document.getElementById('result-remaining-input').value);
   if (remainingSec === null) return toast('⚠️ Digite o tempo restante no formato MM:SS!');
   const elapsed = Math.max(0, cap - remainingSec);
@@ -6060,6 +6068,48 @@ async function startTvResults(params) {
 }
 
 
+// ── Configuração do evento: time cap por prova + liberação do link da equipe ──
+function capFrom(minId, secId) {
+  return (parseInt(document.getElementById(minId).value) || 0) * 60 + (parseInt(document.getElementById(secId).value) || 0);
+}
+function fillTimeCapFields(info) {
+  const set = (x, sec) => {
+    document.getElementById('ev-cfg-timecap-min' + x).value = sec ? Math.floor(sec / 60) : '';
+    document.getElementById('ev-cfg-timecap-sec' + x).value = sec ? sec % 60 : '';
+  };
+  set('', info.time_cap_seconds || 0);
+  set('-1', info.time_cap_seconds_1 || 0);
+  set('-2', info.time_cap_seconds_2 || 0);
+}
+function fillLiveSelect(info) {
+  const sel = document.getElementById('ev-cfg-live'); if (!sel) return;
+  const opts = info.is_dual
+    ? [['', '🚫 Bloqueado (ninguém lança resultado)'], ['1', '🥇 ' + (info.sub1_name || 'Evento 1') + ' — acontecendo agora'], ['2', '🥈 ' + (info.sub2_name || 'Evento 2') + ' — acontecendo agora']]
+    : [['', '🚫 Bloqueado (ninguém lança resultado)'], ['1', '✅ Liberado — evento acontecendo agora']];
+  sel.innerHTML = opts.map(o => `<option value="${o[0]}">${tvEsc(o[1])}</option>`).join('');
+  const live = info.live_sub || '';
+  sel.value = (live === '1' || (live === '2' && info.is_dual)) ? live : '';
+  renderLiveState(info);
+}
+function renderLiveState(info) {
+  const el = document.getElementById('ev-cfg-live-state'); if (!el) return;
+  const live = info.live_sub || '';
+  const on = live === '1' || (live === '2' && info.is_dual);
+  const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : (info.name || 'evento');
+  el.textContent = on ? `🔴 Link da equipe liberado para: ${subName}` : '🔒 Link da equipe bloqueado: ninguém consegue lançar resultados.';
+  el.style.color = on ? 'var(--green)' : 'var(--gold)';
+}
+async function saveLiveRelease() {
+  const v = document.getElementById('ev-cfg-live').value;
+  const info = await getEventInfo();
+  if (!info.id) return toast('⚠️ Salve o evento antes de liberar o lançamento');
+  const newInfo = { ...info, live_sub: v };
+  if (!(await setSetting('event_info', newInfo))) return;
+  EVENT_INFO = newInfo;
+  renderLiveState(newInfo);
+  toast(v ? '🔴 Link da equipe liberado para o evento que está acontecendo' : '🔒 Link da equipe bloqueado');
+}
+
 // ══════════════════════════════════════════════
 //  SENHA DA EQUIPE (única: vale para Meta e para Lançar resultados) + TELA DE LANÇAMENTO
 // ══════════════════════════════════════════════
@@ -6137,27 +6187,44 @@ async function lancarShow() {
   if (ok) await lancarLoad();
   else setTimeout(() => document.getElementById('lancar-pw')?.focus(), 100);
 }
+let LANCAR_SIG = '';
+function lancarSig(info) { return [info.id, info.live_sub || '', info.is_dual ? 1 : 0, info.result_type, info.result_type_1, info.result_type_2].join('|'); }
 async function lancarLoad() {
   EVENT_INFO = null;
   const info = await getEventInfo();
+  LANCAR_SIG = lancarSig(info);
   await loadEventRegistrations();
   await loadResultNotes();
-  document.getElementById('lancar-event-name').textContent = info.name || 'Nenhum evento no momento';
-  const subSelWrap = document.getElementById('result-subevent-selector-wrap');
-  if (info.is_dual) {
-    if (!info.result_type_1 && info.result_type_2) currentSubEventContext = '2';
-    subSelWrap.style.display = '';
-    const subSel = document.getElementById('result-subevent-select');
-    subSel.innerHTML = `<option value="1">${info.sub1_name || 'Evento 1'}</option><option value="2">${info.sub2_name || 'Evento 2'}</option>`;
-    subSel.value = currentSubEventContext;
-  } else {
-    subSelWrap.style.display = 'none';
-    currentSubEventContext = '1';
+  const live = info.live_sub || '';
+  const valid = live === '1' || (live === '2' && info.is_dual);
+  const none = document.getElementById('lancar-none');
+  const wrap = document.getElementById('result-panel-wrap');
+  const nameEl = document.getElementById('lancar-event-name');
+  if (!valid) {
+    nameEl.textContent = info.name || 'Nenhum evento no momento';
+    wrap.style.display = 'none';
+    none.textContent = '🔒 Lançamento ainda não liberado. A administração libera o evento que está acontecendo na configuração do evento.';
+    none.style.display = '';
+    return;
   }
+  currentSubEventContext = info.is_dual ? live : '1';
+  const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
+  nameEl.textContent = '🔴 ' + (info.name || 'Evento') + (subName ? ' · ' + subName : '');
+  const type = info.is_dual ? (live === '2' ? info.result_type_2 : info.result_type_1) : info.result_type;
+  if (!type) {
+    wrap.style.display = 'none';
+    none.textContent = 'O evento liberado ainda não tem tipo de resultado configurado (Tempo ou Rounds/Reps). Peça à administração para configurar.';
+    none.style.display = '';
+    return;
+  }
+  none.style.display = 'none';
   refreshResultPanelForContext(info);
   populateResultSelect();
-  const has = info.is_dual ? (info.result_type_1 || info.result_type_2) : info.result_type;
-  document.getElementById('lancar-none').style.display = has ? 'none' : '';
+}
+// Se a administração liberar/trocar o evento com a tela aberta, ela se ajusta sozinha
+async function lancarWatch() {
+  if (!lancarUnlocked()) return;
+  try { EVENT_INFO = null; const info = await getEventInfo(); if (lancarSig(info) !== LANCAR_SIG) await lancarLoad(); } catch (e) {}
 }
 async function startLancar() {
   document.getElementById('lancar-view').classList.add('on');
@@ -6165,6 +6232,7 @@ async function startLancar() {
   await loadStaffPw();
   try { await loadMembers(); } catch (e) {}          // necessário para somar os pontos do evento ao ranking
   await lancarShow();
+  setInterval(lancarWatch, 20000);
 }
 
 // ══════════════════════════════════════════════
