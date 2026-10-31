@@ -376,6 +376,47 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .results-item-value { font-family:'DM Mono',monospace;color:var(--accent);font-weight:700; }
 .results-header-row { display:flex;justify-content:space-between;align-items:center;padding:6px 16px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700; }
 
+/* Descrição por participante no board público */
+.results-item-name { min-width:0; }
+.results-item-note { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:2px; line-height:1.35; }
+.results-item-value { margin-left:12px; flex-shrink:0; }
+.tv-link-btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--accent); text-decoration:none; background:var(--s1); border:1px solid rgba(232,255,0,.3); padding:8px 14px; border-radius:20px; }
+.tv-link-btn:hover { background:rgba(232,255,0,.1); }
+
+/* MODO TV — link ?tv=resultados (só resultados, letras grandes, atualiza sozinho) */
+#tv-results-view { display:none; position:fixed; inset:0; z-index:500; flex-direction:column; overflow:hidden; color:var(--text);
+  background:radial-gradient(1200px 700px at 12% -10%, rgba(26,58,143,.55), transparent 60%), radial-gradient(900px 600px at 100% 110%, rgba(13,47,92,.6), transparent 60%), var(--bg); }
+#tv-results-view.on { display:flex; }
+.tv-head { flex:0 0 auto; text-align:center; padding:2.4vh 3vw 1vh; }
+.tv-eyebrow { font-size:1.6vh; letter-spacing:.5em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+.tv-title { font-family:'Bebas Neue',sans-serif; font-size:7.5vh; letter-spacing:.08em; line-height:1.05; background:linear-gradient(160deg,#fff 30%,#e8ff00 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.tv-cap { display:inline-block; margin-top:.4vh; font-size:2.2vh; font-weight:800; color:var(--red); letter-spacing:.12em; }
+.tv-body { flex:1 1 auto; min-height:0; display:grid; gap:2vw; padding:1vh 3vw 2.5vh; }
+.tv-panel { min-width:0; min-height:0; display:flex; flex-direction:column; }
+.tv-panel-title { font-family:'Bebas Neue',sans-serif; font-size:4.4vh; letter-spacing:.06em; padding-bottom:.8vh; margin-bottom:1.2vh; border-bottom:.35vh solid rgba(232,255,0,.35); flex:0 0 auto; }
+.tv-panel-title .tv-cap { font-size:2.2vh; margin:0 0 0 1.2vw; }
+.tv-groups { flex:1 1 auto; min-height:0; display:grid; gap:1.6vw; }
+.tv-groups.stacked { gap:1.6vh; }
+.tv-group { min-width:0; min-height:0; display:flex; flex-direction:column; background:var(--s1); border:1px solid var(--border); border-radius:1.6vh; overflow:hidden; }
+.tv-group-title { font-family:'Bebas Neue',sans-serif; font-size:3.8vh; letter-spacing:.05em; padding:1.2vh 1.4vw; background:rgba(255,255,255,.05); border-bottom:1px solid var(--border); flex:0 0 auto; }
+.tv-scroll { flex:1 1 auto; min-height:0; overflow:hidden; }
+.tv-row { display:flex; align-items:center; gap:1.1vw; padding:1.2vh 1.4vw; border-bottom:1px solid var(--border); }
+.tv-row:last-child { border-bottom:none; }
+.tv-pos { flex:0 0 4.6vh; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:3.4vh; color:var(--muted); }
+.tv-who { flex:1 1 auto; min-width:0; }
+.tv-name { font-weight:800; font-size:3.3vh; line-height:1.12; overflow-wrap:anywhere; }
+.tv-note { font-size:2.2vh; color:var(--muted); margin-top:.4vh; line-height:1.25; overflow-wrap:anywhere; }
+.tv-val { flex:0 0 auto; font-family:'Bebas Neue',sans-serif; font-size:4.8vh; color:var(--accent); letter-spacing:.04em; font-variant-numeric:tabular-nums; }
+.tv-val.cap { color:var(--red); font-size:3.2vh; }
+.tv-row.p1 .tv-val { color:var(--gold); }
+.tv-row.p2 .tv-val { color:var(--silver); }
+.tv-row.p3 .tv-val { color:var(--bronze); }
+.tv-row.p1 { background:rgba(255,208,96,.07); }
+.tv-empty { margin:auto; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:6vh; letter-spacing:.1em; color:var(--muted); }
+.tv-live { position:fixed; left:1.5vw; bottom:1.2vh; font-size:1.5vh; color:var(--muted); display:flex; align-items:center; gap:.5vw; opacity:.8; }
+.tv-fs { position:fixed; top:1.5vh; right:1.5vw; opacity:0; transition:opacity .3s; background:var(--s1); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:8px 14px; font-family:'Outfit',sans-serif; font-weight:700; cursor:pointer; }
+#tv-results-view:hover .tv-fs { opacity:.9; }
+
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
 .mini-row:hover { border-color:var(--accent); }
@@ -528,6 +569,18 @@ textarea { resize:vertical;min-height:72px; }
 
 <div id="archived-results-view" style="display:none;min-height:100vh;background:var(--bg);"></div>
 
+<!-- MODO TV: link ?tv=resultados — só os resultados do evento, otimizado para telão -->
+<div id="tv-results-view">
+  <div class="tv-head">
+    <div class="tv-eyebrow">🏁 Resultados</div>
+    <div class="tv-title" id="tv-title">Carregando...</div>
+    <div id="tv-cap-wrap"></div>
+  </div>
+  <div class="tv-body" id="tv-body"></div>
+  <div class="tv-live"><span class="live-dot"></span> ao vivo · atualiza sozinho</div>
+  <button class="tv-fs" onclick="(document.documentElement.requestFullscreen||function(){}).call(document.documentElement)">⛶ Tela cheia</button>
+</div>
+
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 
@@ -612,6 +665,7 @@ textarea { resize:vertical;min-height:72px; }
   <div class="results-board" id="results-board" style="display:none">
     <div class="section-label" id="results-title">🏁 Resultados</div>
     <div id="results-groups"></div>
+    <div style="text-align:center;margin-top:10px"><a class="tv-link-btn" href="?tv=resultados" target="_blank" rel="noopener">📺 Abrir resultados em modo TV</a></div>
   </div>
   <div class="video-wrap">
     <div class="event-hero" id="event-hero">
@@ -799,24 +853,26 @@ textarea { resize:vertical;min-height:72px; }
       <div style="display:flex;gap:8px"><input type="text" id="cad-name" placeholder="Digite o nome ou toque na seta" autocomplete="off" autocorrect="off" oninput="cadType()"><button class="mt-tiny" style="flex:0 0 56px;padding:0;font-size:20px" onclick="cadToggleList()">▾</button></div>
       <div id="cad-sug" class="cad-sug" style="display:none"></div></div>
     <div class="field-group"><label class="field-label">Cor da equipe</label><div id="cad-chips" class="mt-gchips"></div></div>
-    <div class="field-group"><label class="field-label">Número da pulseira</label><input type="text" id="cad-num" inputmode="numeric" placeholder="ex: 12" oninput="cadCheck()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="cad-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
+    <div class="field-group"><label class="field-label">Número da pulseira / inscrição</label><input type="text" id="cad-num" inputmode="numeric" placeholder="ex: 12" oninput="cadCheck()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="cad-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
     <button class="btn btn-blue" onclick="cadSave()">✅ Cadastrar atleta</button>
     <div id="cad-last" style="margin-top:10px;font-size:13px;color:var(--green);font-weight:700;text-align:center"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-cad').classList.remove('open')">Fechar</button>
   </div></div>
   <div class="bd-ov" id="meta-val" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
-    <div style="font-weight:800;font-size:18px;margin-bottom:4px">📎 Validar minha corrida</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Cole o link da atividade do Strava e o km que o GPS marcou. O painel compara com os km registrados e a equipe confere.</div>
-    <div class="field-group"><label class="field-label">Quem é você</label><select id="val-name"></select></div>
+    <div style="font-weight:800;font-size:18px;margin-bottom:4px">📎 Enviar meu Strava</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Cole o link da atividade. A equipe confere se bate com os km registrados.</div>
+    <div class="field-group"><label class="field-label">Nome</label>
+      <div style="display:flex;gap:8px"><input type="text" id="val-name" placeholder="Digite o nome ou toque na seta" autocomplete="off" autocorrect="off" oninput="valType()"><button class="mt-tiny" style="flex:0 0 52px;padding:0;font-size:18px" onclick="valToggleList()">▾</button></div>
+      <div id="val-sug" class="cad-sug" style="display:none"></div></div>
+    <div class="field-group"><label class="field-label">Nº da pulseira / inscrição (opcional)</label><input type="text" id="val-num" inputmode="numeric" placeholder="ex: 12" oninput="valNum()"><div id="val-hint" style="margin-top:8px;font-size:13px;font-weight:700"></div></div>
     <div class="field-group"><label class="field-label">Link da atividade no Strava</label><input type="text" id="val-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off"></div>
-    <div class="field-group"><label class="field-label">Km no GPS</label><input type="text" id="val-km" inputmode="decimal" placeholder="ex: 4,12"></div>
-    <button class="btn btn-blue" onclick="valSave()">✅ Enviar para validação</button>
+    <button class="btn btn-blue" onclick="valSave()">✅ Enviar</button>
     <div id="val-res" style="margin-top:10px;font-size:13px;font-weight:700;text-align:center"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-val').classList.remove('open')">Fechar</button>
   </div></div>
   <div class="bd-ov" id="meta-vlist" onclick="if(event.target===this)this.classList.remove('open')"><div class="bd-box" style="text-align:left">
-    <div style="font-weight:800;font-size:18px">📎 Validações do Strava</div>
-    <div style="font-size:12px;color:var(--muted);margin:4px 0 12px">As divergências (⚠️) aparecem primeiro. Abra o link, confira a atividade e toque em Conferido.</div>
+    <div style="font-weight:800;font-size:18px">📎 Strava dos atletas</div>
+    <div style="font-size:12px;color:var(--muted);margin:4px 0 12px">Os envios pendentes aparecem primeiro. Abra o link, compare com os km registrados e toque em Conferido.</div>
     <div id="meta-vlist-body"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:10px" onclick="document.getElementById('meta-vlist').classList.remove('open')">Fechar</button>
   </div></div>
@@ -824,7 +880,7 @@ textarea { resize:vertical;min-height:72px; }
     <div style="font-weight:800;font-size:18px">📍 REGISTRAR VOLTA POR GPS</div>
     <div id="lap-info" style="font-size:12px;color:var(--muted);margin:4px 0 12px"></div>
     <div class="field-group" id="lap-gwrap"><label class="field-label">Cor da pulseira</label><div id="lap-chips" class="mt-gchips"></div></div>
-    <div class="field-group" id="lap-nwrap"><label class="field-label">Número da pulseira</label><input type="text" id="lap-num" inputmode="numeric" placeholder="ex: 12" oninput="lapWho()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="lap-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
+    <div class="field-group" id="lap-nwrap"><label class="field-label">Número da pulseira / inscrição</label><input type="text" id="lap-num" inputmode="numeric" placeholder="ex: 12" oninput="lapWho()" style="font-size:28px;text-align:center;font-weight:800;padding:14px"><div id="lap-who" style="margin-top:8px;font-weight:700;min-height:22px;text-align:center"></div></div>
     <button class="btn btn-blue" id="lap-btn" style="font-size:18px;padding:18px" onclick="lapGo()">📍 PASSEI NA LINHA</button>
     <div id="lap-res" style="margin-top:12px;font-weight:700;text-align:center;min-height:22px"></div>
     <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="document.getElementById('meta-lap').classList.remove('open')">Fechar</button>
@@ -840,9 +896,9 @@ textarea { resize:vertical;min-height:72px; }
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:18px">➕ Registrar</b><span id="mt-reg-badge" class="mt-vb ok" style="display:none"></span></div>
     <div class="field-group" id="mt-group-wrap" style="display:none"><div id="mt-gchips" class="mt-gchips mt-gsm"></div></div>
     <div id="mt-roster" class="mt-roster" style="display:none"></div>
-    <div class="field-group" id="mt-num-wrap" style="display:none"><input type="text" id="mt-num" inputmode="numeric" placeholder="Nº da pulseira" oninput="mtWho();mtRosterList()" style="font-size:24px;text-align:center;font-weight:800;padding:10px"><div id="mt-who" style="margin-top:6px;font-weight:700;min-height:20px;text-align:center;font-size:13px"></div></div>
-    <div id="mt-name-block"><div class="field-group"><label class="field-label" id="mt-name-label">Nome</label><select id="mt-name" onchange="mtNameChange()"></select>
-      <input type="text" id="mt-name-free" placeholder="Digite seu nome completo" oninput="mtShowMine()" style="display:none;margin-top:8px">
+    <div class="field-group" id="mt-num-wrap" style="display:none"><input type="text" id="mt-num" inputmode="numeric" placeholder="Nº da pulseira / inscrição" oninput="mtWho();mtRosterList()" style="font-size:24px;text-align:center;font-weight:800;padding:10px"><div id="mt-who" style="margin-top:6px;font-weight:700;min-height:20px;text-align:center;font-size:13px"></div></div>
+    <div id="mt-name-block"><div class="field-group"><label class="field-label" id="mt-name-label">Nome</label><div style="display:flex;gap:8px"><input type="text" id="mt-name" placeholder="Digite o nome ou toque na seta" autocomplete="off" autocorrect="off" oninput="mtNameType()"><button class="mt-tiny" style="flex:0 0 52px;padding:0;font-size:18px" onclick="mtNameList()">▾</button></div>
+      <div id="mt-sug" class="cad-sug" style="display:none"></div>
       <div id="mt-mine" style="display:none;margin-top:8px;font-size:13px;color:var(--accent);font-weight:700"></div></div></div>
     <div class="field-group" id="mt-pt-wrap" style="display:none">
       <div class="mt-gchips"><button class="mt-gchip mt-pt" id="mt-pt-a" onclick="mtSetPt('A')">PONTO A<small>Largada / chegada</small></button><button class="mt-gchip mt-pt" id="mt-pt-b" onclick="mtSetPt('B')">PONTO B<small>Ponto de volta</small></button></div></div>
@@ -1108,7 +1164,7 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtToggleClosed()" id="mta-close">⏹ Encerrar registros</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtPrintFinal()">📄 Relatório por equipe (imprimir / PDF)</button>
           <button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="mtNewChallenge()">🔄 Novo desafio (zera tudo)</button>
-          <div class="section-label" style="margin-top:22px">📎 Validações do Strava (divergências primeiro)</div>
+          <div class="section-label" style="margin-top:22px">📎 Strava enviado pelos atletas (pendentes primeiro)</div>
           <div id="mta-val-list"></div>
           <div class="section-label" style="margin-top:22px">Últimos registros</div>
           <div id="mta-list"></div>
@@ -1309,6 +1365,16 @@ textarea { resize:vertical;min-height:72px; }
           <hr class="divider">
           <div class="section-label" id="result-entry-label" style="display:none">⏱️ Lançar Resultados</div>
           <div id="result-panel-wrap" style="display:none">
+            <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px">
+              <label class="field-label">📺 Link da TV (só resultados, letras grandes)</label>
+              <input type="text" id="tv-link-input" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+              <div style="display:flex;gap:8px">
+                <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvLink()">📋 Copiar link</button>
+                <button class="btn-sm" style="flex:1;padding:10px" onclick="openTvLink()">📺 Abrir</button>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4">Abra esse link no navegador da TV. Atualiza sozinho a cada 15 s. Para ordem alfabética em vez de classificação, acrescente <b>&amp;ordem=nome</b> no fim do link.</div>
+            </div>
+
             <div class="field-group" id="result-subevent-selector-wrap" style="display:none">
               <label class="field-label">🎯 Lançando resultado de qual evento?</label>
               <select id="result-subevent-select" onchange="onSubEventContextChange()">
@@ -1355,6 +1421,10 @@ textarea { resize:vertical;min-height:72px; }
               <div class="field-group" style="margin-bottom:10px">
                 <label class="field-label" id="result-final-label">Resultado final (editável — corrige se estiver errado)</label>
                 <input type="text" id="result-final-input" class="result-final-input">
+              </div>
+              <div class="field-group" style="margin-bottom:10px">
+                <label class="field-label">📝 Descrição do participante (opcional)</label>
+                <input type="text" id="result-note-input" maxlength="140" placeholder="ex: Rx · escalado · 3 no-reps · recorde pessoal">
               </div>
               <button class="btn btn-gold" onclick="saveSelectedResult()" style="width:100%">💾 Salvar Resultado</button>
               <button class="btn-sm-danger" id="delete-result-btn" style="width:100%;padding:10px;margin-top:8px;display:none" onclick="deleteSelectedResult()">🗑️ Excluir Resultado deste Participante</button>
@@ -2179,8 +2249,8 @@ function mtCopyFinal() {
 function mtPrintFinal() {
   if (!MT_CFG) return; const d = mtFinalData(), e = listaEsc;
   const rank = d.st.map((t, i) => `<tr><td>${i+1}º</td><td>${e(t.g.name || 'Total')}</td><td>${mtKm(t.a.total)} ${d.unit}</td><td>${mtKm(t.g.goal)} ${d.unit}</td><td>${Math.floor(t.pct)}%</td><td>${t.pers}</td><td>${t.a.n}</td></tr>`).join('');
-  const teams = d.st.map(t => `<h2 style="border-left:6px solid ${t.g.color};padding-left:8px">${e(t.g.name || 'Total')} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</h2><table><thead><tr><th>Nº</th><th>Atleta</th><th>Total (${d.unit})</th><th>Registros</th><th>% da equipe</th><th>GPS (Strava)</th></tr></thead><tbody>` +
-    (t.a.list.map(p => { const r = (t.g.roster || []).find(x => listaNorm(x.name) === listaNorm(p.name)); return `<tr><td>${r ? r.n : '—'}</td><td>${e(p.name)}</td><td>${mtKm(p.km)}</td><td>${p.n}</td><td>${(p.km/(t.a.total||1)*100).toFixed(1).replace('.', ',')}%</td><td>${(() => { const v = mtValState(p.name); return v ? (v.ok ? '✓ ' : '⚠ ') + mtKm(v.v.km) + ' km' : '—'; })()}</td></tr>`; }).join('') || '<tr><td colspan="6">Sem registros</td></tr>') + '</tbody></table>').join('');
+  const teams = d.st.map(t => `<h2 style="border-left:6px solid ${t.g.color};padding-left:8px">${e(t.g.name || 'Total')} — ${mtKm(t.a.total)} / ${mtKm(t.g.goal)} ${d.unit}</h2><table><thead><tr><th>Nº</th><th>Atleta</th><th>Total (${d.unit})</th><th>Registros</th><th>% da equipe</th><th>Strava</th></tr></thead><tbody>` +
+    (t.a.list.map(p => { const r = (t.g.roster || []).find(x => listaNorm(x.name) === listaNorm(p.name)); return `<tr><td>${r ? r.n : '—'}</td><td>${e(p.name)}</td><td>${mtKm(p.km)}</td><td>${p.n}</td><td>${(p.km/(t.a.total||1)*100).toFixed(1).replace('.', ',')}%</td><td>${(() => { const v = mtValState(p.name); return v ? (v.ok ? '✓ conferido' : 'enviado') : '—'; })()}</td></tr>`; }).join('') || '<tr><td colspan="6">Sem registros</td></tr>') + '</tbody></table>').join('');
   const html = `<html><head><meta charset="utf-8"><title>${e(d.title)} — Relatório</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:22px 0 8px}.m{color:#555;font-size:13px;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}@media print{button{display:none}}</style></head><body>
     <h1>${e(d.title)} — ${mtEnded() ? 'Relatório final' : 'Relatório parcial'}</h1><div class="m">${d.when} · gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</div>
     <h2>Quanto cada equipe fez</h2><table><thead><tr><th>Pos.</th><th>Equipe</th><th>Total</th><th>Meta</th><th>% da meta</th><th>Pessoas</th><th>Registros</th></tr></thead><tbody>${rank}</tbody></table>${teams}
@@ -2190,43 +2260,68 @@ function mtPrintFinal() {
 // — validação da corrida: link do Strava + km do GPS comparados com os km registrados; check-in por GPS no ponto da volta —
 let MT_VAL = {}, MT_OPEN_LAP = false, lapGrp = '';
 async function mtLoadVal() { const v = await getSetting('relay_validations', {}); MT_VAL = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; }
-function mtValState(name) {   // compara o km do GPS informado com o total registrado da pessoa
+function mtValState(name) {   // envio do Strava de um atleta: pendente ou conferido pela equipe
   const k = listaNorm(name), v = MT_VAL[k]; if (!v) return null;
-  const reg = MT_ENTRIES.filter(e => listaNorm(e.name) === k).reduce((s, e) => s + (+e.km), 0), tol = Math.max(.2, .1 * Math.max(reg, +v.km));
-  return { v, reg, ok:!!v.approved || Math.abs(reg - v.km) <= tol };
+  const reg = MT_ENTRIES.filter(e => listaNorm(e.name) === k).reduce((s, e) => s + (+e.km), 0);
+  return { v, reg, ok:!!v.approved };
 }
 function mtValBadge(name) {
   if (mtUnit() !== 'km') return ''; const s = mtValState(name); if (!s) return '';
   const link = mtUnlocked() && MT_CFG.staffPw ? ` <a href="${listaEsc(s.v.link)}" target="_blank" rel="noopener" style="text-decoration:none">🔗</a>` : '';
-  return ` <span class="mt-vb ${s.ok ? 'ok' : 'warn'}">${s.ok ? '✓' : '⚠️'} GPS ${mtKm(s.v.km)} km</span>${link}`;
+  return ` <span class="mt-vb ${s.ok ? 'ok' : 'warn'}">${s.ok ? '✓ Strava conferido' : '📎 Strava enviado'}</span>${link}`;
 }
+let VAL_SUG = [], VAL_M = [];
+function valKnown() {   // nomes conhecidos: quem já registrou, atletas cadastrados e inscritos do evento
+  const set = new Map(), add = n => { const k = listaNorm(n); if (k && !set.has(k)) set.set(k, n); };
+  MT_ENTRIES.forEach(e => add(e.name)); mtGroups().forEach(g => (g.roster || []).forEach(r => add(r.name))); mtNames().forEach(add);
+  return [...set.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+function valSuggest(all) {
+  const q = listaNorm(document.getElementById('val-name').value), box = document.getElementById('val-sug'), L = valKnown();
+  VAL_SUG = (all ? L : q ? L.filter(n => listaNorm(n).includes(q)) : []).slice(0, all ? 300 : 6);
+  box.style.display = VAL_SUG.length ? 'block' : 'none'; box.innerHTML = VAL_SUG.map((n, i) => `<div onclick="valChoose(${i})">${listaEsc(n)}</div>`).join('');
+}
+const valType = () => valSuggest(false);
+function valToggleList() { const b = document.getElementById('val-sug'); if (b.style.display === 'block') b.style.display = 'none'; else valSuggest(true); }
+function valChoose(i) { if (!VAL_SUG[i]) return; document.getElementById('val-name').value = VAL_SUG[i]; document.getElementById('val-sug').style.display = 'none'; }
+function valMatches(num) {   // nº da pulseira = nº de inscrição: acha quem tem esse número nas equipes
+  const n = parseInt(num); if (!(n > 0)) return []; const out = [];
+  mtGroups().forEach(g => (g.roster || []).forEach(r => { if (r.n === n) out.push({ name:r.name, team:g.name, color:g.color }); }));
+  return out;
+}
+function valNum() {
+  const num = document.getElementById('val-num').value, h = document.getElementById('val-hint'), m = valMatches(num); VAL_M = m;
+  if (!num.trim()) { h.innerHTML = ''; return; }
+  if (!m.length) { h.style.color = 'var(--gold)'; h.textContent = 'Nº não encontrado: digite o nome'; return; }
+  if (m.length === 1) { h.style.color = 'var(--green)'; h.textContent = '✅ ' + m[0].name + (m[0].team ? ' · ' + m[0].team : ''); document.getElementById('val-name').value = m[0].name; return; }
+  h.style.color = 'var(--muted)'; h.innerHTML = 'Esse número existe em mais de uma equipe. Toque na sua:<div class="mt-roster" style="margin-top:6px">' + m.map((x, i) => `<button class="mt-rchip" style="border-color:${x.color}66" onclick="valPick(${i})">${listaEsc(x.name)} · ${listaEsc(x.team)}</button>`).join('') + '</div>';
+}
+function valPick(i) { const h = document.getElementById('val-hint'); document.getElementById('val-name').value = VAL_M[i].name; h.style.color = 'var(--green)'; h.textContent = '✅ ' + VAL_M[i].name + ' · ' + VAL_M[i].team; }
 function valOpen() {
   if (!MT_CFG) return;
-  const set = new Map(); MT_ENTRIES.forEach(e => set.set(listaNorm(e.name), e.name)); mtGroups().forEach(g => (g.roster || []).forEach(r => { if (!set.has(listaNorm(r.name))) set.set(listaNorm(r.name), r.name); }));
-  document.getElementById('val-name').innerHTML = '<option value="">— escolha seu nome —</option>' + [...set.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(n => `<option>${listaEsc(n)}</option>`).join('');
-  document.getElementById('val-link').value = ''; document.getElementById('val-km').value = ''; document.getElementById('val-res').textContent = '';
+  ['val-name', 'val-num', 'val-link'].forEach(id => document.getElementById(id).value = ''); document.getElementById('val-hint').textContent = ''; document.getElementById('val-res').textContent = ''; document.getElementById('val-sug').style.display = 'none';
   document.getElementById('meta-val').classList.add('open');
 }
 async function valSave() {
-  const name = document.getElementById('val-name').value, link = document.getElementById('val-link').value.trim(), km = parseFloat(document.getElementById('val-km').value.replace(',', '.'));
-  if (!name) return toast('⚠️ Escolha seu nome');
+  let name = document.getElementById('val-name').value.trim(); const num = document.getElementById('val-num').value.trim(), link = document.getElementById('val-link').value.trim();
+  if (!name && num) { const m = valMatches(num); if (m.length === 1) name = m[0].name; else if (m.length > 1) return toast('⚠️ Esse número existe em mais de uma equipe: toque na sua'); }
+  if (!name) return toast('⚠️ Digite o nome ou o número da pulseira/inscrição');
   if (!/^https?:\/\/([a-z0-9-]+\.)?strava\.(com|app\.link)\//i.test(link)) return toast('⚠️ Cole o link da atividade do Strava');
-  if (!(km > 0) || km > 300) return toast('⚠️ Informe o km que o GPS marcou');
-  await mtLoadVal(); MT_VAL[listaNorm(name)] = { name, link, km, at:new Date().toISOString() };
+  const k0 = listaNorm(name); name = valKnown().find(n => listaNorm(n) === k0) || mtResolve(name);
+  await mtLoadVal(); MT_VAL[listaNorm(name)] = { name, num, link, at:new Date().toISOString() };
   if (!(await setSetting('relay_validations', MT_VAL))) return toast('❌ Não foi possível enviar');
-  const s = mtValState(name), el = document.getElementById('val-res'); el.style.color = s.ok ? 'var(--green)' : 'var(--gold)';
-  el.textContent = s.ok ? `✓ Bate com os ${mtKm(s.reg)} km registrados.` : `⚠️ O GPS marcou ${mtKm(km)} km e o painel tem ${mtKm(s.reg)} km registrados. A equipe vai conferir.`;
-  mtRender(); toast('📎 Enviado para validação!');
+  const s = mtValState(name), el = document.getElementById('val-res'); el.style.color = 'var(--green)';
+  el.textContent = `✅ Enviado! O painel tem ${mtKm(s.reg)} ${mtUnit()} registrados para você. A equipe vai conferir.`; mtRender(); toast('📎 Strava enviado!');
 }
-// lista de validações do Strava: divergências primeiro
+// lista para a equipe conferir: pendentes primeiro
 function mtValEntries() {
-  return Object.keys(MT_VAL).map(k => { const v = MT_VAL[k], s = mtValState(v.name); return { k, v, reg:s ? s.reg : 0, diff:v.km - (s ? s.reg : 0), ok:!!(s && s.ok) }; }).sort((a, b) => (a.ok - b.ok) || Math.abs(b.diff) - Math.abs(a.diff));
+  return Object.keys(MT_VAL).map(k => { const v = MT_VAL[k], s = mtValState(v.name); return { k, v, reg:s ? s.reg : 0, ok:!!v.approved }; }).sort((a, b) => (a.ok - b.ok) || a.v.name.localeCompare(b.v.name, 'pt-BR'));
 }
 function mtValListHtml() {
   const L = mtValEntries(); if (!L.length) return '<div style="color:var(--muted);font-size:13px">Nenhum envio ainda.</div>';
-  return L.map(e => `<div class="mt-row"><div style="display:flex;justify-content:space-between;gap:8px"><b>${e.ok ? '✓' : '⚠️'} ${listaEsc(e.v.name)}</b><b style="color:${e.ok ? 'var(--green)' : 'var(--gold)'}">${e.v.approved ? 'conferido' : (e.diff > 0 ? '+' : '') + mtKm(e.diff) + ' km'}</b></div>
-    <div style="font-size:12px;color:var(--muted);margin:3px 0 6px">Registrado: <b>${mtKm(e.reg)} km</b> · GPS informado: <b>${mtKm(e.v.km)} km</b></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="mt-tiny" style="text-decoration:none" href="${listaEsc(e.v.link)}" target="_blank" rel="noopener">🔗 Abrir no Strava</a>${e.v.approved ? '' : `<button class="mt-tiny" onclick="valApprove('${e.k}')">✓ Conferido</button>`}<button class="mt-tiny warn" onclick="valRemove('${e.k}')">Remover</button></div></div>`).join('');
+  return L.map(e => `<div class="mt-row"><div style="display:flex;justify-content:space-between;gap:8px"><b>${e.ok ? '✓' : '📎'} ${listaEsc(e.v.name)}${e.v.num ? ` <span style="color:var(--muted);font-weight:600">#${listaEsc(e.v.num)}</span>` : ''}</b><b style="color:${e.ok ? 'var(--green)' : 'var(--gold)'}">${e.ok ? 'conferido' : 'aguardando'}</b></div>
+    <div style="font-size:12px;color:var(--muted);margin:3px 0 6px">Registrado no painel: <b>${mtKm(e.reg)} ${mtUnit()}</b></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="mt-tiny" style="text-decoration:none" href="${listaEsc(e.v.link)}" target="_blank" rel="noopener">🔗 Abrir no Strava</a>${e.ok ? '' : `<button class="mt-tiny" onclick="valApprove('${e.k}')">✓ Conferido</button>`}<button class="mt-tiny warn" onclick="valRemove('${e.k}')">Remover</button></div></div>`).join('');
 }
 function mtValRefreshUI() { const a = document.getElementById('mta-val-list'), b = document.getElementById('meta-vlist-body'); if (a) a.innerHTML = mtValListHtml(); if (b) b.innerHTML = mtValListHtml(); }
 async function mtValPatch(fn) { await mtLoadVal(); fn(MT_VAL); await setSetting('relay_validations', MT_VAL); mtRender(); mtValRefreshUI(); }
@@ -2349,7 +2444,7 @@ function mtRenderStaff() {
   el.style.display = 'block';
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="color:var(--green)">✅ Acesso liberado</b>${hasPw ? '<button class="btn-sm-danger" style="padding:6px 12px" onclick="mtLogout()">Sair</button>' : ''}</div>
     <button class="btn btn-blue" ${eff ? 'disabled' : ''} onclick="mtOpenSheet()" style="font-size:17px;padding:16px">${eff ? '🔒 Prova encerrada' : '➕ Registrar ' + (mtUnit() === 'km' ? 'km' : 'rounds')}</button>
-    ${mtUnit() === 'km' ? `<button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="vlistOpen()">📎 Conferir validações do Strava${mtValEntries().filter(e => !e.ok).length ? ' · ' + mtValEntries().filter(e => !e.ok).length + ' ⚠️' : ''}</button>` : ''}
+    ${mtUnit() === 'km' ? `<button class="btn-sm-danger" style="width:100%;padding:12px;margin-top:8px" onclick="vlistOpen()">📎 Conferir Strava${mtValEntries().filter(e => !e.ok).length ? ' · ' + mtValEntries().filter(e => !e.ok).length + ' pendente(s)' : ''}</button>` : ''}
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-weight:800">CONTROLE DA PROVA</div><div style="font-size:13px;margin:6px 0 10px">${status}</div>${ctrl}</div>`;
 }
 // — cadastro de atleta: nome + cor da equipe + nº da pulseira (entra direto na lista) —
@@ -2457,7 +2552,7 @@ function mtNames() {
 }
 let mtSelGrp = '', MT_LAST = null;
 function mtRoster(gid) { return (mtGroup(gid).roster || []); }
-function mtCurName() { const sel = document.getElementById('mt-name').value; return (sel === '__free' ? document.getElementById('mt-name-free').value : sel).trim(); }
+function mtCurName() { return document.getElementById('mt-name').value.trim(); }
 const mtTeamMode = () => mtMulti() && !!mtSelGrp && !mtRoster(mtSelGrp).length;
 function mtGchips() {
   document.getElementById('mt-gchips').innerHTML = mtGroups().map(g => { const on = g.id === mtSelGrp;
@@ -2567,7 +2662,7 @@ async function mtPwSubmit() {
 function mtOpenSheetNow() {
   mtKmU = 'km';
   const multi = mtMulti(), me = localStorage.getItem('mt_me') || '', names = mtNames();
-  document.getElementById('mt-name').innerHTML = '<option value="">— escolha o nome —</option>' + names.map(n => `<option ${!multi && listaNorm(n)===listaNorm(me)?'selected':''}>${listaEsc(n)}</option>`).join('') + '<option value="__free">✏️ Nome não está na lista</option>';
+  document.getElementById('mt-name').value = !multi && names.some(n => listaNorm(n) === listaNorm(me)) ? me : ''; document.getElementById('mt-sug').style.display = 'none';
   document.getElementById('mt-group-wrap').style.display = multi ? 'block' : 'none';
   document.getElementById('mt-name-block').dataset.open = '0';
   if (multi) { const sv = localStorage.getItem('mt_grp'); mtSelGrp = mtGroups().some(g => g.id === sv) ? sv : ''; mtGchips(); } else mtSelGrp = '';
@@ -2617,7 +2712,23 @@ function mtKmInput() {   // aceita "350" (na unidade escolhida), "350m" ou "0,35
   return Math.round((u === 'm' ? parseFloat(m[1]) / 1000 : parseFloat(m[1])) * 100) / 100;
 }
 function mtDefaultKm() { if (mtHalf()) { const h = mtHalfVal(); return mtSetKm(h > 0 ? mtFmtKm(h) : ''); } if (mtUnit() === 'rounds') return mtSetKm('1'); const l = mtLapKm(); mtSetKm(l > 0 ? mtFmtKm(l) : ''); }
-function mtNameChange() { document.getElementById('mt-name-free').style.display = document.getElementById('mt-name').value === '__free' ? 'block' : 'none'; mtShowMine(); }
+function mtNameChange() { mtShowMine(); }
+let MT_SUG = [];
+function mtNameCands() {   // atletas da equipe escolhida primeiro, depois os inscritos
+  const set = new Map(), add = n => { const k = listaNorm(n); if (k && !set.has(k)) set.set(k, n); };
+  if (mtMulti() && mtSelGrp) mtRoster(mtSelGrp).forEach(r => add(r.name)); mtNames().forEach(add); return [...set.values()];
+}
+function mtNameSuggest(all) {
+  const q = listaNorm(document.getElementById('mt-name').value), box = document.getElementById('mt-sug'), L = mtNameCands();
+  MT_SUG = (all ? L : q ? L.filter(n => listaNorm(n).includes(q)) : []).slice(0, all ? 300 : 6);
+  box.style.display = MT_SUG.length ? 'block' : 'none'; box.innerHTML = MT_SUG.map((n, i) => `<div onclick="mtNameChoose(${i})">${listaEsc(n)}</div>`).join('');
+}
+const mtNameType = () => { mtNameSuggest(false); mtShowMine(); };
+function mtNameList() { const b = document.getElementById('mt-sug'); if (b.style.display === 'block') b.style.display = 'none'; else mtNameSuggest(true); }
+function mtNameChoose(i) { if (!MT_SUG[i]) return; document.getElementById('mt-name').value = MT_SUG[i]; document.getElementById('mt-sug').style.display = 'none'; mtShowMine(); }
+function mtCanon(n) {   // usa a grafia do atleta cadastrado ou do inscrito, se for parecido
+  n = String(n || '').trim(); if (!n) return ''; const k = listaNorm(n), r = mtSelGrp ? mtRoster(mtSelGrp).find(x => listaNorm(x.name) === k) : null; return r ? r.name : mtResolve(n);
+}
 function mtShowMine() {
   const m = mtMine(mtCurName(), mtMulti() ? (mtSelGrp || undefined) : ''), el = document.getElementById('mt-mine');
   el.style.display = m ? 'block' : 'none'; el.textContent = '';
@@ -2634,10 +2745,10 @@ async function mtSubmit() {
   if (mtEffClosed()) return toast(mtCapReached() ? '⏰ Tempo esgotado: registros encerrados' : '🔒 Prova encerrada');
   const multi = mtMulti(), grp = multi ? mtSelGrp : '', team = mtTeamMode(), num = parseInt(document.getElementById('mt-num').value); let name = '';
   if (multi && !grp) return toast('⚠️ Escolha a cor da equipe');
-  if (team) name = mtCurName() || mtGroup(grp).name;
+  if (team) name = mtCurName() ? mtResolve(mtCurName()) : mtGroup(grp).name;
   else if (multi && num) { const r = mtRoster(grp).find(x => x.n === num); if (!r) return toast(`⚠️ Nº ${num} não cadastrado nesta cor`); name = r.name; }
-  else name = mtCurName();
-  if (!name) return toast(multi ? '⚠️ Digite o número da pulseira (ou busque pelo nome)' : '⚠️ Escolha ou digite seu nome');
+  else name = mtCanon(mtCurName());
+  if (!name) return toast(multi ? '⚠️ Digite o número da pulseira (ou busque pelo nome)' : '⚠️ Digite seu nome');
   const km = mtKmInput();
   if (mtUnit() === 'km' && km > 0 && km < 0.01) return toast('⚠️ Distância mínima: 10 metros');
   if (!(km > 0) || km > 60) return toast(mtUnit() === 'km' ? '⚠️ Informe a distância (mínimo 10 m, máximo 60 km)' : '⚠️ Informe os rounds (máximo 60)');
@@ -3201,6 +3312,7 @@ function formatTimeCap(seconds) {
 
 async function renderResultsBoard(info) {
   const board = document.getElementById('results-board');
+  await loadResultNotes();
 
   if (info.is_dual) {
     await renderDualResultsBoard(info);
@@ -3253,7 +3365,7 @@ function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField) {
           <div class="results-header-row"><span>PARTICIPANTES</span><span>${colLabel}</span></div>
           ${items.map(r => `
             <div class="results-item">
-              <span class="results-item-name">${r.name}</span>
+              <span class="results-item-name">${r.name}${getResultNote(r, resultField.replace('result_value','')) ? `<span class="results-item-note">${tvEsc(getResultNote(r, resultField.replace('result_value','')))}</span>` : ''}</span>
               <span class="results-item-value">${r[resultField]}</span>
             </div>`).join('')}
         </div>
@@ -4098,6 +4210,7 @@ async function startNewEvent() {
 async function archiveEventResults(info, regs) {
   const archiveId = 'arc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   const groupDescs = await getSetting('level_descriptions', {});
+  await loadResultNotes();
 
   // Monta um snapshot leve: só o essencial pra exibir os resultados depois
   const snapshot = {
@@ -4120,7 +4233,8 @@ async function archiveEventResults(info, regs) {
       idx, name: r.name, phone: r.phone, fitness_level: r.fitness_level,
       is_member: r.is_member, is_ct_student: r.is_ct_student, sub_events: r.sub_events,
       attended: r.attended, attended_1: r.attended_1, attended_2: r.attended_2,
-      result_value: r.result_value, result_value_1: r.result_value_1, result_value_2: r.result_value_2
+      result_value: r.result_value, result_value_1: r.result_value_1, result_value_2: r.result_value_2,
+      result_note: getResultNote(r, '') || null, result_note_1: getResultNote(r, '_1') || null, result_note_2: getResultNote(r, '_2') || null
     }))
   };
 
@@ -4274,11 +4388,13 @@ function renderArchiveEditorModal(archive) {
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
             <span style="font-size:11px;color:var(--muted);width:70px;flex-shrink:0">🥇 ${sub1Name}</span>
             <input type="text" value="${r.result_value_1||''}" placeholder="resultado" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, '1', this.value)">
+            <input type="text" value="${(r.result_note_1||'').replace(/"/g,'&quot;')}" placeholder="descrição" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveNote(${idx}, '1', this.value)">
           </div>` : ''}
           ${inSub2 ? `
           <div style="display:flex;gap:8px;align-items:center">
             <span style="font-size:11px;color:var(--muted);width:70px;flex-shrink:0">🥈 ${sub2Name}</span>
             <input type="text" value="${r.result_value_2||''}" placeholder="resultado" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, '2', this.value)">
+            <input type="text" value="${(r.result_note_2||'').replace(/"/g,'&quot;')}" placeholder="descrição" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveNote(${idx}, '2', this.value)">
           </div>` : ''}
         </div>`;
     } else {
@@ -4286,6 +4402,7 @@ function renderArchiveEditorModal(archive) {
         <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
           <div style="font-weight:700;font-size:13px;flex:1">${r.name}</div>
           <input type="text" value="${r.result_value||''}" placeholder="resultado" style="width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveResult(${idx}, null, this.value)">
+            <input type="text" value="${(r.result_note||'').replace(/"/g,'&quot;')}" placeholder="descrição" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-size:12px" onchange="updateArchiveNote(${idx}, null, this.value)">
         </div>`;
     }
   }
@@ -4544,10 +4661,13 @@ async function onResultSelectChange() {
   const finalInput = document.getElementById('result-final-input');
   const levelWrap = document.getElementById('result-level-wrap');
   const deleteBtn = document.getElementById('delete-result-btn');
-  if (!regId) { finalInput.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; return; }
+  const noteInputEl = document.getElementById('result-note-input');
+  if (!regId) { finalInput.value = ''; if (noteInputEl) noteInputEl.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; return; }
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   const resultField = 'result_value' + suffix;
   finalInput.value = reg && reg[resultField] ? reg[resultField] : '';
+  await loadResultNotes();
+  if (noteInputEl) noteInputEl.value = reg ? getResultNote(reg, suffix) : '';
   finalInput.placeholder = resultType === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
   // Popula o select com os mesmos rótulos configurados em "Descrição de cada nível"
@@ -4575,6 +4695,8 @@ async function deleteSelectedResult() {
   const { error } = await sb.from('event_registrations').update({ [resultField]: null }).eq('id', regId);
   if (error) { toast('⚠️ Erro ao excluir resultado'); console.error(error); return; }
   reg[resultField] = null;
+  await saveResultNote(regId, info.is_dual ? '_' + currentSubEventContext : '', '');
+  const noteDel = document.getElementById('result-note-input'); if (noteDel) noteDel.value = '';
 
   populateResultSelect();
   document.getElementById('result-select').value = '';
@@ -4638,6 +4760,8 @@ async function saveSelectedResult() {
   if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
   reg[resultField] = value;
   reg[attendedField] = true;
+  const noteVal = (document.getElementById('result-note-input')?.value || '').trim();
+  const noteOk = await saveResultNote(regId, suffix, noteVal);
 
   let pointsMsg = '';
   if (reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
@@ -4656,8 +4780,9 @@ async function saveSelectedResult() {
   document.getElementById('result-select').value = '';
   document.getElementById('result-final-input').value = '';
   document.getElementById('result-remaining-input').value = '';
+  const noteClr = document.getElementById('result-note-input'); if (noteClr) noteClr.value = '';
   document.getElementById('delete-result-btn').style.display = 'none';
-  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}${pointsMsg}`;
+  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}${noteVal ? ' — ' + noteVal : ''}${pointsMsg}`;
   renderRegistrationsList();
   renderNoShowList();
   await renderResultsBoard(EVENT_INFO || defaultEventInfo());
@@ -5698,6 +5823,181 @@ function setFilter(f) {
   renderRanking();
 }
 
+
+// ══════════════════════════════════════════════
+//  DESCRIÇÃO POR PARTICIPANTE + MODO TV DE RESULTADOS
+// ══════════════════════════════════════════════
+// As descrições ficam em app_settings ('result_notes'), então NÃO precisa criar coluna nova no banco.
+// Chave: id da inscrição + sufixo do sub-evento ('' | '_1' | '_2').
+let RESULT_NOTES = {};
+async function loadResultNotes() {
+  const v = await getSetting('result_notes', {});
+  RESULT_NOTES = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+// Lê a descrição: do snapshot arquivado (result_note*) ou da lista ao vivo
+function getResultNote(r, sfx) {
+  const k = 'result_note' + (sfx || '');
+  if (r[k] !== undefined) return r[k] || '';
+  if (r.id !== undefined) return RESULT_NOTES[r.id + (sfx || '')] || '';
+  return '';
+}
+async function saveResultNote(regId, sfx, text) {
+  await loadResultNotes();
+  const key = regId + (sfx || '');
+  text = (text || '').trim();
+  const before = RESULT_NOTES[key] || '';
+  if (text === before) return true;
+  if (text) RESULT_NOTES[key] = text; else delete RESULT_NOTES[key];
+  return await setSetting('result_notes', RESULT_NOTES);
+}
+function tvEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+async function updateArchiveNote(idx, subCtx, newValue) {
+  if (!currentEditingArchiveId) return;
+  const archive = ARCHIVED_EVENTS.find(a => a.id === currentEditingArchiveId);
+  if (!archive || !archive.snap.registrations[idx]) return;
+  const field = subCtx ? 'result_note_' + subCtx : 'result_note';
+  archive.snap.registrations[idx][field] = newValue.trim() || null;
+  const { error } = await sb.from('event_archives').update({ data: JSON.stringify(archive.snap) }).eq('id', currentEditingArchiveId);
+  if (error) { toast('⚠️ Erro ao salvar descrição'); console.error(error); return; }
+  toast('✅ Descrição atualizada no arquivo!');
+}
+
+// ── Link da TV (admin) ──
+function tvLinkUrl() { return location.href.split('#')[0].split('?')[0] + '?tv=resultados'; }
+(function () { const el = document.getElementById('tv-link-input'); if (el) el.value = tvLinkUrl(); })();
+function copyTvLink() {
+  const url = tvLinkUrl();
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => toast('📋 Link da TV copiado!'), () => toast(url));
+  else { const el = document.getElementById('tv-link-input'); el.select(); document.execCommand('copy'); toast('📋 Link da TV copiado!'); }
+}
+function openTvLink() { window.open(tvLinkUrl(), '_blank'); }
+
+// ── Modo TV ──
+let TV_SIG = '', TV_BYNAME = false;
+
+function tvIsCap(v) { return /time\s*cap/i.test(String(v || '')); }
+function tvSortKey(v, type) {
+  if (tvIsCap(v)) return null;
+  if (type === 'tempo') {
+    const p = String(v).trim().split(':').map(x => parseFloat(x.replace(',', '.')));
+    if (!p.length || p.some(isNaN)) return null;
+    return [p.reduce((acc, n) => acc * 60 + n, 0)];                   // menor tempo = melhor
+  }
+  const nums = (String(v).match(/\d+(?:[.,]\d+)?/g) || []).map(x => parseFloat(x.replace(',', '.')));
+  return nums.length ? nums.map(n => -n) : null;                       // mais rounds/reps = melhor
+}
+function tvCompare(a, b, type, field) {
+  const ka = tvSortKey(a[field], type), kb = tvSortKey(b[field], type);
+  if (ka && !kb) return -1;
+  if (!ka && kb) return 1;
+  if (ka && kb) { for (let i = 0; i < Math.max(ka.length, kb.length); i++) { const d = (ka[i] ?? 0) - (kb[i] ?? 0); if (d) return d; } }
+  return a.name.localeCompare(b.name);
+}
+function tvGroupsHtml(regs, type, descs, field, stacked) {
+  const sfx = field.replace('result_value', '');
+  const order = [
+    { key:'Iniciante', emoji:'🟢', name:'Verde' },
+    { key:'Intermediário', emoji:'🟡', name:'Amarelo' },
+    { key:'Avançado', emoji:'🟠', name:'Laranja' }
+  ];
+  const cols = [];
+  order.forEach(g => {
+    const items = regs.filter(r => (r.fitness_level || 'Iniciante') === g.key)
+      .slice().sort((a, b) => TV_BYNAME ? a.name.localeCompare(b.name) : tvCompare(a, b, type, field));
+    if (!items.length) return;
+    const title = descs[g.key] ? descs[g.key] : `Grupo ${g.name}`;
+    let pos = 0;
+    const rows = items.map(r => {
+      const cap = tvIsCap(r[field]);
+      let posHtml = '', cls = '';
+      if (!TV_BYNAME) {
+        if (!cap && tvSortKey(r[field], type)) { pos++; posHtml = pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + 'º'; if (pos <= 3) cls = ' p' + pos; }
+        else posHtml = '–';
+      }
+      const note = getResultNote(r, sfx);
+      return `<div class="tv-row${cls}">
+        ${TV_BYNAME ? '' : `<div class="tv-pos">${posHtml}</div>`}
+        <div class="tv-who"><div class="tv-name">${tvEsc(r.name)}</div>${note ? `<div class="tv-note">${tvEsc(note)}</div>` : ''}</div>
+        <div class="tv-val${cap ? ' cap' : ''}">${tvEsc(r[field])}</div>
+      </div>`;
+    }).join('');
+    cols.push(`<div class="tv-group"><div class="tv-group-title">${g.emoji} ${tvEsc(title)}</div><div class="tv-scroll">${rows}</div></div>`);
+  });
+  if (!cols.length) return '';
+  const style = stacked ? `grid-template-rows:repeat(${cols.length},minmax(0,1fr))` : `grid-template-columns:repeat(${cols.length},minmax(0,1fr))`;
+  return `<div class="tv-groups${stacked ? ' stacked' : ''}" style="${style}">${cols.join('')}</div>`;
+}
+
+async function tvRefresh() {
+  try {
+    EVENT_INFO = null; eventRegLoaded = false;
+    const info = await getEventInfo();
+    await loadEventRegistrations();
+    await loadResultNotes();
+    const descs = await getSetting('level_descriptions', {});
+    const all = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+    const panels = [];
+    if (info.is_dual) {
+      [1, 2].forEach(n => {
+        const type = info['result_type_' + n], field = 'result_value_' + n;
+        const regs = type ? all.filter(r => r[field]) : [];
+        if (regs.length) panels.push({
+          title: (n === 1 ? '🥇 ' : '🥈 ') + (info['sub' + n + '_name'] || 'Evento ' + n),
+          cap: formatTimeCap(info['time_cap_seconds_' + n]), type, field, regs
+        });
+      });
+    } else if (info.result_type) {
+      const regs = all.filter(r => r.result_value);
+      if (regs.length) panels.push({ title: '', cap: formatTimeCap(info.time_cap_seconds), type: info.result_type, field: 'result_value', regs });
+    }
+    const dual = !!info.is_dual;
+    const bodyHtml = panels.length
+      ? panels.map(p => `<div class="tv-panel">${dual ? `<div class="tv-panel-title">${tvEsc(p.title)}${p.cap ? `<span class="tv-cap">TIME CAP ${p.cap}</span>` : ''}</div>` : ''}${tvGroupsHtml(p.regs, p.type, descs, p.field, dual && panels.length > 1)}</div>`).join('')
+      : `<div class="tv-empty">⏳ Aguardando os primeiros resultados…</div>`;
+    const singleCap = (!dual && panels[0] && panels[0].cap) ? `<span class="tv-cap">TIME CAP: ${panels[0].cap}</span>` : '';
+    const sig = JSON.stringify([info.name, panels.length, bodyHtml, singleCap]);
+    if (sig === TV_SIG) return;            // nada mudou: não mexe na tela (evita reiniciar a rolagem)
+    TV_SIG = sig;
+    document.getElementById('tv-title').textContent = info.name || 'Resultados';
+    document.getElementById('tv-cap-wrap').innerHTML = singleCap;
+    const body = document.getElementById('tv-body');
+    body.style.gridTemplateColumns = `repeat(${Math.max(1, panels.length)},minmax(0,1fr))`;
+    body.innerHTML = bodyHtml;
+    document.title = (info.name ? info.name + ' · ' : '') + 'Resultados';
+  } catch (e) { console.error('tv', e); }
+}
+
+// Rolagem automática suave para listas maiores que a tela (pausa no começo e no fim)
+function tvAutoScroll() {
+  const st = new WeakMap(); let last = performance.now();
+  function step(t) {
+    const dt = Math.min(100, t - last); last = t;
+    document.querySelectorAll('#tv-results-view .tv-scroll').forEach(el => {
+      const max = el.scrollHeight - el.clientHeight;
+      if (max <= 2) { el.scrollTop = 0; return; }
+      let s = st.get(el); if (!s) { s = { pos: 0, wait: 3500, atEnd: false }; st.set(el, s); }
+      if (s.wait > 0) { s.wait -= dt; return; }
+      if (s.atEnd) { s.pos = 0; s.atEnd = false; s.wait = 3500; el.scrollTop = 0; return; }
+      s.pos += dt * 0.04;
+      if (s.pos >= max) { s.pos = max; s.atEnd = true; s.wait = 3500; }
+      el.scrollTop = s.pos;
+    });
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+async function startTvResults(params) {
+  TV_BYNAME = params.get('ordem') === 'nome';
+  document.getElementById('tv-results-view').classList.add('on');
+  try { if (navigator.wakeLock) { const wl = () => navigator.wakeLock.request('screen').catch(() => {}); wl(); document.addEventListener('visibilitychange', () => { if (!document.hidden) wl(); }); } } catch (e) {}
+  await tvRefresh();
+  setInterval(tvRefresh, 15000);
+  tvAutoScroll();
+}
+
 // ══════════════════════════════════════════════
 //  START
 // ══════════════════════════════════════════════
@@ -5710,6 +6010,13 @@ async function start() {
       if (el.id !== 'archived-results-view') el.style.display = 'none';
     });
     await renderArchivedResults(archiveId);
+    return;
+  }
+
+  if (params0.get('tv') === 'resultados' && params0.get('meta') === null) {
+    // Link de TV: só os resultados do evento atual, em tela cheia, sem o resto do app
+    document.querySelectorAll('body > *').forEach(el => { if (el.id !== 'tv-results-view' && el.tagName !== 'SCRIPT') el.style.display = 'none'; });
+    await startTvResults(params0);
     return;
   }
 
