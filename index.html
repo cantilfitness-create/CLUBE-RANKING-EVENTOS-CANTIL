@@ -430,6 +430,61 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 #lancar-view #result-entry-label { display:none !important; }
 #lancar-view #result-subevent-selector-wrap { display:none !important; }
 
+/* Nº de inscrição / pulseira */
+.bib-badge { display:inline-block; background:rgba(255,208,96,.14); color:var(--gold); border:1px solid rgba(255,208,96,.4); border-radius:8px; font-size:11px; font-weight:800; padding:2px 8px; margin-right:6px; letter-spacing:.5px; }
+.er-who { font-weight:800; font-size:17px; line-height:1.2; }
+.er-when { font-size:12px; color:var(--muted); margin:3px 0 14px; }
+.er-hero { background:rgba(232,255,0,.07); border:1.5px solid rgba(232,255,0,.4); border-radius:18px; padding:16px; margin-bottom:12px; }
+.er-hero-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:var(--accent); margin-bottom:10px; }
+.er-bib-input { font-size:26px !important; font-weight:800; text-align:center; letter-spacing:2px; }
+.er-hint { font-size:11.5px; color:var(--muted); line-height:1.45; margin-top:6px; }
+.er-section-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; margin:22px 0 4px; padding-top:16px; border-top:1px solid var(--border); }
+
+/* CONTROLE AO VIVO (admin) */
+.live-ctl { background:var(--s2); border:1px solid var(--border); border-radius:18px; padding:14px 14px 12px; margin-bottom:22px; }
+.live-ctl .section-label { margin-top:0; }
+.live-row { background:var(--s1); border:1px solid var(--border); border-radius:14px; padding:12px; margin-top:10px; }
+.live-row-head { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.live-row-name { font-weight:800; font-size:14px; min-width:0; overflow-wrap:anywhere; }
+.live-chip { font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; border:1px solid var(--border); white-space:nowrap; color:var(--muted); }
+.live-chip.live-ready { color:var(--green); border-color:rgba(61,232,154,.5); }
+.live-chip.live-running { color:#000; background:var(--green); border-color:var(--green); }
+.live-chip.live-paused { color:var(--gold); border-color:rgba(255,208,96,.5); }
+.live-chip.live-timeup, .live-chip.live-ended { color:#fff; background:var(--red); border-color:var(--red); }
+.live-clock { font-family:'Bebas Neue',sans-serif; font-size:48px; letter-spacing:3px; line-height:1; margin:8px 0 2px; font-variant-numeric:tabular-nums; }
+.live-sub { font-size:12px; color:var(--muted); }
+.live-btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.live-btn { flex:1; min-width:120px; padding:13px 10px; border-radius:12px; border:1px solid var(--border); background:var(--s2); color:var(--text); font-family:'Outfit',sans-serif; font-weight:800; font-size:14px; cursor:pointer; }
+.live-btn.go { background:var(--green); color:#000; border-color:var(--green); }
+.live-btn.stop { background:rgba(255,95,109,.15); color:var(--red); border-color:rgba(255,95,109,.5); }
+.live-hint { font-size:11.5px; color:var(--muted); line-height:1.45; margin-top:12px; }
+
+/* TELA DA EQUIPE: quadro principal */
+.lv-live-card { background:var(--s1); border:1px solid var(--border); border-radius:22px; padding:16px; margin-bottom:14px; }
+.lv-clock-state { text-align:center; font-size:12px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+.lv-clock-state.lv-running { color:var(--green); }
+.lv-clock-state.lv-paused { color:var(--gold); }
+.lv-clock-state.lv-timeup, .lv-clock-state.lv-ended { color:var(--red); }
+.lv-clock { font-family:'Bebas Neue',sans-serif; font-size:clamp(64px,22vw,110px); line-height:1; text-align:center; letter-spacing:3px; font-variant-numeric:tabular-nums; margin:2px 0; }
+.lv-clock-sub { text-align:center; font-size:13px; color:var(--muted); margin-bottom:14px; }
+.lv-hint { font-size:12.5px; color:var(--muted); line-height:1.45; text-align:center; }
+#lv-search { margin-bottom:10px; }
+.lv-count { font-size:12px; font-weight:800; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin:6px 2px; }
+.lv-row { display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--border); }
+.lv-bib { flex:0 0 46px; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--gold); line-height:1; }
+.lv-who { flex:1 1 auto; min-width:0; }
+.lv-name { font-weight:800; font-size:16px; overflow-wrap:anywhere; }
+.lv-fin { flex:0 0 auto; padding:14px 16px; border-radius:14px; border:none; background:var(--accent); color:#000; font-family:'Outfit',sans-serif; font-weight:800; font-size:15px; cursor:pointer; }
+.lv-fin.cap { background:var(--red); color:#fff; }
+.lv-row.done .lv-name { color:var(--muted); font-weight:600; }
+.lv-val { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--accent); letter-spacing:1px; }
+.lv-undo-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:8px 10px; cursor:pointer; font-size:14px; }
+.lv-capall { width:100%; padding:13px; border-radius:12px; border:1px solid rgba(255,95,109,.5); background:rgba(255,95,109,.12); color:var(--red); font-family:'Outfit',sans-serif; font-weight:800; font-size:14px; margin-bottom:10px; cursor:pointer; }
+.lv-more { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:0 14px 14px; margin-bottom:14px; }
+.lv-more > summary { padding:14px 0 4px; cursor:pointer; font-weight:800; font-size:13px; color:var(--muted); }
+.lv-snack { position:fixed; left:12px; right:12px; bottom:14px; z-index:900; background:#0e2a1d; border:1px solid var(--green); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; }
+.lv-snack button { background:var(--green); color:#000; border:none; border-radius:10px; padding:10px 14px; font-weight:800; font-family:'Outfit',sans-serif; cursor:pointer; }
+
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
 .mini-row:hover { border-color:var(--accent); }
@@ -627,6 +682,21 @@ textarea { resize:vertical;min-height:72px; }
 
 
 
+            <div class="lv-live-card" id="lv-live-card">
+              <div class="lv-clock-state" id="lv-clock-state">—</div>
+              <div class="lv-clock" id="lv-clock">00:00</div>
+              <div class="lv-clock-sub" id="lv-clock-sub"></div>
+              <div id="lv-finish-area">
+                <input type="search" id="lv-search" placeholder="🔎 Buscar por nome ou nº…" oninput="lancarRenderList()" autocomplete="off">
+                <button class="lv-capall" id="lv-capall" style="display:none" onclick="lancarMarkRemainingCap()">🚫 Marcar TIME CAP em quem não terminou</button>
+                <div id="lv-runner-list"></div>
+              </div>
+              <div class="lv-hint" id="lv-manual-hint" style="display:none">Este evento é de Rounds/Reps e é lançado manualmente. Abra “Mais opções” logo abaixo.</div>
+            </div>
+
+            <details class="lv-more" id="lv-more">
+              <summary>⚙️ Mais opções — categoria, nº de pulseira, ajustar ou excluir resultado</summary>
+              <div style="margin-top:12px">
             <div class="result-panel">
               <div class="field-group" style="margin-bottom:14px">
                 <label class="field-label">Selecionar inscrito</label>
@@ -636,6 +706,11 @@ textarea { resize:vertical;min-height:72px; }
               <div class="field-group" id="result-level-wrap" style="display:none;margin-bottom:14px">
                 <label class="field-label">Categoria (pode ajustar no dia do evento)</label>
                 <select id="result-level-select" onchange="updateResultLevel()"></select>
+              </div>
+
+              <div class="field-group" id="result-bib-wrap" style="display:none;margin-bottom:14px">
+                <label class="field-label">🎽 Nº de pulseira / inscrição</label>
+                <input type="number" id="result-bib-input" min="0" inputmode="numeric" placeholder="auto" onchange="updateResultBib()">
               </div>
 
               <div id="result-tempo-helper" style="display:none">
@@ -662,6 +737,9 @@ textarea { resize:vertical;min-height:72px; }
               <button class="btn-sm-danger" id="delete-result-btn" style="width:100%;padding:10px;margin-top:8px;display:none" onclick="deleteSelectedResult()">🗑️ Excluir Resultado deste Participante</button>
               <div class="result-saved-tag" id="result-saved-tag"></div>
             </div>
+              </div>
+            </details>
+            <div class="lv-snack" id="lv-snack" style="display:none"></div>
           </div>
     </div>
   </div>
@@ -1257,6 +1335,11 @@ textarea { resize:vertical;min-height:72px; }
         </div>
 
         <div class="adm-panel" id="tab-evento">
+          <div class="live-ctl" id="live-ctl">
+            <div class="section-label">🔴 Controle ao vivo</div>
+            <div id="live-ctl-rows"></div>
+            <div class="live-hint">Libere o evento que está acontecendo e toque em ▶ Começar: o cronômetro roda sozinho até você pausar ou encerrar, ou até estourar o Time Cap. A equipe só toca em “Finalizar” em cada participante e o tempo de prova sai na hora. Não precisa salvar o evento.</div>
+          </div>
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
             <label class="field-label">Nome do evento</label>
@@ -1446,14 +1529,6 @@ textarea { resize:vertical;min-height:72px; }
 
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
           <div id="ev-dual-config-wrap" style="display:none"></div>
-
-          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px">
-            <label class="field-label">🔴 Evento acontecendo agora (libera o link da equipe)</label>
-            <select id="ev-cfg-live" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s1);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;"></select>
-            <button class="btn btn-gold" style="margin-top:10px" onclick="saveLiveRelease()">✅ Aplicar liberação</button>
-            <div id="ev-cfg-live-state" style="font-size:12px;margin-top:8px"></div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.45">As inscrições podem ficar abertas para os dois eventos, mas só um acontece em tempo real. O link de <b>Lançar resultados</b> da equipe lança sempre no evento liberado aqui, sem a equipe escolher nada. Aplica na hora (não precisa salvar o evento). Deixe <b>Bloqueado</b> fora do dia do evento.</div>
-          </div>
 
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
@@ -3901,12 +3976,23 @@ async function submitEventRegistration() {
   document.getElementById('event-fields-wrap').style.display = 'none';
   eventRegLoaded = false;
   await loadEventRegistrations();
+  try { await ensureBibs(info); } catch (e) { console.error(e); }       // dá o próximo nº de inscrição de cada prova
   await renderEventPublicView();
   try { renderRegistrationsList(); } catch (e) { console.error(e); }   // atualiza também a lista do admin
 
-  const successDetail = subEvents
-    ? `Você está inscrito(a) em: ${subEvents}`
-    : `${name}, sua vaga em ${info.name} está garantida!`;
+  const mine = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r.name === name).sort((a, b) => b.id - a.id)[0];
+  let successDetail;
+  if (subEvents) {
+    const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+    const parts = [];
+    if (mine) {
+      if (evRegInSub(mine, n1, n2)) parts.push(n1 + (bibOf(mine, '1') != null ? ` (nº ${bibPad(bibOf(mine, '1'))})` : ''));
+      if (evRegInSub(mine, n2, n1)) parts.push(n2 + (bibOf(mine, '2') != null ? ` (nº ${bibPad(bibOf(mine, '2'))})` : ''));
+    }
+    successDetail = `Você está inscrito(a) em: ${parts.length ? parts.join(' + ') : subEvents}`;
+  } else {
+    successDetail = `${name}, sua vaga em ${info.name} está garantida!` + ((mine && bibOf(mine, '0') != null) ? ` Seu número de inscrição: ${bibPad(bibOf(mine, '0'))}` : '');
+  }
   showRegistrationConfirm(successDetail);
 }
 
@@ -3964,7 +4050,7 @@ async function renderEventAdminView() {
   }
   toggleDualEventFields();
   fillTimeCapFields(info);
-  fillLiveSelect(info);
+  renderLiveControls(info);
 
   const imgPreviewWrap = document.getElementById('event-image-preview-wrap');
   if (info.image) {
@@ -3975,6 +4061,7 @@ async function renderEventAdminView() {
   }
 
   await loadEventRegistrations();   // sempre busca de novo: evita lista de inscritos desatualizada
+  try { await ensureBibs(info); } catch (e) { console.error(e); }
   renderRegistrationsList();
   renderNoShowList();
 
@@ -4165,7 +4252,10 @@ async function updateEventConfig() {
   }
 
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
-  newInfo.live_sub = (id === prevInfo.id && (prevInfo.live_sub === '1' || (prevInfo.live_sub === '2' && isDual))) ? prevInfo.live_sub : '';
+  EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
+  const sameEv = id === freshInfo.id;
+  newInfo.live_sub = (sameEv && (freshInfo.live_sub === '1' || (freshInfo.live_sub === '2' && isDual))) ? freshInfo.live_sub : '';
+  newInfo.clk = sameEv ? (freshInfo.clk || {}) : {};
   const ok = await setSetting('event_info', newInfo);
   if (!ok) return;
   EVENT_INFO = newInfo;
@@ -4298,6 +4388,7 @@ async function archiveEventResults(info, regs) {
   const archiveId = 'arc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   const groupDescs = await getSetting('level_descriptions', {});
   await loadResultNotes();
+  try { await loadBibs(info); } catch (e) {}
 
   // Monta um snapshot leve: só o essencial pra exibir os resultados depois
   const snapshot = {
@@ -4321,7 +4412,8 @@ async function archiveEventResults(info, regs) {
       is_member: r.is_member, is_ct_student: r.is_ct_student, sub_events: r.sub_events,
       attended: r.attended, attended_1: r.attended_1, attended_2: r.attended_2,
       result_value: r.result_value, result_value_1: r.result_value_1, result_value_2: r.result_value_2,
-      result_note: getResultNote(r, '') || null, result_note_1: getResultNote(r, '_1') || null, result_note_2: getResultNote(r, '_2') || null
+      result_note: getResultNote(r, '') || null, result_note_1: getResultNote(r, '_1') || null, result_note_2: getResultNote(r, '_2') || null,
+      bib: bibOf(r, '0'), bib_1: bibOf(r, '1'), bib_2: bibOf(r, '2')
     }))
   };
 
@@ -4531,7 +4623,7 @@ function renderRegistrationsList() {
         <div class="attend-dual-wrap">
           ${inSub1 ? `
           <div class="attend-dual-row">
-            <span class="attend-dual-label">${sub1Name}</span>
+            <span class="attend-dual-label">${sub1Name}${bibOf(r, '1') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">nº ${bibPad(bibOf(r, '1'))}</span>` : ''}</span>
             <div class="attend-btns">
               <button class="attend-btn yes ${r.attended_1===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '1')">✓</button>
               <button class="attend-btn no ${r.attended_1===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '1')">✕</button>
@@ -4540,7 +4632,7 @@ function renderRegistrationsList() {
           </div>` : ''}
           ${inSub2 ? `
           <div class="attend-dual-row">
-            <span class="attend-dual-label">${sub2Name}</span>
+            <span class="attend-dual-label">${sub2Name}${bibOf(r, '2') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">nº ${bibPad(bibOf(r, '2'))}</span>` : ''}</span>
             <div class="attend-btns">
               <button class="attend-btn yes ${r.attended_2===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '2')">✓</button>
               <button class="attend-btn no ${r.attended_2===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '2')">✕</button>
@@ -4560,8 +4652,9 @@ function renderRegistrationsList() {
     return `
     <div class="reg-chip">
       <div class="reg-chip-info">
-        <div class="reg-chip-name">${r.name} ${badges}</div>
+        <div class="reg-chip-name">${(!info.is_dual && bibOf(r, '0') != null) ? `<span class="bib-badge">nº ${bibPad(bibOf(r, '0'))}</span>` : ''}${r.name} ${badges}</div>
         <div class="reg-chip-meta">${r.age?r.age+' anos · ':''}${r.fitness_level||''} · ${r.phone}</div>
+        <div class="reg-chip-meta" style="margin-top:2px">🕒 Inscrito em ${fmtRegWhen(r.created_at)}</div>
         ${r.custom_answer ? `<div style="font-size:11.5px;color:var(--gold);margin-top:4px;background:rgba(255,208,96,0.08);border-left:2px solid var(--gold);padding:6px 10px;border-radius:6px">📝 ${r.custom_answer}</div>` : ''}
         ${info.is_dual ? attendanceHtml : ''}
       </div>
@@ -4713,7 +4806,8 @@ function populateResultSelect() {
     const lvl = levelColor(r.fitness_level);
     const resultField = 'result_value' + suffix;
     const done = r[resultField] ? ' ✓' : '';
-    return `<option value="${r.id}">${lvl.emoji} ${r.name}${done}</option>`;
+    const bn = bibOf(r, info.is_dual ? currentSubEventContext : '0');
+    return `<option value="${r.id}">${lvl.emoji} ${bn != null ? bibPad(bn) + ' · ' : ''}${r.name}${done}</option>`;
   }).join('');
 }
 
@@ -4730,7 +4824,7 @@ async function onResultSelectChange() {
   const levelWrap = document.getElementById('result-level-wrap');
   const deleteBtn = document.getElementById('delete-result-btn');
   const noteInputEl = document.getElementById('result-note-input');
-  if (!regId) { finalInput.value = ''; if (noteInputEl) noteInputEl.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; return; }
+  if (!regId) { finalInput.value = ''; if (noteInputEl) noteInputEl.value = ''; levelWrap.style.display = 'none'; deleteBtn.style.display = 'none'; fillResultBib(null, info); return; }
   const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
   const resultField = 'result_value' + suffix;
   finalInput.value = reg && reg[resultField] ? reg[resultField] : '';
@@ -4738,6 +4832,7 @@ async function onResultSelectChange() {
   if (noteInputEl) noteInputEl.value = reg ? getResultNote(reg, suffix) : '';
   finalInput.placeholder = resultType === 'tempo' ? 'MM:SS' : 'rounds';
   levelWrap.style.display = '';
+  fillResultBib(reg, info);
   // Popula o select com os mesmos rótulos configurados em "Descrição de cada nível"
   // (ex: "2K", "6K"), pra bater exatamente com o que o inscrito escolheu ao se inscrever
   await populateResultLevelSelect();
@@ -4809,52 +4904,70 @@ function markTimeCap() {
   document.getElementById('result-final-input').value = 'TIME CAP';
 }
 
-async function saveSelectedResult() {
-  const regId = parseInt(document.getElementById('result-select').value);
-  if (!regId) return toast('⚠️ Selecione um inscrito primeiro!');
-  const reg = EVENT_REGISTRATIONS.find(r=>r.id===regId);
-  if (!reg) return;
-  const value = document.getElementById('result-final-input').value.trim();
-  if (!value) return toast('⚠️ Digite ou calcule o resultado antes de salvar!');
-
+// Núcleo: grava o resultado (opcionalmente só se ainda estiver vazio, para dois celulares não se atropelarem)
+async function commitResultCore(regId, value, opts) {
+  opts = opts || {};
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId);
+  if (!reg) return null;
   const info = EVENT_INFO || defaultEventInfo();
   const suffix = info.is_dual ? '_' + currentSubEventContext : '';
-  const resultField = 'result_value' + suffix;
-  const attendedField = 'attended' + suffix;
+  const resultField = 'result_value' + suffix, attendedField = 'attended' + suffix;
+  let q = sb.from('event_registrations').update({ [resultField]: value, [attendedField]: true }).eq('id', regId);
+  if (opts.onlyIfEmpty) q = q.is(resultField, null);
+  const { data, error } = await q.select('id');
+  if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return null; }
+  if (opts.onlyIfEmpty && Array.isArray(data) && data.length === 0) {
+    toast(`⚠️ ${reg.name} já tem resultado (outro celular finalizou antes)`);
+    await loadEventRegistrations();
+    return { conflict: true };
+  }
+  reg[resultField] = value; reg[attendedField] = true;
+  return { reg, info, suffix, value };
+}
+// Complemento: descrição, pontos do ranking e atualização das telas
+async function commitResultExtras(ctx, noteVal) {
+  const { reg, info, suffix } = ctx;
   const pointsAwardedField = 'points_awarded' + suffix;
-
-  const updateData = { [resultField]: value, [attendedField]: true };
-  const { error } = await sb.from('event_registrations').update(updateData).eq('id', regId);
-  if (error) { toast('⚠️ Erro ao salvar resultado'); console.error(error); return; }
-  reg[resultField] = value;
-  reg[attendedField] = true;
-  const noteVal = (document.getElementById('result-note-input')?.value || '').trim();
-  const noteOk = await saveResultNote(regId, suffix, noteVal);
-
+  if (noteVal !== undefined) await saveResultNote(reg.id, suffix, noteVal);
   let pointsMsg = '';
   if (reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
     const pts = info.is_dual
       ? (currentSubEventContext === '2' ? (info.points_2||0) : (info.points_1||0))
       : (info.points || 0);
     await addPointsToMember(reg.member_id, pts, info.name, 'evento');
-    await sb.from('event_registrations').update({ [pointsAwardedField]: true }).eq('id', regId);
+    await sb.from('event_registrations').update({ [pointsAwardedField]: true }).eq('id', reg.id);
     reg[pointsAwardedField] = true;
     await loadMembers();
     renderRanking();
     const updatedMember = MEMBERS.find(m => m.id === reg.member_id);
     pointsMsg = updatedMember ? ` (+${pts} pts no ranking geral, total: ${updatedMember.points})` : ` (+${pts} pts no ranking geral)`;
   }
+  renderRegistrationsList();
+  renderNoShowList();
+  await renderResultsBoard(EVENT_INFO || defaultEventInfo());
+  return pointsMsg;
+}
+
+async function saveSelectedResult() {
+  const regId = parseInt(document.getElementById('result-select').value);
+  if (!regId) return toast('⚠️ Selecione um inscrito primeiro!');
+  const value = document.getElementById('result-final-input').value.trim();
+  if (!value) return toast('⚠️ Digite ou calcule o resultado antes de salvar!');
+  const noteVal = (document.getElementById('result-note-input')?.value || '').trim();
+
+  const ctx = await commitResultCore(regId, value);
+  if (!ctx) return;
+  const pointsMsg = await commitResultExtras(ctx, noteVal);
   populateResultSelect();
   document.getElementById('result-select').value = '';
   document.getElementById('result-final-input').value = '';
   document.getElementById('result-remaining-input').value = '';
   const noteClr = document.getElementById('result-note-input'); if (noteClr) noteClr.value = '';
   document.getElementById('delete-result-btn').style.display = 'none';
-  document.getElementById('result-saved-tag').textContent = `✅ ${reg.name}: ${value}${noteVal ? ' — ' + noteVal : ''}${pointsMsg}`;
-  renderRegistrationsList();
-  renderNoShowList();
-  await renderResultsBoard(EVENT_INFO || defaultEventInfo());
-  toast(`✅ Resultado de ${reg.name} salvo!${pointsMsg}`);
+  document.getElementById('result-saved-tag').textContent = `✅ ${ctx.reg.name}: ${value}${noteVal ? ' — ' + noteVal : ''}${pointsMsg}`;
+  fillResultBib(null, ctx.info);
+  try { if (typeof lancarRenderList === 'function') lancarRenderList(); } catch (e) {}
+  toast(`✅ Resultado de ${ctx.reg.name} salvo!${pointsMsg}`);
 }
 
 async function deleteRegistration(id) {
@@ -4877,6 +4990,9 @@ function openEditRegistration(id) {
   document.getElementById('er-age').value = reg.age || '';
   document.getElementById('er-phone').value = reg.phone || '';
   document.getElementById('er-level').value = reg.fitness_level || 'Iniciante';
+  document.getElementById('er-who').textContent = '👤 ' + (reg.name || '');
+  document.getElementById('er-when').textContent = '🕒 Inscrito em ' + fmtRegWhen(reg.created_at);
+  ['0', '1', '2'].forEach(x => { document.getElementById('er-bib-' + x).dataset.loaded = ''; });
   document.getElementById('er-is-clube').checked = !!reg.is_member;
   document.getElementById('er-is-ct').checked = !!reg.is_ct_student;
 
@@ -4901,6 +5017,7 @@ function openEditRegistration(id) {
   }
 
   toggleEditMemberSelect();
+  refreshEditBibRows();
   document.getElementById('edit-reg-overlay').classList.add('open');
 }
 
@@ -4948,15 +5065,18 @@ async function saveEditRegistration() {
   const idx = EVENT_REGISTRATIONS.findIndex(r=>r.id===editingRegId);
   if (idx>=0) EVENT_REGISTRATIONS[idx] = { ...EVENT_REGISTRATIONS[idx], ...updateData };
 
-  closeEditRegistration();
+  const bibsOk = await saveEditBibs(info, EVENT_REGISTRATIONS.find(r => r.id === editingRegId));
   renderRegistrationsList();
   renderNoShowList();
   populateResultSelect();
+  if (!bibsOk) { toast('⚠️ Inscrição salva, mas confira o nº de pulseira'); return; }
+  closeEditRegistration();
   toast('✅ Inscrição atualizada!');
 }
 
 document.addEventListener('change', e => {
   if (e.target && e.target.id === 'er-is-clube') toggleEditMemberSelect();
+  if (e.target && (e.target.id === 'er-sub1-check' || e.target.id === 'er-sub2-check')) refreshEditBibRows();
 });
 document.addEventListener('keydown', e => {
   if (e.key==='Escape' && document.getElementById('edit-reg-overlay')?.classList.contains('open')) closeEditRegistration();
@@ -4967,6 +5087,7 @@ async function printEventReport() {
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
   if (!regs.length) return toast('⚠️ Não há inscritos nesse evento ainda.');
 
+  try { await ensureBibs(info); } catch (e) { console.error(e); }
   const groupDescs = await getSetting('level_descriptions', {});
   const levelLabel = (key) => (groupDescs[key] && groupDescs[key].trim()) ? groupDescs[key] : (key || '—');
   const formatWhen = (createdAt) => {
@@ -4990,7 +5111,7 @@ async function printEventReport() {
         <td>${i+1}</td>
         <td>${r.name}</td>
         <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
-        <td>${r.sub_events||'—'}</td>
+        <td>${(() => { const p = []; if (evRegInSub(r, sub1, sub2)) p.push(sub1 + bibTxt(r, '1')); if (evRegInSub(r, sub2, sub1)) p.push(sub2 + bibTxt(r, '2')); return p.length ? p.join('<br>') : (r.sub_events || '—'); })()}</td>
         <td>${r.age||'—'}</td>
         <td>${levelLabel(r.fitness_level)}</td>
         <td>${r.phone||'—'}</td>
@@ -5008,6 +5129,7 @@ async function printEventReport() {
     rows = regs.map((r,i) => `
       <tr>
         <td>${i+1}</td>
+        <td>${bibOf(r, '0') != null ? bibPad(bibOf(r, '0')) : '—'}</td>
         <td>${r.name}</td>
         <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
         <td>${r.age||'—'}</td>
@@ -5018,7 +5140,7 @@ async function printEventReport() {
         ${hasCustomQ ? `<td>${r.custom_answer||'—'}</td>` : ''}
         <td>${formatWhen(r.created_at)}</td>
       </tr>`).join('');
-    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}<th>Inscrição em</th>`;
+    headerCols = `<th>#</th><th>Nº insc.</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}<th>Inscrição em</th>`;
   }
 
   let hiddenPre = []; try { hiddenPre = JSON.parse(localStorage.getItem('rep_hidden_cols') || '[]'); } catch (e) {}
@@ -6068,6 +6190,128 @@ async function startTvResults(params) {
 }
 
 
+// ══════════════════════════════════════════════
+//  Nº DE INSCRIÇÃO / PULSEIRA (por evento; por prova no evento duplo)
+// ══════════════════════════════════════════════
+// Guardado em app_settings, uma linha por inscrição: 'bib:<evento>:<prova>:<inscrição>' = número.
+// <prova> = '0' (evento simples) ou '1' / '2' (evento duplo). Não precisa mexer no banco.
+// Automático: próximo número da fila de cada prova, em ordem de inscrição. Editável à mão.
+let BIBS = {};
+const bibPad = n => String(n).padStart(2, '0');
+function bibOf(r, sub) { const n = BIBS[r.id + ':' + sub]; return n == null ? null : n; }
+function bibTxt(r, sub) { const n = bibOf(r, sub); return n == null ? '' : ' · nº ' + bibPad(n); }
+function fmtRegWhen(createdAt) {
+  if (!createdAt) return '—';
+  const d = new Date(createdAt);
+  return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+function bibSubsFor(r, info) {
+  if (!info.is_dual) return ['0'];
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2', out = [];
+  if (evRegInSub(r, n1, n2)) out.push('1');
+  if (evRegInSub(r, n2, n1)) out.push('2');
+  return out;
+}
+async function loadBibs(info) {
+  BIBS = {};
+  if (!info || !info.id) return;
+  const { data, error } = await sb.from('app_settings').select('key,value').like('key', 'bib:' + info.id + ':%').limit(5000);
+  if (error) { console.error(error); return; }
+  (data || []).forEach(row => {
+    const p = String(row.key).split(':');           // bib : evento : prova : inscrição
+    const n = parseInt(row.value, 10);
+    if (p.length === 4 && !isNaN(n)) BIBS[p[3] + ':' + p[2]] = n;
+  });
+}
+// Carrega os números e dá o próximo número a quem ainda não tem (ordem de inscrição)
+async function ensureBibs(info) {
+  if (!info || !info.id) return;
+  await loadBibs(info);
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).slice()
+    .sort((a, b) => (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
+  const maxBy = {};
+  Object.keys(BIBS).forEach(k => { const sub = k.split(':')[1]; maxBy[sub] = Math.max(maxBy[sub] || 0, BIBS[k]); });
+  const rows = [], keys = [];
+  regs.forEach(r => bibSubsFor(r, info).forEach(sub => {
+    const k = r.id + ':' + sub;
+    if (BIBS[k] == null) {
+      const n = (maxBy[sub] || 0) + 1; maxBy[sub] = n; BIBS[k] = n; keys.push(k);
+      rows.push({ key: `bib:${info.id}:${sub}:${r.id}`, value: String(n), updated_at: new Date().toISOString() });
+    }
+  }));
+  if (!rows.length) return;
+  const { error } = await sb.from('app_settings').upsert(rows, { onConflict: 'key' });
+  if (error) { console.error(error); keys.forEach(k => delete BIBS[k]); }
+}
+async function setRegBib(reg, sub, raw, info) {
+  raw = String(raw == null ? '' : raw).trim();
+  const key = `bib:${info.id}:${sub}:${reg.id}`;
+  if (raw === '') {                                    // vazio = volta para o automático
+    await sb.from('app_settings').delete().eq('key', key);
+    delete BIBS[reg.id + ':' + sub];
+    await ensureBibs(info);
+    return true;
+  }
+  const n = parseInt(raw, 10);
+  if (isNaN(n) || n < 0) { toast('⚠️ Número inválido'); return false; }
+  if (BIBS[reg.id + ':' + sub] === n) return true;
+  const dup = EVENT_REGISTRATIONS.find(o => o.id !== reg.id && o.event_id === info.id && BIBS[o.id + ':' + sub] === n);
+  if (dup && !confirm(`O número ${bibPad(n)} já é de ${dup.name}. Salvar mesmo assim?`)) return false;
+  const { error } = await sb.from('app_settings').upsert({ key, value: String(n), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+  if (error) { toast('⚠️ Erro ao salvar o número'); console.error(error); return false; }
+  BIBS[reg.id + ':' + sub] = n;
+  return true;
+}
+
+// ── Editar inscrição: linhas do nº de pulseira conforme os eventos marcados ──
+function refreshEditBibRows() {
+  const info = EVENT_INFO || defaultEventInfo();
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === editingRegId); if (!reg) return;
+  const show = (sub, on) => {
+    const row = document.getElementById('er-bib-row-' + sub), inp = document.getElementById('er-bib-' + sub);
+    row.style.display = on ? '' : 'none';
+    if (on && inp.dataset.loaded !== String(reg.id)) { inp.value = BIBS[reg.id + ':' + sub] != null ? BIBS[reg.id + ':' + sub] : ''; inp.dataset.loaded = String(reg.id); }
+  };
+  if (info.is_dual) {
+    document.getElementById('er-bib-label-1').textContent = info.sub1_name || 'Evento 1';
+    document.getElementById('er-bib-label-2').textContent = info.sub2_name || 'Evento 2';
+    show('0', false); show('1', document.getElementById('er-sub1-check').checked); show('2', document.getElementById('er-sub2-check').checked);
+  } else { show('0', true); show('1', false); show('2', false); }
+}
+async function saveEditBibs(info, reg) {
+  if (!reg) return true;
+  const subs = info.is_dual
+    ? [document.getElementById('er-sub1-check').checked ? '1' : null, document.getElementById('er-sub2-check').checked ? '2' : null].filter(Boolean)
+    : ['0'];
+  let ok = true;
+  for (const sub of subs) {
+    const inp = document.getElementById('er-bib-' + sub);
+    const before = BIBS[reg.id + ':' + sub];
+    const raw = inp.value.trim();
+    if (raw === '' && before == null) continue;               // nada a fazer; o automático entra no ensureBibs
+    if (raw !== '' && parseInt(raw, 10) === before) continue;
+    if (!(await setRegBib(reg, sub, raw, info))) ok = false;
+  }
+  await ensureBibs(info);
+  return ok;
+}
+// ── Tela da equipe: nº de pulseira do inscrito selecionado ──
+function fillResultBib(reg, info) {
+  const wrap = document.getElementById('result-bib-wrap'), inp = document.getElementById('result-bib-input'); if (!wrap) return;
+  const sub = info.is_dual ? currentSubEventContext : '0';
+  inp.value = (reg && BIBS[reg.id + ':' + sub] != null) ? BIBS[reg.id + ':' + sub] : '';
+  wrap.style.display = reg ? '' : 'none';
+}
+async function updateResultBib() {
+  const regId = parseInt(document.getElementById('result-select').value); if (!regId) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  const info = EVENT_INFO || defaultEventInfo();
+  const sub = info.is_dual ? currentSubEventContext : '0';
+  const ok = await setRegBib(reg, sub, document.getElementById('result-bib-input').value, info);
+  fillResultBib(reg, info);
+  if (ok) { populateResultSelect(); document.getElementById('result-select').value = regId; toast(`✅ Nº de ${reg.name} atualizado!`); }
+}
+
 // ── Configuração do evento: time cap por prova + liberação do link da equipe ──
 function capFrom(minId, secId) {
   return (parseInt(document.getElementById(minId).value) || 0) * 60 + (parseInt(document.getElementById(secId).value) || 0);
@@ -6081,34 +6325,129 @@ function fillTimeCapFields(info) {
   set('-1', info.time_cap_seconds_1 || 0);
   set('-2', info.time_cap_seconds_2 || 0);
 }
-function fillLiveSelect(info) {
-  const sel = document.getElementById('ev-cfg-live'); if (!sel) return;
-  const opts = info.is_dual
-    ? [['', '🚫 Bloqueado (ninguém lança resultado)'], ['1', '🥇 ' + (info.sub1_name || 'Evento 1') + ' — acontecendo agora'], ['2', '🥈 ' + (info.sub2_name || 'Evento 2') + ' — acontecendo agora']]
-    : [['', '🚫 Bloqueado (ninguém lança resultado)'], ['1', '✅ Liberado — evento acontecendo agora']];
-  sel.innerHTML = opts.map(o => `<option value="${o[0]}">${tvEsc(o[1])}</option>`).join('');
-  const live = info.live_sub || '';
-  sel.value = (live === '1' || (live === '2' && info.is_dual)) ? live : '';
-  renderLiveState(info);
+// ══════════════════════════════════════════════
+//  CRONÔMETRO DO EVENTO — admin: liberar / começar / pausar / encerrar · equipe: finalizar
+// ══════════════════════════════════════════════
+// Estado em event_info.clk[prova] = { state: 'ready'|'running'|'paused'|'ended', startAt: ms, accMs: ms }.
+// prova = '1' (evento simples) ou '1' / '2' (evento duplo). event_info.live_sub = prova liberada para a equipe.
+// O relógio roda sozinho a partir do instante do "Começar" e trava no Time Cap.
+function clkKeys(info) { return info.is_dual ? ['1', '2'] : ['1']; }
+function clkCapMs(info, key) {
+  const sec = info.is_dual ? (key === '2' ? info.time_cap_seconds_2 : info.time_cap_seconds_1) : info.time_cap_seconds;
+  return (sec || 0) * 1000;
 }
-function renderLiveState(info) {
-  const el = document.getElementById('ev-cfg-live-state'); if (!el) return;
-  const live = info.live_sub || '';
-  const on = live === '1' || (live === '2' && info.is_dual);
-  const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : (info.name || 'evento');
-  el.textContent = on ? `🔴 Link da equipe liberado para: ${subName}` : '🔒 Link da equipe bloqueado: ninguém consegue lançar resultados.';
-  el.style.color = on ? 'var(--green)' : 'var(--gold)';
+function clkEntry(info, key) {
+  const c = (info.clk && info.clk[key]) || null;
+  if (info.live_sub === key) return c || { state: 'ready', startAt: 0, accMs: 0 };
+  return (c && c.state === 'ended') ? c : { state: 'idle', startAt: 0, accMs: 0 };
 }
-async function saveLiveRelease() {
-  const v = document.getElementById('ev-cfg-live').value;
+function clkRawMs(e, now) { return (e.accMs || 0) + (e.state === 'running' ? Math.max(0, now - (e.startAt || now)) : 0); }
+function clkView(info, key, now) {
+  const e = clkEntry(info, key), cap = clkCapMs(info, key), raw = clkRawMs(e, now);
+  const started = e.state === 'running' || e.state === 'paused' || e.state === 'ended';
+  const timeUp = started && cap > 0 && raw >= cap;
+  const ms = cap > 0 ? Math.min(raw, cap) : raw;
+  return { state: e.state, ms, cap, timeUp, remainingMs: cap > 0 ? Math.max(0, cap - ms) : null };
+}
+const clkFmt = ms => formatTime(Math.floor(ms / 1000));
+const CLK_LABEL = { idle: '🔒 Bloqueado', ready: '🟢 Liberado — aguardando início', running: '▶ Em andamento', paused: '⏸ Pausado', ended: '⏹ Encerrado' };
+function liveName(info, key) {
+  return info.is_dual ? (key === '2' ? '🥈 ' + (info.sub2_name || 'Evento 2') : '🥇 ' + (info.sub1_name || 'Evento 1')) : (info.name || 'Evento');
+}
+
+function renderLiveControls(info) {
+  const box = document.getElementById('live-ctl-rows'); if (!box) return;
+  info = info || EVENT_INFO || defaultEventInfo();
+  if (!info.id) { box.innerHTML = '<div class="live-hint">Salve o evento primeiro para poder liberar.</div>'; return; }
+  const now = Date.now();
+  box.innerHTML = clkKeys(info).map(k => {
+    const v = clkView(info, k, now);
+    const up = v.timeUp && v.state === 'running';
+    const st = up ? 'timeup' : v.state;
+    const chip = up ? '⏰ TIME CAP atingido' : CLK_LABEL[v.state];
+    const btn = (act, label, cls) => `<button class="live-btn ${cls || ''}" onclick="clkAction('${k}','${act}')">${label}</button>`;
+    let btns = '';
+    if (v.state === 'idle') btns = btn('release', '🔓 Liberar', 'go');
+    else if (v.state === 'ready') btns = btn('start', '▶ Começar', 'go') + btn('block', '🔒 Bloquear');
+    else if (v.state === 'running') btns = (up ? '' : btn('pause', '⏸ Pausar')) + btn('end', '⏹ Encerrar', 'stop');
+    else if (v.state === 'paused') btns = btn('resume', '▶ Retomar', 'go') + btn('end', '⏹ Encerrar', 'stop');
+    else if (v.state === 'ended') btns = btn('release', '🔓 Liberar de novo (zera)') + btn('block', '🔒 Bloquear');
+    return `<div class="live-row" data-key="${k}">
+      <div class="live-row-head"><div class="live-row-name">${tvEsc(liveName(info, k))}</div><span class="live-chip live-${st}">${chip}</span></div>
+      <div class="live-clock" data-clk="${k}" data-up="${v.timeUp ? 1 : 0}">${clkFmt(v.ms)}</div>
+      <div class="live-sub" data-clk-sub="${k}">${v.cap ? 'TIME CAP ' + clkFmt(v.cap) + ' · restam ' + clkFmt(v.remainingMs) : 'Sem time cap definido (o relógio só para no clique)'}</div>
+      <div class="live-btns">${btns}</div>
+    </div>`;
+  }).join('');
+}
+
+async function clkAction(key, action) {
+  const tap = Date.now();                                  // o relógio parte do instante do toque
+  EVENT_INFO = null;
   const info = await getEventInfo();
-  if (!info.id) return toast('⚠️ Salve o evento antes de liberar o lançamento');
-  const newInfo = { ...info, live_sub: v };
+  if (!info.id) return toast('⚠️ Salve o evento antes de liberar');
+  const clk = { ...(info.clk || {}) };
+  const other = key === '1' ? '2' : '1';
+  const cur = clkEntry(info, key);
+  const capMs = clkCapMs(info, key);
+  const frozen = e => Math.min(clkRawMs(e, tap), capMs > 0 ? capMs : Infinity);
+  let live = info.live_sub || '';
+  let msg = '';
+
+  if (action === 'release' || action === 'reset') {
+    if (info.is_dual && live === other) {                   // só um evento fica ao vivo por vez
+      const oe = clkEntry(info, other);
+      if (oe.state === 'running' || oe.state === 'paused') {
+        if (!confirm(`“${liveName(info, other).replace(/^\S+\s/, '')}” está em andamento. Encerrar e liberar este?`)) return;
+        clk[other] = { state: 'ended', startAt: 0, accMs: Math.min(clkRawMs(oe, tap), clkCapMs(info, other) > 0 ? clkCapMs(info, other) : Infinity) };
+      } else delete clk[other];
+    }
+    live = key; clk[key] = { state: 'ready', startAt: 0, accMs: 0 };
+    msg = '🟢 Liberado para a equipe. Toque em ▶ Começar na largada';
+  } else if (action === 'block') {
+    if (live === key) live = '';
+    delete clk[key];
+    msg = '🔒 Bloqueado: a equipe não consegue lançar';
+  } else if (action === 'start') {
+    if (live !== key) return;
+    clk[key] = { state: 'running', startAt: tap, accMs: 0 };
+    msg = '▶ Cronômetro rodando!';
+  } else if (action === 'pause') {
+    if (cur.state !== 'running') return;
+    clk[key] = { state: 'paused', startAt: 0, accMs: frozen(cur) };
+    msg = '⏸ Pausado';
+  } else if (action === 'resume') {
+    if (cur.state !== 'paused') return;
+    clk[key] = { state: 'running', startAt: tap, accMs: cur.accMs || 0 };
+    msg = '▶ Retomado';
+  } else if (action === 'end') {
+    if (cur.state !== 'running' && cur.state !== 'paused') return;
+    if (!confirm('Encerrar o evento? A equipe não poderá mais finalizar participantes por este link.')) return;
+    clk[key] = { state: 'ended', startAt: 0, accMs: frozen(cur) };
+    msg = '⏹ Evento encerrado';
+  } else return;
+
+  const newInfo = { ...info, live_sub: live, clk };
   if (!(await setSetting('event_info', newInfo))) return;
   EVENT_INFO = newInfo;
-  renderLiveState(newInfo);
-  toast(v ? '🔴 Link da equipe liberado para o evento que está acontecendo' : '🔒 Link da equipe bloqueado');
+  renderLiveControls(newInfo);
+  toast(msg);
 }
+
+// Relógios de tela (admin e equipe) andam a cada segundo
+function clkTickAll() {
+  const info = EVENT_INFO; if (!info) return;
+  const now = Date.now();
+  document.querySelectorAll('#live-ctl-rows .live-clock').forEach(el => {
+    const k = el.dataset.clk, v = clkView(info, k, now);
+    el.textContent = clkFmt(v.ms);
+    if (el.dataset.up !== (v.timeUp ? '1' : '0')) { renderLiveControls(info); return; }   // estourou o Time Cap: atualiza botões/etiqueta
+    const sub = document.querySelector(`#live-ctl-rows [data-clk-sub="${k}"]`);
+    if (sub && v.cap) sub.textContent = 'TIME CAP ' + clkFmt(v.cap) + ' · restam ' + clkFmt(v.remainingMs);
+  });
+  try { lancarApplyClock(); } catch (e) {}
+}
+setInterval(clkTickAll, 1000);
 
 // ══════════════════════════════════════════════
 //  SENHA DA EQUIPE (única: vale para Meta e para Lançar resultados) + TELA DE LANÇAMENTO
@@ -6187,13 +6526,16 @@ async function lancarShow() {
   if (ok) await lancarLoad();
   else setTimeout(() => document.getElementById('lancar-pw')?.focus(), 100);
 }
-let LANCAR_SIG = '';
+let LANCAR_SIG = '', LANCAR_TICKS = 0, LANCAR_SNACK_T = null;
+const LANCAR_BUSY = new Set();
 function lancarSig(info) { return [info.id, info.live_sub || '', info.is_dual ? 1 : 0, info.result_type, info.result_type_1, info.result_type_2].join('|'); }
+function lancarType(info) { const k = info.live_sub; return info.is_dual ? (k === '2' ? info.result_type_2 : info.result_type_1) : info.result_type; }
 async function lancarLoad() {
   EVENT_INFO = null;
   const info = await getEventInfo();
   LANCAR_SIG = lancarSig(info);
   await loadEventRegistrations();
+  try { await ensureBibs(info); } catch (e) { console.error(e); }
   await loadResultNotes();
   const live = info.live_sub || '';
   const valid = live === '1' || (live === '2' && info.is_dual);
@@ -6203,14 +6545,14 @@ async function lancarLoad() {
   if (!valid) {
     nameEl.textContent = info.name || 'Nenhum evento no momento';
     wrap.style.display = 'none';
-    none.textContent = '🔒 Lançamento ainda não liberado. A administração libera o evento que está acontecendo na configuração do evento.';
+    none.textContent = '🔒 Lançamento ainda não liberado. A administração libera o evento que está acontecendo no Controle ao vivo.';
     none.style.display = '';
     return;
   }
   currentSubEventContext = info.is_dual ? live : '1';
   const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
   nameEl.textContent = '🔴 ' + (info.name || 'Evento') + (subName ? ' · ' + subName : '');
-  const type = info.is_dual ? (live === '2' ? info.result_type_2 : info.result_type_1) : info.result_type;
+  const type = lancarType(info);
   if (!type) {
     wrap.style.display = 'none';
     none.textContent = 'O evento liberado ainda não tem tipo de resultado configurado (Tempo ou Rounds/Reps). Peça à administração para configurar.';
@@ -6220,11 +6562,143 @@ async function lancarLoad() {
   none.style.display = 'none';
   refreshResultPanelForContext(info);
   populateResultSelect();
+  const tempo = type === 'tempo';
+  document.getElementById('lv-finish-area').style.display = tempo ? '' : 'none';
+  document.getElementById('lv-manual-hint').style.display = tempo ? 'none' : '';
+  if (!tempo) document.getElementById('lv-more').open = true;
+  document.getElementById('lv-live-card').dataset.sig = '';
+  lancarApplyClock();
+  lancarRenderList();
 }
-// Se a administração liberar/trocar o evento com a tela aberta, ela se ajusta sozinha
+
+// Relógio + estado no topo do quadro
+function lancarApplyClock() {
+  const info = EVENT_INFO, card = document.getElementById('lv-live-card');
+  if (!info || !card || !document.getElementById('lv-clock') || !info.live_sub) return;
+  const v = clkView(info, info.live_sub, Date.now());
+  const up = v.timeUp && v.state === 'running';
+  const st = up ? 'timeup' : v.state;
+  document.getElementById('lv-clock').textContent = clkFmt(v.ms);
+  const stEl = document.getElementById('lv-clock-state');
+  stEl.textContent = up ? '⏰ TIME CAP atingido' : CLK_LABEL[v.state];
+  stEl.className = 'lv-clock-state lv-' + st;
+  document.getElementById('lv-clock-sub').textContent = v.cap ? `TIME CAP ${clkFmt(v.cap)} · restam ${clkFmt(v.remainingMs)}` : '';
+  if (card.dataset.sig !== st) { card.dataset.sig = st; lancarRenderList(); }      // muda o rótulo dos botões
+}
+
+// Lista de participantes com botão Finalizar (ordem do nº de pulseira)
+function lancarRenderList() {
+  const info = EVENT_INFO, box = document.getElementById('lv-runner-list');
+  if (!info || !box || !info.live_sub) return;
+  const key = info.live_sub, sfx = info.is_dual ? '_' + key : '', field = 'result_value' + sfx, sub = info.is_dual ? key : '0';
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  if (info.is_dual) {
+    const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+    regs = regs.filter(r => key === '2' ? evRegInSub(r, n2, n1) : evRegInSub(r, n1, n2));
+  }
+  const q = ((document.getElementById('lv-search') || {}).value || '').trim().toLowerCase();
+  const match = r => {
+    if (!q) return true;
+    if (/^\d+$/.test(q) && bibOf(r, sub) != null && bibOf(r, sub) === parseInt(q, 10)) return true;
+    return r.name.toLowerCase().includes(q);
+  };
+  const byBib = (a, b) => ((bibOf(a, sub) == null ? 1e9 : bibOf(a, sub)) - (bibOf(b, sub) == null ? 1e9 : bibOf(b, sub))) || a.name.localeCompare(b.name);
+  const all = regs.filter(match);
+  const pending = all.filter(r => !r[field]).sort(byBib);
+  const done = all.filter(r => r[field]).sort(byBib);
+  const v = clkView(info, key, Date.now());
+  const capUp = v.timeUp;
+  const bibCell = r => `<div class="lv-bib">${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
+  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div></div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
+  const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div></div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
+  box.innerHTML =
+    `<div class="lv-count">Faltam finalizar: ${pending.length}</div>` +
+    (pending.length ? pending.map(rowP).join('') : '<div class="lv-hint" style="padding:10px 0">Ninguém pendente 🎉</div>') +
+    (done.length ? `<div class="lv-count" style="margin-top:14px">✅ Finalizados: ${done.length}</div>` + done.map(rowD).join('') : '');
+  const capBtn = document.getElementById('lv-capall');
+  if (capBtn) capBtn.style.display = (capUp && pending.length && lancarType(info) === 'tempo') ? '' : 'none';
+}
+
+function lancarSnack(html) {
+  const el = document.getElementById('lv-snack'); if (!el) return;
+  el.innerHTML = html; el.style.display = '';
+  clearTimeout(LANCAR_SNACK_T); LANCAR_SNACK_T = setTimeout(() => { el.style.display = 'none'; }, 12000);
+}
+
+// FINALIZAR: o tempo é o relógio do evento no instante do toque
+async function lancarFinish(regId) {
+  const tap = Date.now();
+  const info = EVENT_INFO; if (!info || !info.live_sub) return;
+  const key = info.live_sub;
+  if (lancarType(info) !== 'tempo') return toast('Este evento é lançado manualmente. Use “Mais opções”.');
+  const v = clkView(info, key, tap);
+  if (v.state === 'ready') return toast('⏳ O evento ainda não começou');
+  if (v.state === 'paused') return toast('⏸ Cronômetro pausado pela administração');
+  if (v.state !== 'running') return toast('⏹ Evento encerrado. Ajustes em “Mais opções”.');
+  if (LANCAR_BUSY.has(regId)) return;
+  LANCAR_BUSY.add(regId);
+  try {
+    const value = v.timeUp ? 'TIME CAP' : clkFmt(v.ms);
+    currentSubEventContext = info.is_dual ? key : '1';
+    const ctx = await commitResultCore(regId, value, { onlyIfEmpty: true });
+    if (!ctx) return;
+    lancarRenderList();
+    if (ctx.conflict) return;
+    lancarSnack(`<span>✅ <b>${tvEsc(ctx.reg.name)}</b> — ${tvEsc(value)}</span><button onclick="lancarClearResult(${regId})">↩ Desfazer</button>`);
+    toast(`✅ ${ctx.reg.name}: ${value}`);
+    if (!document.getElementById('result-select').value) populateResultSelect();
+    commitResultExtras(ctx, undefined).catch(e => console.error(e));        // pontos e telas em segundo plano
+  } finally { LANCAR_BUSY.delete(regId); }
+}
+
+async function lancarClearResult(regId, ask) {
+  const info = EVENT_INFO; if (!info || !info.live_sub) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  if (ask && !confirm(`Desfazer o resultado de ${reg.name}?`)) return;
+  const sfx = info.is_dual ? '_' + info.live_sub : '', field = 'result_value' + sfx;
+  const { error } = await sb.from('event_registrations').update({ [field]: null }).eq('id', regId);
+  if (error) { toast('⚠️ Erro ao desfazer'); console.error(error); return; }
+  reg[field] = null;
+  await saveResultNote(regId, sfx, '');
+  document.getElementById('lv-snack').style.display = 'none';
+  lancarRenderList();
+  if (!document.getElementById('result-select').value) populateResultSelect();
+  toast(`↩ Resultado de ${reg.name} desfeito`);
+  renderRegistrationsList(); renderResultsBoard(EVENT_INFO || defaultEventInfo()).catch(() => {});
+}
+
+// Depois do Time Cap: quem não terminou fica com TIME CAP de uma vez
+async function lancarMarkRemainingCap() {
+  const info = EVENT_INFO; if (!info || !info.live_sub) return;
+  const key = info.live_sub, sfx = info.is_dual ? '_' + key : '', field = 'result_value' + sfx;
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && !r[field]);
+  if (info.is_dual) { const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2'; regs = regs.filter(r => key === '2' ? evRegInSub(r, n2, n1) : evRegInSub(r, n1, n2)); }
+  if (!regs.length) return;
+  if (!confirm(`Marcar TIME CAP em ${regs.length} participante(s) que não terminaram?`)) return;
+  currentSubEventContext = info.is_dual ? key : '1';
+  let n = 0;
+  for (const r of regs) {
+    const ctx = await commitResultCore(r.id, 'TIME CAP', { onlyIfEmpty: true });
+    if (ctx && !ctx.conflict) { n++; await commitResultExtras(ctx, undefined).catch(e => console.error(e)); }
+  }
+  lancarRenderList();
+  toast(`🚫 TIME CAP marcado em ${n} participante(s)`);
+}
+
+// Vigilância: troca de evento/liberação recarrega; relógio e lista só se atualizam
 async function lancarWatch() {
   if (!lancarUnlocked()) return;
-  try { EVENT_INFO = null; const info = await getEventInfo(); if (lancarSig(info) !== LANCAR_SIG) await lancarLoad(); } catch (e) {}
+  try {
+    EVENT_INFO = null;
+    const info = await getEventInfo();
+    if (lancarSig(info) !== LANCAR_SIG) { await lancarLoad(); return; }
+    lancarApplyClock();
+    if (++LANCAR_TICKS % 2 === 0) {
+      await loadEventRegistrations();
+      if (!document.getElementById('result-select').value) populateResultSelect();
+      lancarRenderList();
+    }
+  } catch (e) {}
 }
 async function startLancar() {
   document.getElementById('lancar-view').classList.add('on');
@@ -6232,7 +6706,7 @@ async function startLancar() {
   await loadStaffPw();
   try { await loadMembers(); } catch (e) {}          // necessário para somar os pontos do evento ao ranking
   await lancarShow();
-  setInterval(lancarWatch, 20000);
+  setInterval(lancarWatch, 4000);
 }
 
 // ══════════════════════════════════════════════
@@ -6340,6 +6814,37 @@ setInterval(async () => {
       <button class="close-btn" onclick="closeEditRegistration()">✕</button>
     </div>
     <div class="modal-body">
+      <div class="er-who" id="er-who"></div>
+      <div class="er-when" id="er-when"></div>
+
+      <div class="er-hero">
+        <div class="er-hero-title">⭐ Categoria e pulseira</div>
+        <div class="field-group">
+          <label class="field-label">Categoria / Nível</label>
+          <select id="er-level">
+              <option value="Iniciante">🟢 Iniciante</option>
+              <option value="Intermediário">🟡 Intermediário</option>
+              <option value="Avançado">🟠 Avançado</option>
+          </select>
+        </div>
+        <div class="field-group" id="er-bib-row-0" style="display:none">
+          <label class="field-label">🎽 Nº de pulseira / inscrição</label>
+          <input type="number" id="er-bib-0" class="er-bib-input" min="0" inputmode="numeric" placeholder="auto">
+        </div>
+        <div class="field-group" id="er-bib-row-1" style="display:none">
+          <label class="field-label">🎽 Nº de pulseira — <span id="er-bib-label-1">Evento 1</span></label>
+          <input type="number" id="er-bib-1" class="er-bib-input" min="0" inputmode="numeric" placeholder="auto">
+        </div>
+        <div class="field-group" id="er-bib-row-2" style="display:none">
+          <label class="field-label">🎽 Nº de pulseira — <span id="er-bib-label-2">Evento 2</span></label>
+          <input type="number" id="er-bib-2" class="er-bib-input" min="0" inputmode="numeric" placeholder="auto">
+        </div>
+        <div class="er-hint">Cada evento tem a sua numeração em ordem de inscrição (a mesma pessoa pode ser 05 em um e 10 em outro). Pode trocar à mão; deixe vazio para gerar o próximo número automático.</div>
+      </div>
+      <button class="btn btn-blue" onclick="saveEditRegistration()">💾 Salvar Alterações</button>
+
+      <div class="er-section-title">✏️ Editar outras informações</div>
+      <div class="er-hint" style="margin:0 0 14px">Nome, idade, telefone, tipo de inscrição e eventos. Depois de mexer, salve de novo no botão lá embaixo.</div>
       <div class="field-group">
         <label class="field-label">Nome</label>
         <input type="text" id="er-name">
@@ -6351,14 +6856,6 @@ setInterval(async () => {
       <div class="field-group">
         <label class="field-label">Telefone</label>
         <input type="text" id="er-phone" placeholder="ex: 21999998888">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Nível</label>
-        <select id="er-level">
-          <option value="Iniciante">🟢 Iniciante</option>
-          <option value="Intermediário">🟡 Intermediário</option>
-          <option value="Avançado">🟠 Avançado</option>
-        </select>
       </div>
       <div class="field-group">
         <label class="field-label">Tipo de inscrição</label>
