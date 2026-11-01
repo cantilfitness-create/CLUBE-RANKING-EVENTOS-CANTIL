@@ -485,6 +485,19 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-snack { position:fixed; left:12px; right:12px; bottom:14px; z-index:900; background:#0e2a1d; border:1px solid var(--green); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:14px; }
 .lv-snack button { background:var(--green); color:#000; border:none; border-radius:10px; padding:10px 14px; font-weight:800; font-family:'Outfit',sans-serif; cursor:pointer; }
 
+/* Resultados públicos em aba suspensa */
+.results-toggle { cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; padding:12px 0; margin-bottom:0 !important; }
+.results-toggle::after { order:1; }
+.results-chev { order:2; font-size:16px; color:var(--accent); transition:transform .2s; line-height:1; }
+.results-toggle.open .results-chev { transform:rotate(180deg); }
+.results-cap { text-align:center; font-size:12px; letter-spacing:1px; margin:2px 0 14px; }
+.results-cap:empty { display:none; }
+#results-body { padding-top:6px; }
+
+/* Equipe: botão Ausente */
+.lv-abs { margin-top:6px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; }
+.lv-row.absent .lv-name { color:var(--muted); font-weight:600; text-decoration:line-through; }
+
 .mini-list { display:flex;flex-direction:column;gap:8px; }
 .mini-row { display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:8px 12px;cursor:pointer;transition:all .2s; }
 .mini-row:hover { border-color:var(--accent); }
@@ -827,9 +840,12 @@ textarea { resize:vertical;min-height:72px; }
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
   <div class="results-board" id="results-board" style="display:none">
-    <div class="section-label" id="results-title">🏁 Resultados</div>
-    <div id="results-groups"></div>
-    <div style="text-align:center;margin-top:10px"><a class="tv-link-btn" href="?tv=resultados" target="_blank" rel="noopener">📺 Abrir resultados em modo TV</a></div>
+    <div class="section-label results-toggle" id="results-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleResultsBoard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleResultsBoard()}">🏁 Resultados<span class="results-chev" id="results-chev">▾</span></div>
+    <div id="results-body" style="display:none">
+      <div class="results-cap" id="results-title"></div>
+      <div id="results-groups"></div>
+      <div style="text-align:center;margin-top:10px"><a class="tv-link-btn" href="?tv=resultados" target="_blank" rel="noopener">📺 Abrir resultados em modo TV</a></div>
+    </div>
   </div>
   <div class="video-wrap">
     <div class="event-hero" id="event-hero">
@@ -3490,8 +3506,8 @@ async function renderResultsBoard(info) {
   const titleEl = document.getElementById('results-title');
   if (titleEl) {
     titleEl.innerHTML = capLabel
-      ? `🏁 Resultados <span style="color:var(--red);font-weight:800;margin-left:6px">— TIME CAP: ${capLabel}</span>`
-      : '🏁 Resultados';
+      ? `<span style="color:var(--red);font-weight:800">TIME CAP: ${capLabel}</span>`
+      : '';
   }
 
   const html = renderResultsGroupsHtml(regs, info.result_type, groupDescs);
@@ -3552,7 +3568,7 @@ async function renderDualResultsBoard(info) {
   if (!regs1.length && !regs2.length) { board.style.display = 'none'; setEventDetailsCollapsed(false); return; }
 
   const titleEl = document.getElementById('results-title');
-  if (titleEl) titleEl.innerHTML = '🏁 Resultados';
+  if (titleEl) titleEl.innerHTML = '';
 
   let html = '';
 
@@ -3588,6 +3604,16 @@ function setEventDetailsCollapsed(shouldOffer) {
     toggleBtn.style.display = 'none';
     detailsBody.style.display = '';
   }
+}
+
+// Resultados públicos: só o título "RESULTADOS" aparece; toque para abrir/fechar
+function toggleResultsBoard() {
+  const body = document.getElementById('results-body'), tg = document.getElementById('results-toggle');
+  if (!body || !tg) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  tg.setAttribute('aria-expanded', open ? 'true' : 'false');
+  tg.classList.toggle('open', open);
 }
 
 function toggleEventDetails() {
@@ -6604,17 +6630,20 @@ function lancarRenderList() {
   };
   const byBib = (a, b) => ((bibOf(a, sub) == null ? 1e9 : bibOf(a, sub)) - (bibOf(b, sub) == null ? 1e9 : bibOf(b, sub))) || a.name.localeCompare(b.name);
   const all = regs.filter(match);
-  const pending = all.filter(r => !r[field]).sort(byBib);
+  const attField = 'attended' + sfx;
+  const pending = all.filter(r => !r[field] && r[attField] !== false).sort(byBib);
+  const absent = all.filter(r => !r[field] && r[attField] === false).sort(byBib);
   const done = all.filter(r => r[field]).sort(byBib);
   const v = clkView(info, key, Date.now());
   const capUp = v.timeUp;
   const bibCell = r => `<div class="lv-bib">${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
-  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div></div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
+  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
   const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div></div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
   box.innerHTML =
     `<div class="lv-count">Faltam finalizar: ${pending.length}</div>` +
     (pending.length ? pending.map(rowP).join('') : '<div class="lv-hint" style="padding:10px 0">Ninguém pendente 🎉</div>') +
-    (done.length ? `<div class="lv-count" style="margin-top:14px">✅ Finalizados: ${done.length}</div>` + done.map(rowD).join('') : '');
+    (done.length ? `<div class="lv-count" style="margin-top:14px">✅ Finalizados: ${done.length}</div>` + done.map(rowD).join('') : '') +
+    (absent.length ? `<div class="lv-count" style="margin-top:14px">🚫 Ausentes: ${absent.length}</div>` + absent.map(r => `<div class="lv-row absent">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div></div><button class="lv-undo-btn" onclick="lancarSetAttendance(${r.id}, null)">↩ Voltar</button></div>`).join('') : '');
   const capBtn = document.getElementById('lv-capall');
   if (capBtn) capBtn.style.display = (capUp && pending.length && lancarType(info) === 'tempo') ? '' : 'none';
 }
@@ -6667,11 +6696,35 @@ async function lancarClearResult(regId, ask) {
   renderRegistrationsList(); renderResultsBoard(EVENT_INFO || defaultEventInfo()).catch(() => {});
 }
 
+// AUSENTE: o aluno não veio. Sai da lista e fica como faltante (mesma marcação do painel do admin)
+async function lancarSetAttendance(regId, value) {
+  const info = EVENT_INFO; if (!info || !info.live_sub) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  const sfx = info.is_dual ? '_' + info.live_sub : '', att = 'attended' + sfx;
+  if (value === false && reg['result_value' + sfx]) return toast('⚠️ ' + reg.name + ' já tem resultado lançado');
+  const key = 'att' + regId;
+  if (LANCAR_BUSY.has(key)) return;
+  LANCAR_BUSY.add(key);
+  try {
+    const { error } = await sb.from('event_registrations').update({ [att]: value }).eq('id', regId);
+    if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
+    reg[att] = value;
+    lancarRenderList();
+    if (value === false) {
+      lancarSnack(`<span>🚫 <b>${tvEsc(reg.name)}</b> — ausente</span><button onclick="lancarSetAttendance(${regId}, null)">↩ Desfazer</button>`);
+    } else {
+      document.getElementById('lv-snack').style.display = 'none';
+      toast(`↩ ${reg.name} voltou para a lista`);
+    }
+    try { renderRegistrationsList(); renderNoShowList(); } catch (e) {}
+  } finally { LANCAR_BUSY.delete(key); }
+}
+
 // Depois do Time Cap: quem não terminou fica com TIME CAP de uma vez
 async function lancarMarkRemainingCap() {
   const info = EVENT_INFO; if (!info || !info.live_sub) return;
   const key = info.live_sub, sfx = info.is_dual ? '_' + key : '', field = 'result_value' + sfx;
-  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && !r[field]);
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && !r[field] && r['attended' + sfx] !== false);
   if (info.is_dual) { const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2'; regs = regs.filter(r => key === '2' ? evRegInSub(r, n2, n1) : evRegInSub(r, n1, n2)); }
   if (!regs.length) return;
   if (!confirm(`Marcar TIME CAP em ${regs.length} participante(s) que não terminaram?`)) return;
