@@ -1589,7 +1589,7 @@ textarea { resize:vertical;min-height:72px; }
               <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvLink()">📋 Copiar link</button>
               <button class="btn-sm" style="flex:1;padding:10px" onclick="openTvLink()">📺 Abrir</button>
             </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.4">A senha da equipe (a mesma da Meta) é definida na aba <b>Config</b>. A TV atualiza sozinha a cada 15 s; para ordem alfabética acrescente <b>&amp;ordem=nome</b> no fim do link.</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.4">A senha da equipe (a mesma da Meta) é definida na aba <b>Config</b>. A TV atualiza sozinha a cada 15 s, em ordem alfabética e sem medalhas. Para classificar por tempo (com medalhas), acrescente <b>&amp;ordem=tempo</b> no fim do link.</div>
           </div>
           <div class="section-label">📋 Inscritos (<span id="ev-count">0</span>)</div>
           <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
@@ -6207,7 +6207,7 @@ function tvAutoScroll() {
 }
 
 async function startTvResults(params) {
-  TV_BYNAME = params.get('ordem') === 'nome';
+  TV_BYNAME = params.get('ordem') !== 'tempo';      // padrão: ordem alfabética, sem medalhas
   document.getElementById('tv-results-view').classList.add('on');
   try { if (navigator.wakeLock) { const wl = () => navigator.wakeLock.request('screen').catch(() => {}); wl(); document.addEventListener('visibilitychange', () => { if (!document.hidden) wl(); }); } } catch (e) {}
   await tvRefresh();
@@ -6461,6 +6461,32 @@ async function clkAction(key, action) {
 }
 
 // Relógios de tela (admin e equipe) andam a cada segundo
+// Lista de inscritos do admin acompanha o que a equipe faz (ausente, resultado = presente, novas inscrições)
+let ADMIN_LIVE_BUSY = false;
+function adminRegsSig(info) {
+  return EVENT_REGISTRATIONS.filter(r => r.event_id === info.id)
+    .map(r => [r.id, r.name, r.fitness_level, r.sub_events, r.attended, r.attended_1, r.attended_2, r.result_value, r.result_value_1, r.result_value_2].join('~')).join('|');
+}
+async function adminLiveRefresh() {
+  if (ADMIN_LIVE_BUSY) return;
+  const ov = document.getElementById('modal-overlay'), panel = document.getElementById('tab-evento'), edit = document.getElementById('edit-reg-overlay');
+  if (!ov || !panel || !ov.classList.contains('open') || !panel.classList.contains('active')) return;
+  if (edit && edit.classList.contains('open')) return;                  // não mexe enquanto está editando uma inscrição
+  ADMIN_LIVE_BUSY = true;
+  try {
+    const info = EVENT_INFO || defaultEventInfo();
+    if (!info.id) return;
+    const before = adminRegsSig(info);
+    await loadEventRegistrations();
+    if (adminRegsSig(info) === before) return;                          // nada mudou: não redesenha
+    try { await ensureBibs(info); } catch (e) { console.error(e); }
+    renderRegistrationsList();
+    renderNoShowList();
+  } catch (e) { console.error(e); }
+  finally { ADMIN_LIVE_BUSY = false; }
+}
+setInterval(adminLiveRefresh, 8000);
+
 function clkTickAll() {
   const info = EVENT_INFO; if (!info) return;
   const now = Date.now();
