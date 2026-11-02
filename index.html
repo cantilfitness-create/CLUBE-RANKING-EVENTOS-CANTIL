@@ -490,6 +490,7 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-sv a { text-decoration:none; margin-left:4px; }
 .lv-sv-btn { margin-top:6px; margin-left:6px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; }
 .lv-sv-btn.has { border-color:rgba(232,255,0,.45); color:var(--accent); }
+.lv-runner-st-only .lv-fin { display:none; }
 .lv-sv-ov { position:fixed; inset:0; background:rgba(5,5,5,.94); z-index:9999; display:none; align-items:center; justify-content:center; padding:20px; }
 .lv-sv-ov.open { display:flex; }
 .lv-sv-box { background:var(--s1); border:1px solid var(--border); border-radius:20px; padding:22px 18px; max-width:380px; width:100%; max-height:90vh; overflow:auto; text-align:left; }
@@ -712,6 +713,24 @@ textarea { resize:vertical;min-height:72px; }
         <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="lancarStravaClose()">Fechar</button>
       </div>
     </div>
+    <!-- Validar estação pelo link do Strava -->
+    <div class="lv-sv-ov" id="lv-st-ov" onclick="if(event.target===this)lancarStationClose()">
+      <div class="lv-sv-box">
+        <div style="font-weight:800;font-size:18px;margin-bottom:2px">📍 Validar estação</div>
+        <div id="lv-st-who" style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px"></div>
+        <div id="lv-st-prog" style="font-size:13px;margin-bottom:12px"></div>
+        <div id="lv-st-add">
+          <div class="field-group"><label class="field-label">Link do Strava que o participante enviou</label>
+            <div style="display:flex;gap:8px"><input type="text" id="lv-st-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off" autocomplete="off"><button class="mt-tiny" style="flex:0 0 auto" onclick="lancarStationPaste()">📋 Colar</button></div></div>
+          <div class="field-group"><label class="field-label" id="lv-st-kmlabel">Km da estação</label>
+            <input type="text" id="lv-st-km" inputmode="decimal" placeholder="ex: 1"></div>
+          <button class="btn btn-gold" style="width:100%" onclick="lancarStationAdd()">✅ Validar estação</button>
+        </div>
+        <div id="lv-st-hist" style="margin-top:10px"></div>
+        <button class="btn-sm-danger" id="lv-st-undo" style="display:none;width:100%;padding:10px;margin-top:8px" onclick="lancarStationUndo()">↩ Desfazer última estação</button>
+        <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="lancarStationClose()">Fechar</button>
+      </div>
+    </div>
     <div id="lancar-main" style="display:none">
       <div class="lv-bar">
         <button class="btn-sm" onclick="lancarLoad()">🔄 Atualizar lista</button>
@@ -876,6 +895,7 @@ textarea { resize:vertical;min-height:72px; }
 
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
+  <div class="results-board" id="stations-board" style="display:none"><div class="section-label">📍 Estações · ao vivo</div><div id="stations-body"></div></div>
   <div class="results-board" id="results-board" style="display:none">
     <div class="section-label results-toggle" id="results-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleResultsBoard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleResultsBoard()}">🏁 Resultados<span class="results-chev" id="results-chev">▾</span></div>
     <div id="results-body" style="display:none">
@@ -1598,6 +1618,11 @@ textarea { resize:vertical;min-height:72px; }
           <!-- Campos DUPLICADOS por sub-evento (só aparecem se dual estiver marcado) -->
           <div id="ev-dual-config-wrap" style="display:none"></div>
 
+          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px">
+            <label class="field-label">📍 Estações validadas pelo Strava (opcional)</label>
+            <div style="display:flex;gap:8px"><input type="number" id="ev-cfg-st-count" min="0" placeholder="Nº de estações (ex: 5)"><input type="text" id="ev-cfg-st-km" inputmode="decimal" placeholder="Km por estação (ex: 1)"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4">Cada link do Strava validado na tela “Lançar resultados” conclui uma estação, em ordem, e soma os km no saldo do participante. Aparece ao vivo na TV e na aba Evento. Deixe vazio para não usar.</div>
+          </div>
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="evBadgeBackfill()" style="width:100%;padding:12px;margin-bottom:8px">🎖️ Conceder emblema a quem já teve presença</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
@@ -3801,6 +3826,7 @@ async function renderEventPublicView() {
   if (!eventRegLoaded) await loadEventRegistrations();
 
   await renderResultsBoard(info);
+  await renderStationsBoard(info);
   await populateLevelSelect();
 
   document.getElementById('event-name').textContent = info.name || 'Nenhum evento no momento';
@@ -4204,6 +4230,8 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
   document.getElementById('ev-cfg-sub2').value = info.sub2_name || '';
   bdFillSelects();
+  document.getElementById('ev-cfg-st-count').value = info.stations_count || '';
+  document.getElementById('ev-cfg-st-km').value = info.stations_km ? String(info.stations_km).replace('.', ',') : '';
 
   if (info.is_dual) {
     // Campos duplicados por sub-evento
@@ -4441,6 +4469,8 @@ async function updateEventConfig() {
 
   if (isDual) { newInfo.badge_id_1 = document.getElementById('ev-cfg-badge-1').value || ''; newInfo.badge_id_2 = document.getElementById('ev-cfg-badge-2').value || ''; }
   else newInfo.badge_id = document.getElementById('ev-cfg-badge').value || '';
+  newInfo.stations_count = Math.max(0, parseInt(document.getElementById('ev-cfg-st-count').value) || 0);
+  newInfo.stations_km = parseFloat(String(document.getElementById('ev-cfg-st-km').value).replace(',', '.')) || (newInfo.stations_count ? 1 : 0);
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -4523,7 +4553,7 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
   document.getElementById('ev-cfg-points').value = '';
-  ['ev-cfg-badge','ev-cfg-badge-1','ev-cfg-badge-2'].forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
+  ['ev-cfg-badge','ev-cfg-badge-1','ev-cfg-badge-2','ev-cfg-st-count','ev-cfg-st-km'].forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
   document.getElementById('ev-cfg-result-type').value = '';
   document.getElementById('ev-cfg-active').value = 'true';
   document.getElementById('ev-cfg-dual').checked = false;
@@ -6332,6 +6362,7 @@ async function tvRefresh() {
     const info = await getEventInfo();
     await loadEventRegistrations();
     await loadResultNotes();
+    await loadStationLog();
     const descs = await getSetting('level_descriptions', {});
     const all = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
     const panels = [];
@@ -6349,9 +6380,11 @@ async function tvRefresh() {
       if (regs.length) panels.push({ title: '', cap: formatTimeCap(info.time_cap_seconds), type: info.result_type, field: 'result_value', regs });
     }
     const dual = !!info.is_dual;
-    const bodyHtml = panels.length
+    const stPanel = tvStationsPanel(info);
+    const resHtml = panels.length
       ? panels.map(p => `<div class="tv-panel">${dual ? `<div class="tv-panel-title">${tvEsc(p.title)}${p.cap ? `<span class="tv-cap">TIME CAP ${p.cap}</span>` : ''}</div>` : ''}${tvGroupsHtml(p.regs, p.type, descs, p.field, dual && panels.length > 1)}</div>`).join('')
-      : `<div class="tv-empty">⏳ Aguardando os primeiros resultados…</div>`;
+      : (stPanel ? '' : `<div class="tv-empty">⏳ Aguardando os primeiros resultados…</div>`);
+    const bodyHtml = stPanel + resHtml;
     const singleCap = (!dual && panels[0] && panels[0].cap) ? `<span class="tv-cap">TIME CAP: ${panels[0].cap}</span>` : '';
     const sig = JSON.stringify([info.name, panels.length, bodyHtml, singleCap]);
     if (sig === TV_SIG) return;            // nada mudou: não mexe na tela (evita reiniciar a rolagem)
@@ -6359,7 +6392,7 @@ async function tvRefresh() {
     document.getElementById('tv-title').textContent = info.name || 'Resultados';
     document.getElementById('tv-cap-wrap').innerHTML = singleCap;
     const body = document.getElementById('tv-body');
-    body.style.gridTemplateColumns = `repeat(${Math.max(1, panels.length)},minmax(0,1fr))`;
+    body.style.gridTemplateColumns = `repeat(${Math.max(1, panels.length + (stPanel ? 1 : 0))},minmax(0,1fr))`;
     body.innerHTML = bodyHtml;
     document.title = (info.name ? info.name + ' · ' : '') + 'Resultados';
   } catch (e) { console.error('tv', e); }
@@ -6769,6 +6802,7 @@ async function lancarLoad() {
   try { await ensureBibs(info); } catch (e) { console.error(e); }
   await loadResultNotes();
   await loadResultStrava();
+  await loadStationLog();
   const live = info.live_sub || '';
   const valid = live === '1' || (live === '2' && info.is_dual);
   const none = document.getElementById('lancar-none');
@@ -6785,16 +6819,19 @@ async function lancarLoad() {
   const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
   nameEl.textContent = '🔴 ' + (info.name || 'Evento') + (subName ? ' · ' + subName : '');
   const type = lancarType(info);
-  if (!type) {
+  const stOnly = !type && stCfg(info).count > 0;
+  if (!type && !stOnly) {
     wrap.style.display = 'none';
     none.textContent = 'O evento liberado ainda não tem tipo de resultado configurado (Tempo ou Rounds/Reps). Peça à administração para configurar.';
     none.style.display = '';
     return;
   }
   none.style.display = 'none';
-  refreshResultPanelForContext(info);
-  populateResultSelect();
-  const tempo = type === 'tempo';
+  document.getElementById('lv-runner-list').classList.toggle('lv-runner-st-only', stOnly);
+  document.getElementById('lv-more').style.display = stOnly ? 'none' : '';
+  if (stOnly) wrap.style.display = '';
+  else { refreshResultPanelForContext(info); populateResultSelect(); }
+  const tempo = type === 'tempo' || stOnly;
   document.getElementById('lv-finish-area').style.display = tempo ? '' : 'none';
   document.getElementById('lv-manual-hint').style.display = tempo ? 'none' : '';
   if (!tempo) document.getElementById('lv-more').open = true;
@@ -6982,6 +7019,7 @@ function lvSvPace(km, time) {
 }
 function lvSvKmTxt(km) { return String(+(+km).toFixed(2)).replace('.', ','); }
 function lancarStravaSummary(r, sfx) {
+  if (stCfg(EVENT_INFO).count > 0) return stRowSummary(r, sfx);
   const d = RESULT_STRAVA[r.id + (sfx || '')]; if (!d) return '';
   const parts = [];
   if (d.km !== '' && d.km != null) parts.push(lvSvKmTxt(d.km) + ' km');
@@ -6991,6 +7029,7 @@ function lancarStravaSummary(r, sfx) {
   return `<div class="lv-sv">📎 ${parts.join(' · ')}${link}</div>`;
 }
 function lancarStravaBtn(r, sfx) {
+  if (stCfg(EVENT_INFO).count > 0) return stRowBtn(r, sfx);
   const has = !!RESULT_STRAVA[r.id + (sfx || '')];
   return `<button class="lv-sv-btn ${has ? 'has' : ''}" onclick="lancarStravaOpen(${r.id})">${has ? '✏️ Editar Strava' : '📎 Strava'}</button>`;
 }
@@ -7040,6 +7079,139 @@ async function lancarStravaRemove() {
   toast('🗑 Strava removido');
 }
 
+// ══════════════════════════════════════════════
+//  ESTAÇÕES VALIDADAS PELO STRAVA (cada link validado = uma estação concluída, em ordem; os km somam no saldo)
+// ══════════════════════════════════════════════
+// Fica em app_settings ('station_log'): { "<id da inscrição + sufixo>": [ {n, link, km, at}, ... ] } — não precisa criar coluna no banco.
+let STATION_LOG = {}, LV_ST_REG = null;
+async function loadStationLog() {
+  const v = await getSetting('station_log', {});
+  STATION_LOG = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+const stCfg = info => ({ count: Math.max(0, parseInt(info && info.stations_count) || 0), km: parseFloat(info && info.stations_km) || 0 });
+const stTotal = arr => (arr || []).reduce((s, e) => s + (+e.km || 0), 0);
+const stKm = n => String(+(+n).toFixed(2)).replace('.', ',');
+const stDots = (n, N) => Array.from({ length: Math.min(N, 40) }, (_, i) => i < n ? '🟢' : '⚪').join('');
+function stLinkId(l) {
+  l = String(l || '').trim().toLowerCase();
+  const m = /activities\/(\d+)/.exec(l);
+  return m ? 'act:' + m[1] : l.replace(/[?#].*$/, '').replace(/\/+$/, '');
+}
+function stRowSummary(r, sfx) {
+  const cfg = stCfg(EVENT_INFO), arr = STATION_LOG[r.id + (sfx || '')] || [], n = arr.length;
+  if (!n) return `<div class="lv-sv" style="color:var(--muted)">📍 Estação 0/${cfg.count} · aguardando</div>`;
+  return `<div class="lv-sv">📍 Estação ${n}/${cfg.count} · ${stKm(stTotal(arr))} km${n >= cfg.count ? ' · 🏁 COMPLETO' : ''}</div>`;
+}
+function stRowBtn(r, sfx) {
+  const cfg = stCfg(EVENT_INFO), n = (STATION_LOG[r.id + (sfx || '')] || []).length;
+  return `<button class="lv-sv-btn ${n ? 'has' : ''}" onclick="lancarStationOpen(${r.id})">📍 ${n >= cfg.count ? 'Ver estações' : 'Validar Strava'}</button>`;
+}
+function lancarStationOpen(regId) {
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  LV_ST_REG = regId;
+  document.getElementById('lv-st-who').textContent = reg.name;
+  document.getElementById('lv-st-link').value = '';
+  lancarStationRender();
+  document.getElementById('lv-st-ov').classList.add('open');
+}
+function lancarStationClose() { document.getElementById('lv-st-ov').classList.remove('open'); LV_ST_REG = null; }
+function lancarStationRender() {
+  const cfg = stCfg(EVENT_INFO), key = LV_ST_REG + lancarStravaSfx(), arr = STATION_LOG[key] || [], n = arr.length, done = n >= cfg.count;
+  document.getElementById('lv-st-prog').innerHTML = done
+    ? `🏁 <b>Prova completa</b> · ${n} estações · ${stKm(stTotal(arr))} km<div style="margin-top:4px">${stDots(n, cfg.count)}</div>`
+    : `Próxima: <b>estação ${n + 1} de ${cfg.count}</b>${n ? ` · saldo ${stKm(stTotal(arr))} km` : ''}<div style="margin-top:4px">${stDots(n, cfg.count)}</div>`;
+  document.getElementById('lv-st-add').style.display = done ? 'none' : '';
+  document.getElementById('lv-st-km').value = cfg.km ? stKm(cfg.km) : '';
+  document.getElementById('lv-st-kmlabel').textContent = `Km da estação ${Math.min(n + 1, cfg.count)}`;
+  document.getElementById('lv-st-undo').style.display = n ? '' : 'none';
+  document.getElementById('lv-st-hist').innerHTML = arr.map(e => `<div class="tl-line">✓ <b style="color:var(--text)">Estação ${e.n}</b> · ${stKm(e.km)} km · ${new Date(e.at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })} · <a href="${tvEsc(e.link)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">🔗 Strava</a></div>`).join('');
+}
+async function lancarStationPaste() {
+  try { const t = await navigator.clipboard.readText(); if (t) document.getElementById('lv-st-link').value = t.trim(); else toast('⚠️ A área de transferência está vazia'); }
+  catch (e) { toast('⚠️ O celular não deixou colar sozinho: segure no campo e escolha Colar'); }
+}
+async function lancarStationAdd() {
+  const info = EVENT_INFO, cfg = stCfg(info); if (!LV_ST_REG || !cfg.count) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG); if (!reg) return;
+  const raw = document.getElementById('lv-st-link').value.trim(), mm = raw.match(/https?:\/\/[^\s]+/i), link = mm ? mm[0] : raw;
+  if (!lvSvOk(link)) return toast('⚠️ Cole o link do Strava');
+  const kmRaw = document.getElementById('lv-st-km').value, km = kmRaw.trim() ? lvSvParseKm(kmRaw) : cfg.km;
+  if (km === null || !(km > 0)) return toast('⚠️ Informe os km desta estação (ex: 1)');
+  if (LANCAR_BUSY.has('st' + reg.id)) return;
+  LANCAR_BUSY.add('st' + reg.id);
+  try {
+    await loadStationLog();                                   // lê o mais recente (outro celular pode ter validado)
+    const key = reg.id + lancarStravaSfx(), arr = STATION_LOG[key] || [];
+    if (arr.length >= cfg.count) { lancarStationRender(); return toast('🏁 Esse participante já completou todas as estações'); }
+    const id = stLinkId(link);
+    for (const k of Object.keys(STATION_LOG)) {
+      if ((STATION_LOG[k] || []).some(e => stLinkId(e.link) === id)) {
+        const o = EVENT_REGISTRATIONS.find(r => String(r.id) === String(parseInt(k)));
+        return toast(`⚠️ Esse link já foi usado${o ? ' por ' + o.name : ''}`);
+      }
+    }
+    arr.push({ n: arr.length + 1, link, km, at: new Date().toISOString() });
+    STATION_LOG[key] = arr;
+    if (!(await setSetting('station_log', STATION_LOG))) return;
+    const n = arr.length, tot = stTotal(arr), done = n >= cfg.count;
+    lancarStationClose(); lancarRenderList();
+    const msg = done ? `🏁 <b>${tvEsc(reg.name)}</b> — PROVA COMPLETA · ${n} estações · ${stKm(tot)} km`
+                     : `✅ <b>${tvEsc(reg.name)}</b> — Estação ${n} · ${stKm(km)} km COMPLETO · saldo ${stKm(tot)} km`;
+    lancarSnack(`<span>${msg}</span><button onclick="lancarStationUndoFor(${reg.id})">↩ Desfazer</button>`);
+    toast(msg.replace(/<[^>]+>/g, ''));
+  } finally { LANCAR_BUSY.delete('st' + reg.id); }
+}
+async function lancarStationUndoFor(regId) {
+  const key = regId + lancarStravaSfx(); await loadStationLog();
+  const arr = STATION_LOG[key] || []; if (!arr.length) return;
+  arr.pop(); if (arr.length) STATION_LOG[key] = arr; else delete STATION_LOG[key];
+  if (!(await setSetting('station_log', STATION_LOG))) return;
+  document.getElementById('lv-snack').style.display = 'none';
+  lancarRenderList(); if (LV_ST_REG === regId) lancarStationRender();
+  toast('↩ Última estação desfeita');
+}
+function lancarStationUndo() {
+  if (!LV_ST_REG) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG);
+  if (reg && confirm(`Desfazer a última estação de ${reg.name}?`)) lancarStationUndoFor(LV_ST_REG);
+}
+// Painel ao vivo (TV e tela pública): quem está em qual estação e o saldo de km
+function stationRows(info) {
+  const cfg = stCfg(info); if (!cfg.count || !info || !info.id) return null;
+  const sfxs = info.is_dual ? ['_1', '_2'] : [''], rows = [];
+  EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => sfxs.forEach(sfx => {
+    const arr = STATION_LOG[r.id + sfx]; if (arr && arr.length) rows.push({ r, sfx, arr, n: arr.length, tot: stTotal(arr) });
+  }));
+  rows.sort((a, b) => (b.n - a.n) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
+  return { cfg, rows };
+}
+function stRowText(x, cfg, info) {
+  const sub = info.is_dual && x.sfx ? ' · ' + (x.sfx === '_2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
+  const done = x.n >= cfg.count;
+  return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${x.n} estações` : `📍 Estação ${x.n}/${cfg.count} · ${stKm(+x.arr[x.n - 1].km)} km COMPLETO` };
+}
+function tvStationsPanel(info) {
+  const d = stationRows(info); if (!d || !d.rows.length) return '';
+  const rows = d.rows.map(x => { const t = stRowText(x, d.cfg, info);
+    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, d.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km</div></div>`; }).join('');
+  return `<div class="tv-panel"><div class="tv-panel-title">📍 Estações · ao vivo</div><div class="tv-groups" style="grid-template-columns:minmax(0,1fr)"><div class="tv-group"><div class="tv-scroll">${rows}</div></div></div></div>`;
+}
+async function renderStationsBoard(info) {
+  const box = document.getElementById('stations-board'); if (!box) return;
+  try {
+    info = info || await getEventInfo();
+    if (!stCfg(info).count) { box.style.display = 'none'; return; }
+    await loadStationLog();
+    if (!eventRegLoaded) await loadEventRegistrations();
+    const d = stationRows(info);
+    if (!d || !d.rows.length) { box.style.display = 'none'; return; }
+    document.getElementById('stations-body').innerHTML = d.rows.map(x => { const t = stRowText(x, d.cfg, info);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, d.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent)">${stKm(x.tot)} km</div></div>`; }).join('');
+    box.style.display = '';
+  } catch (e) { console.error('estações', e); }
+}
+setInterval(() => { if (!document.hidden && document.getElementById('view-evento') && document.getElementById('view-evento').classList.contains('active')) renderStationsBoard(); }, 10000);
+
 // Vigilância: troca de evento/liberação recarrega; relógio e lista só se atualizam
 async function lancarWatch() {
   if (!lancarUnlocked()) return;
@@ -7051,6 +7223,7 @@ async function lancarWatch() {
     if (++LANCAR_TICKS % 2 === 0) {
       await loadEventRegistrations();
       if (!document.getElementById('lv-sv-ov').classList.contains('open')) await loadResultStrava();
+      if (!document.getElementById('lv-st-ov').classList.contains('open')) await loadStationLog();
       if (!document.getElementById('result-select').value) populateResultSelect();
       lancarRenderList();
     }
