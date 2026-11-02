@@ -718,6 +718,7 @@ textarea { resize:vertical;min-height:72px; }
       <div class="lv-sv-box">
         <div style="font-weight:800;font-size:18px;margin-bottom:2px">📍 Validar estação</div>
         <div id="lv-st-who" style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px"></div>
+        <div id="lv-st-rule" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
         <div id="lv-st-prog" style="font-size:13px;margin-bottom:12px"></div>
         <div id="lv-st-add">
           <div class="field-group"><label class="field-label">Link do Strava que o participante enviou</label>
@@ -1620,8 +1621,34 @@ textarea { resize:vertical;min-height:72px; }
 
           <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px">
             <label class="field-label">📍 Estações validadas pelo Strava (opcional)</label>
-            <div style="display:flex;gap:8px"><input type="number" id="ev-cfg-st-count" min="0" placeholder="Nº de estações (ex: 5)"><input type="text" id="ev-cfg-st-km" inputmode="decimal" placeholder="Km por estação (ex: 1)"></div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4">Cada link do Strava validado na tela “Lançar resultados” conclui uma estação, em ordem, e soma os km no saldo do participante. Aparece ao vivo na TV e na aba Evento. Deixe vazio para não usar.</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.4">Estação = km + exercício funcional. Cada nível (cor) tem a sua quantidade, km e exercício. Cada link do Strava validado na tela “Lançar resultados” conclui uma estação, em ordem, e soma os km no saldo. Deixe o nº de estações vazio no nível que não participa.</div>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--s1)">
+              <div style="font-weight:800;margin-bottom:8px">🟢 Verde · Iniciante</div>
+              <div style="display:flex;gap:8px">
+                <div style="flex:1;min-width:0"><label class="field-label">Nº de estações</label><input type="number" id="ev-cfg-st-count-I" min="0" placeholder="ex: 6"></div>
+                <div style="flex:1;min-width:0"><label class="field-label">Km por estação</label><input type="text" id="ev-cfg-st-km-I" inputmode="decimal" placeholder="ex: 1"></div>
+              </div>
+              <label class="field-label" style="margin-top:8px">Exercício funcional da estação</label>
+              <input type="text" id="ev-cfg-st-ex-I" placeholder="ex: 20 agachamentos + 10 flexões">
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--s1)">
+              <div style="font-weight:800;margin-bottom:8px">🟡 Amarelo · Intermediário</div>
+              <div style="display:flex;gap:8px">
+                <div style="flex:1;min-width:0"><label class="field-label">Nº de estações</label><input type="number" id="ev-cfg-st-count-M" min="0" placeholder="ex: 6"></div>
+                <div style="flex:1;min-width:0"><label class="field-label">Km por estação</label><input type="text" id="ev-cfg-st-km-M" inputmode="decimal" placeholder="ex: 1"></div>
+              </div>
+              <label class="field-label" style="margin-top:8px">Exercício funcional da estação</label>
+              <input type="text" id="ev-cfg-st-ex-M" placeholder="ex: 20 agachamentos + 10 flexões">
+            </div>
+            <div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--s1)">
+              <div style="font-weight:800;margin-bottom:8px">🟠 Laranja · Avançado</div>
+              <div style="display:flex;gap:8px">
+                <div style="flex:1;min-width:0"><label class="field-label">Nº de estações</label><input type="number" id="ev-cfg-st-count-A" min="0" placeholder="ex: 6"></div>
+                <div style="flex:1;min-width:0"><label class="field-label">Km por estação</label><input type="text" id="ev-cfg-st-km-A" inputmode="decimal" placeholder="ex: 1"></div>
+              </div>
+              <label class="field-label" style="margin-top:8px">Exercício funcional da estação</label>
+              <input type="text" id="ev-cfg-st-ex-A" placeholder="ex: 20 agachamentos + 10 flexões">
+            </div>
           </div>
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
           <button class="btn-sm-danger" onclick="evBadgeBackfill()" style="width:100%;padding:12px;margin-bottom:8px">🎖️ Conceder emblema a quem já teve presença</button>
@@ -4230,8 +4257,12 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
   document.getElementById('ev-cfg-sub2').value = info.sub2_name || '';
   bdFillSelects();
-  document.getElementById('ev-cfg-st-count').value = info.stations_count || '';
-  document.getElementById('ev-cfg-st-km').value = info.stations_km ? String(info.stations_km).replace('.', ',') : '';
+  ST_LEVELS.forEach(([k, x]) => {
+    const c = stCfg(info, k);
+    document.getElementById('ev-cfg-st-count-' + x).value = c.count || '';
+    document.getElementById('ev-cfg-st-km-' + x).value = c.km ? String(c.km).replace('.', ',') : '';
+    document.getElementById('ev-cfg-st-ex-' + x).value = c.ex || '';
+  });
 
   if (info.is_dual) {
     // Campos duplicados por sub-evento
@@ -4469,8 +4500,13 @@ async function updateEventConfig() {
 
   if (isDual) { newInfo.badge_id_1 = document.getElementById('ev-cfg-badge-1').value || ''; newInfo.badge_id_2 = document.getElementById('ev-cfg-badge-2').value || ''; }
   else newInfo.badge_id = document.getElementById('ev-cfg-badge').value || '';
-  newInfo.stations_count = Math.max(0, parseInt(document.getElementById('ev-cfg-st-count').value) || 0);
-  newInfo.stations_km = parseFloat(String(document.getElementById('ev-cfg-st-km').value).replace(',', '.')) || (newInfo.stations_count ? 1 : 0);
+  const stBy = {};
+  ST_LEVELS.forEach(([k, x]) => {
+    const count = Math.max(0, parseInt(document.getElementById('ev-cfg-st-count-' + x).value) || 0);
+    if (!count) return;
+    stBy[k] = { count, km: parseFloat(String(document.getElementById('ev-cfg-st-km-' + x).value).replace(',', '.')) || 1, ex: document.getElementById('ev-cfg-st-ex-' + x).value.trim() };
+  });
+  newInfo.stations_by_level = stBy; newInfo.stations_count = 0; newInfo.stations_km = 0;
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -4553,7 +4589,7 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
   document.getElementById('ev-cfg-points').value = '';
-  ['ev-cfg-badge','ev-cfg-badge-1','ev-cfg-badge-2','ev-cfg-st-count','ev-cfg-st-km'].forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
+  ['ev-cfg-badge','ev-cfg-badge-1','ev-cfg-badge-2',...ST_LEVELS.flatMap(([, x]) => ['ev-cfg-st-count-' + x, 'ev-cfg-st-km-' + x, 'ev-cfg-st-ex-' + x])].forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
   document.getElementById('ev-cfg-result-type').value = '';
   document.getElementById('ev-cfg-active').value = 'true';
   document.getElementById('ev-cfg-dual').checked = false;
@@ -6819,7 +6855,7 @@ async function lancarLoad() {
   const subName = info.is_dual ? (live === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
   nameEl.textContent = '🔴 ' + (info.name || 'Evento') + (subName ? ' · ' + subName : '');
   const type = lancarType(info);
-  const stOnly = !type && stCfg(info).count > 0;
+  const stOnly = !type && stEnabled(info);
   if (!type && !stOnly) {
     wrap.style.display = 'none';
     none.textContent = 'O evento liberado ainda não tem tipo de resultado configurado (Tempo ou Rounds/Reps). Peça à administração para configurar.';
@@ -7019,7 +7055,7 @@ function lvSvPace(km, time) {
 }
 function lvSvKmTxt(km) { return String(+(+km).toFixed(2)).replace('.', ','); }
 function lancarStravaSummary(r, sfx) {
-  if (stCfg(EVENT_INFO).count > 0) return stRowSummary(r, sfx);
+  if (stEnabled(EVENT_INFO)) return stRowSummary(r, sfx);
   const d = RESULT_STRAVA[r.id + (sfx || '')]; if (!d) return '';
   const parts = [];
   if (d.km !== '' && d.km != null) parts.push(lvSvKmTxt(d.km) + ' km');
@@ -7029,7 +7065,7 @@ function lancarStravaSummary(r, sfx) {
   return `<div class="lv-sv">📎 ${parts.join(' · ')}${link}</div>`;
 }
 function lancarStravaBtn(r, sfx) {
-  if (stCfg(EVENT_INFO).count > 0) return stRowBtn(r, sfx);
+  if (stEnabled(EVENT_INFO)) return stRowBtn(r, sfx);
   const has = !!RESULT_STRAVA[r.id + (sfx || '')];
   return `<button class="lv-sv-btn ${has ? 'has' : ''}" onclick="lancarStravaOpen(${r.id})">${has ? '✏️ Editar Strava' : '📎 Strava'}</button>`;
 }
@@ -7088,7 +7124,17 @@ async function loadStationLog() {
   const v = await getSetting('station_log', {});
   STATION_LOG = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
 }
-const stCfg = info => ({ count: Math.max(0, parseInt(info && info.stations_count) || 0), km: parseFloat(info && info.stations_km) || 0 });
+const ST_LEVELS = [['Iniciante', 'I'], ['Intermediário', 'M'], ['Avançado', 'A']];
+// Estação = km + exercício funcional. Cada nível (cor) tem seu nº de estações, km e exercício.
+function stCfg(info, level) {
+  const by = info && info.stations_by_level;
+  let c = by ? by[level || 'Iniciante'] : (info && info.stations_count ? { count: info.stations_count, km: info.stations_km } : null);   // eventos salvos antes: valor único
+  c = c || {};
+  return { count: Math.max(0, parseInt(c.count) || 0), km: parseFloat(c.km) || 0, ex: String(c.ex || '') };
+}
+const stCfgReg = (info, reg) => stCfg(info, (reg && reg.fitness_level) || 'Iniciante');
+const stEnabled = info => ST_LEVELS.some(([k]) => stCfg(info, k).count > 0);
+const stLvl = r => levelColor((r && r.fitness_level) || 'Iniciante');
 const stTotal = arr => (arr || []).reduce((s, e) => s + (+e.km || 0), 0);
 const stKm = n => String(+(+n).toFixed(2)).replace('.', ',');
 const stDots = (n, N) => Array.from({ length: Math.min(N, 40) }, (_, i) => i < n ? '🟢' : '⚪').join('');
@@ -7098,12 +7144,14 @@ function stLinkId(l) {
   return m ? 'act:' + m[1] : l.replace(/[?#].*$/, '').replace(/\/+$/, '');
 }
 function stRowSummary(r, sfx) {
-  const cfg = stCfg(EVENT_INFO), arr = STATION_LOG[r.id + (sfx || '')] || [], n = arr.length;
+  const cfg = stCfgReg(EVENT_INFO, r), arr = STATION_LOG[r.id + (sfx || '')] || [], n = arr.length;
+  if (!cfg.count) return '';
   if (!n) return `<div class="lv-sv" style="color:var(--muted)">📍 Estação 0/${cfg.count} · aguardando</div>`;
   return `<div class="lv-sv">📍 Estação ${n}/${cfg.count} · ${stKm(stTotal(arr))} km${n >= cfg.count ? ' · 🏁 COMPLETO' : ''}</div>`;
 }
 function stRowBtn(r, sfx) {
-  const cfg = stCfg(EVENT_INFO), n = (STATION_LOG[r.id + (sfx || '')] || []).length;
+  const cfg = stCfgReg(EVENT_INFO, r), n = (STATION_LOG[r.id + (sfx || '')] || []).length;
+  if (!cfg.count) return '';
   return `<button class="lv-sv-btn ${n ? 'has' : ''}" onclick="lancarStationOpen(${r.id})">📍 ${n >= cfg.count ? 'Ver estações' : 'Validar Strava'}</button>`;
 }
 function lancarStationOpen(regId) {
@@ -7116,7 +7164,9 @@ function lancarStationOpen(regId) {
 }
 function lancarStationClose() { document.getElementById('lv-st-ov').classList.remove('open'); LV_ST_REG = null; }
 function lancarStationRender() {
-  const cfg = stCfg(EVENT_INFO), key = LV_ST_REG + lancarStravaSfx(), arr = STATION_LOG[key] || [], n = arr.length, done = n >= cfg.count;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG), cfg = stCfgReg(EVENT_INFO, reg), key = LV_ST_REG + lancarStravaSfx(), arr = STATION_LOG[key] || [], n = arr.length, done = n >= cfg.count;
+  document.getElementById('lv-st-who').textContent = `${stLvl(reg).emoji} ${reg.name} · ${stLvl(reg).name}`;
+  document.getElementById('lv-st-rule').textContent = `Cada estação = ${stKm(cfg.km)} km + ${cfg.ex || 'exercício funcional'}`;
   document.getElementById('lv-st-prog').innerHTML = done
     ? `🏁 <b>Prova completa</b> · ${n} estações · ${stKm(stTotal(arr))} km<div style="margin-top:4px">${stDots(n, cfg.count)}</div>`
     : `Próxima: <b>estação ${n + 1} de ${cfg.count}</b>${n ? ` · saldo ${stKm(stTotal(arr))} km` : ''}<div style="margin-top:4px">${stDots(n, cfg.count)}</div>`;
@@ -7131,8 +7181,9 @@ async function lancarStationPaste() {
   catch (e) { toast('⚠️ O celular não deixou colar sozinho: segure no campo e escolha Colar'); }
 }
 async function lancarStationAdd() {
-  const info = EVENT_INFO, cfg = stCfg(info); if (!LV_ST_REG || !cfg.count) return;
+  const info = EVENT_INFO; if (!LV_ST_REG) return;
   const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG); if (!reg) return;
+  const cfg = stCfgReg(info, reg); if (!cfg.count) return toast('⚠️ Este nível não tem estações configuradas');
   const raw = document.getElementById('lv-st-link').value.trim(), mm = raw.match(/https?:\/\/[^\s]+/i), link = mm ? mm[0] : raw;
   if (!lvSvOk(link)) return toast('⚠️ Cole o link do Strava');
   const kmRaw = document.getElementById('lv-st-km').value, km = kmRaw.trim() ? lvSvParseKm(kmRaw) : cfg.km;
@@ -7177,36 +7228,37 @@ function lancarStationUndo() {
 }
 // Painel ao vivo (TV e tela pública): quem está em qual estação e o saldo de km
 function stationRows(info) {
-  const cfg = stCfg(info); if (!cfg.count || !info || !info.id) return null;
+  if (!info || !info.id || !stEnabled(info)) return null;
   const sfxs = info.is_dual ? ['_1', '_2'] : [''], rows = [];
   EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => sfxs.forEach(sfx => {
-    const arr = STATION_LOG[r.id + sfx]; if (arr && arr.length) rows.push({ r, sfx, arr, n: arr.length, tot: stTotal(arr) });
+    const arr = STATION_LOG[r.id + sfx], cfg = stCfgReg(info, r); if (arr && arr.length && cfg.count) rows.push({ r, sfx, arr, cfg, n: arr.length, tot: stTotal(arr) });
   }));
   rows.sort((a, b) => (b.n - a.n) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
-  return { cfg, rows };
+  return { rows };
 }
-function stRowText(x, cfg, info) {
+function stRowText(x, _unused, info) {
+  const cfg = x.cfg;
   const sub = info.is_dual && x.sfx ? ' · ' + (x.sfx === '_2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
   const done = x.n >= cfg.count;
   return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${x.n} estações` : `📍 Estação ${x.n}/${cfg.count} · ${stKm(+x.arr[x.n - 1].km)} km COMPLETO` };
 }
 function tvStationsPanel(info) {
   const d = stationRows(info); if (!d || !d.rows.length) return '';
-  const rows = d.rows.map(x => { const t = stRowText(x, d.cfg, info);
-    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, d.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km</div></div>`; }).join('');
+  const rows = d.rows.map(x => { const t = stRowText(x, null, info);
+    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, x.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km</div></div>`; }).join('');
   return `<div class="tv-panel"><div class="tv-panel-title">📍 Estações · ao vivo</div><div class="tv-groups" style="grid-template-columns:minmax(0,1fr)"><div class="tv-group"><div class="tv-scroll">${rows}</div></div></div></div>`;
 }
 async function renderStationsBoard(info) {
   const box = document.getElementById('stations-board'); if (!box) return;
   try {
     info = info || await getEventInfo();
-    if (!stCfg(info).count) { box.style.display = 'none'; return; }
+    if (!stEnabled(info)) { box.style.display = 'none'; return; }
     await loadStationLog();
     if (!eventRegLoaded) await loadEventRegistrations();
     const d = stationRows(info);
     if (!d || !d.rows.length) { box.style.display = 'none'; return; }
-    document.getElementById('stations-body').innerHTML = d.rows.map(x => { const t = stRowText(x, d.cfg, info);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, d.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent)">${stKm(x.tot)} km</div></div>`; }).join('');
+    document.getElementById('stations-body').innerHTML = d.rows.map(x => { const t = stRowText(x, null, info);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, x.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent)">${stKm(x.tot)} km</div></div>`; }).join('');
     box.style.display = '';
   } catch (e) { console.error('estações', e); }
 }
