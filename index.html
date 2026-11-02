@@ -230,6 +230,13 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .bd-sw{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0}
 .bd-sw.on{border-color:#fff}
 .bd-mem{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:14px}
+.rk-mini{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border:1px solid var(--border);border-radius:12px;background:var(--s2);cursor:pointer;vertical-align:middle;font-size:10px;line-height:1.5;color:var(--muted)}
+.rk-mini svg{display:block}
+.rk-det{border:1px solid var(--border);border-radius:12px;margin-top:8px;background:var(--s2);text-align:left}
+.rk-det>summary{display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;font-weight:800;font-size:14px;list-style:none}
+.rk-det>summary::-webkit-details-marker{display:none}
+.rk-det-body{padding:4px 12px 12px;text-align:center;font-size:12px;color:var(--muted)}
+.tl-line{font-size:12px;color:var(--muted);padding:3px 0;text-align:left}
 .bd-chip{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;margin:3px 4px 0 0}
 .bd-ov{position:fixed;inset:0;background:#050505;z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
 .bd-ov.open{display:flex}
@@ -478,6 +485,16 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-fin.cap { background:var(--red); color:#fff; }
 .lv-row.done .lv-name { color:var(--muted); font-weight:600; }
 .lv-val { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--accent); letter-spacing:1px; }
+/* Strava por participante (tela Lançar resultados) */
+.lv-sv { margin-top:5px; font-size:12px; font-weight:700; color:var(--accent); line-height:1.4; }
+.lv-sv a { text-decoration:none; margin-left:4px; }
+.lv-sv-btn { margin-top:6px; margin-left:6px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; }
+.lv-sv-btn.has { border-color:rgba(232,255,0,.45); color:var(--accent); }
+.lv-sv-ov { position:fixed; inset:0; background:rgba(5,5,5,.94); z-index:9999; display:none; align-items:center; justify-content:center; padding:20px; }
+.lv-sv-ov.open { display:flex; }
+.lv-sv-box { background:var(--s1); border:1px solid var(--border); border-radius:20px; padding:22px 18px; max-width:380px; width:100%; max-height:90vh; overflow:auto; text-align:left; }
+.lv-sv-row { display:flex; gap:10px; }
+.lv-sv-row > .field-group { flex:1 1 0; min-width:0; }
 .lv-undo-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:8px 10px; cursor:pointer; font-size:14px; }
 .lv-capall { width:100%; padding:13px; border-radius:12px; border:1px solid rgba(255,95,109,.5); background:rgba(255,95,109,.12); color:var(--red); font-family:'Outfit',sans-serif; font-weight:800; font-size:14px; margin-bottom:10px; cursor:pointer; }
 .lv-more { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:0 14px 14px; margin-bottom:14px; }
@@ -676,6 +693,25 @@ textarea { resize:vertical;min-height:72px; }
       <input type="password" id="lancar-pw" placeholder="Senha" autocomplete="off" onkeydown="if(event.key==='Enter')lancarUnlock()">
       <button class="btn btn-gold" style="margin-top:12px" onclick="lancarUnlock()">Entrar</button>
     </div>
+    <!-- Strava do participante: link + km + tempo total -->
+    <div class="lv-sv-ov" id="lv-sv-ov" onclick="if(event.target===this)lancarStravaClose()">
+      <div class="lv-sv-box">
+        <div style="font-weight:800;font-size:18px;margin-bottom:2px">📎 Strava do participante</div>
+        <div id="lv-sv-who" style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:12px"></div>
+        <div class="field-group"><label class="field-label">Link do Strava (atividade ou perfil)</label>
+          <input type="text" id="lv-sv-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off" autocomplete="off"></div>
+        <div class="lv-sv-row">
+          <div class="field-group"><label class="field-label">Distância (km)</label>
+            <input type="text" id="lv-sv-km" inputmode="decimal" placeholder="ex: 5,2" autocomplete="off"></div>
+          <div class="field-group"><label class="field-label">Tempo total</label>
+            <input type="text" id="lv-sv-time" inputmode="text" placeholder="ex: 32:10 ou 1:05:30" autocomplete="off"></div>
+        </div>
+        <div id="lv-sv-pace" style="font-size:12px;color:var(--muted);min-height:16px;margin:-4px 0 10px"></div>
+        <button class="btn btn-gold" style="width:100%" onclick="lancarStravaSave()">💾 Salvar</button>
+        <button class="btn-sm-danger" id="lv-sv-del" style="display:none;width:100%;padding:10px;margin-top:8px" onclick="lancarStravaRemove()">🗑 Remover Strava deste participante</button>
+        <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="lancarStravaClose()">Fechar</button>
+      </div>
+    </div>
     <div id="lancar-main" style="display:none">
       <div class="lv-bar">
         <button class="btn-sm" onclick="lancarLoad()">🔄 Atualizar lista</button>
@@ -817,7 +853,7 @@ textarea { resize:vertical;min-height:72px; }
       <button class="filter-tab" onclick="setFilter('M')">👨 Masculino</button>
       <button class="filter-tab kids-tab" onclick="setFilter('kids')">🧒 Infantil</button>
     </div>
-    <div class="stars-legend">🔥 = desafio feito &nbsp;·&nbsp; ⭐ = evento feito (escolhido ao lançar o ponto)</div>
+    <div class="stars-legend">🔥 = desafio feito &nbsp;·&nbsp; ⭐ = evento feito &nbsp;·&nbsp; toque nos ícones ao lado do nome para ver os detalhes</div>
     <div class="ranking-card" id="ranking-list"></div>
   </div>
 </div>
@@ -826,8 +862,9 @@ textarea { resize:vertical;min-height:72px; }
 <div class="view-section" id="view-desafios">
   <div class="video-wrap">
     <div id="badges-wrap" style="display:none;margin-bottom:28px">
-      <div class="section-label">🏅 Distintivos Cantil</div>
+      <div class="section-label">🏆 Sala de troféus · Distintivos Cantil</div>
       <div class="bd-grid" id="badges-grid"></div>
+      <div id="trophy-people"></div>
     </div>
     <div class="section-label">🎬 Desafios em Destaque</div>
     <div class="video-grid" id="desafios-grid"></div>
@@ -1313,6 +1350,9 @@ textarea { resize:vertical;min-height:72px; }
           <div class="field-group"><label class="field-label">⏱ Time cap: tempo máximo de prova (opcional)</label><input type="text" id="mta-cap" placeholder="ex: 45:00 (minutos:segundos). Vazio = sem limite">
             <select id="mta-capmode" style="margin-top:8px"><option value="down">⏳ Decrescente: conta de trás para frente</option><option value="up">⏱ Crescente: conta até o limite</option></select></div>
           <div class="field-group"><label class="field-label">Lista de nomes para escolher</label><select id="mta-src"><option value="evento">Inscritos do evento atual</option><option value="membros">Membros do clube</option><option value="ambos">Inscritos + membros</option></select></div>
+          <div class="field-group"><label class="field-label">🏅 Emblema desta meta (vai para a Sala de troféus)</label><select id="mta-badge"><option value="">— sem emblema —</option></select>
+            <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="mtAwardBadge()">🎖️ Conceder emblema aos participantes agora</button>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4">Quem registrou km e é membro do clube recebe o emblema ao <b>encerrar os registros</b> (ou pelo botão acima). Salve a configuração antes.</div></div>
           <div class="field-group"><label class="field-label">🔒 Senha de quem registra</label>
             <div style="font-size:12px;color:var(--muted);line-height:1.45">Agora é uma senha única da equipe, definida na aba <b>Config</b>. Vale para o link da Meta e para o link de Lançar resultados.</div>
             <button class="btn-sm" style="width:100%;padding:10px;margin-top:8px" onclick="admTab('settings')">Abrir Config →</button></div>
@@ -1393,6 +1433,10 @@ textarea { resize:vertical;min-height:72px; }
                 <input type="number" id="ev-cfg-points-1" placeholder="ex: 10">
               </div>
               <div class="field-group">
+                <label class="field-label">🏅 Emblema deste evento (vai para a Sala de troféus de quem tiver presença)</label>
+                <select id="ev-cfg-badge-1"><option value="">— sem emblema —</option></select>
+              </div>
+              <div class="field-group">
                 <label class="field-label">Tipo de resultado (Evento 1)</label>
                 <select id="ev-cfg-result-type-1" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
                   <option value="">— Sem resultado (só presença)</option>
@@ -1439,6 +1483,10 @@ textarea { resize:vertical;min-height:72px; }
               <div class="field-group">
                 <label class="field-label">Pontos por presença (Evento 2)</label>
                 <input type="number" id="ev-cfg-points-2" placeholder="ex: 10">
+              </div>
+              <div class="field-group">
+                <label class="field-label">🏅 Emblema deste evento (vai para a Sala de troféus de quem tiver presença)</label>
+                <select id="ev-cfg-badge-2"><option value="">— sem emblema —</option></select>
               </div>
               <div class="field-group">
                 <label class="field-label">Tipo de resultado (Evento 2)</label>
@@ -1499,6 +1547,10 @@ textarea { resize:vertical;min-height:72px; }
               <input type="number" id="ev-cfg-points" placeholder="ex: 10">
             </div>
             <div class="field-group">
+              <label class="field-label">🏅 Emblema deste evento (vai para a Sala de troféus de quem tiver presença)</label>
+              <select id="ev-cfg-badge"><option value="">— sem emblema —</option></select>
+            </div>
+            <div class="field-group">
               <label class="field-label">Tipo de resultado deste evento</label>
               <select id="ev-cfg-result-type" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;">
                 <option value="">— Sem resultado (só presença)</option>
@@ -1547,6 +1599,7 @@ textarea { resize:vertical;min-height:72px; }
           <div id="ev-dual-config-wrap" style="display:none"></div>
 
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
+          <button class="btn-sm-danger" onclick="evBadgeBackfill()" style="width:100%;padding:12px;margin-bottom:8px">🎖️ Conceder emblema a quem já teve presença</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
           <hr class="divider">
           <div class="section-label">🏷️ Categorias da inscrição <span style="font-weight:400;color:var(--muted);font-size:11px">(texto de cada nível que aparece no formulário)</span></div>
@@ -2087,9 +2140,8 @@ function renderRanking() {
         <div class="rank-num">${m.ghost?'👻':pos+'º'}</div>
         <div class="rank-avatar">${m.emoji}</div>
         <div class="rank-info">
-          <div class="rank-name"><span class="rank-name-text">${m.name}</span>${m.ghost?'':bdMini(m.id)} ${m.ghost?'':trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}${categoryBadges ? ` <span class="category-badges">${categoryBadges}</span>` : ''}</div>
+          <div class="rank-name"><span class="rank-name-text">${m.name}</span>${rkChips(m)} ${m.ghost?'':trend}${isKidsCategory(m)?'<span class="kids-badge">🧒 Infantil</span>':''}</div>
           <div class="rank-badge-small">${m.points} pts${m.ghost?` · ${ghostDays(m)} dias sem pontuar`:''}</div>
-          ${challengeTag}
           ${lastSeen}
         </div>
         <div class="rank-bar-wrap">
@@ -3055,7 +3107,7 @@ async function mtAdminInit() {
   await mtLoadCfg(); await loadStaffPw(); MT_LOGO = String((await getSetting('relay_logo', '')) || '');
   try { await getEventInfo(); await loadEventRegistrations(); } catch (e) {}
   const c = MT_CFG || {}, v = (id, val) => document.getElementById(id).value = val ?? '';
-  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); document.getElementById('mta-half').checked = !!c.halfLap; mtCpLinks(); mtRegLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
+  v('mta-title', c.title || 'Desafio 38 km'); v('mta-goal', c.goal || 38); v('mta-lap', c.lapKm || ''); v('mta-src', c.source || 'evento'); bdFillSelects(); v('mta-badge', c.badge || ''); v('mta-cp-lat', c.checkpoint ? c.checkpoint.lat : ''); v('mta-cp-lng', c.checkpoint ? c.checkpoint.lng : ''); v('mta-cp-r', c.checkpoint ? c.checkpoint.r : 40); v('mta-cp-min', c.minLapSec || 60); document.getElementById('mta-half').checked = !!c.halfLap; mtCpLinks(); mtRegLinks(); v('mta-unit', c.unit || 'km'); v('mta-cap', c.capSec ? mtClock(c.capSec) : ''); v('mta-capmode', c.capMode || 'down');
   MTA_ROUTE = c.route || 'onda'; mtaRenderRoutes();
   MTA_GROUPS = (c.groups || []).map(g => ({ ...g, rosterText:(g.roster || (g.names||[]).map((n, i) => ({ n:i+1, name:n }))).map(r => r.n + ' ' + r.name).join('\n') })); mtaRenderGroups();
   const lp = document.getElementById('mta-logo-prev'); lp.src = MT_LOGO; lp.style.display = MT_LOGO ? 'block' : 'none';
@@ -3078,12 +3130,35 @@ async function mtSaveCfg(extra) {
   if (groups.some(g => !(g.goal > 0))) return toast('⚠️ Informe a meta de cada equipe');
   const goal = num('mta-goal') || (groups[0] && groups[0].goal);
   if (!(goal > 0)) return toast('⚠️ Informe a meta');
-  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, groups, staffPw, route:MTA_ROUTE, checkpoint, minLapSec, halfLap:document.getElementById('mta-half').checked, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
+  MT_CFG = { id:(MT_CFG && MT_CFG.id) || 'm' + Date.now().toString(36), startedAt:null, closed:false, ...(MT_CFG||{}), title:document.getElementById('mta-title').value.trim(), goal, lapKm:num('mta-lap') || '', source:document.getElementById('mta-src').value, badge:document.getElementById('mta-badge').value, groups, staffPw, route:MTA_ROUTE, checkpoint, minLapSec, halfLap:document.getElementById('mta-half').checked, unit:document.getElementById('mta-unit').value, capSec:mtParseTime(document.getElementById('mta-cap').value), capMode:document.getElementById('mta-capmode').value, ...(extra||{}) };
   if (await setSetting('relay_challenge', MT_CFG)) { toast('✅ Salvo!'); mtAdminInit(); }
 }
 const mtClearPw = () => confirm('Remover a senha? Qualquer pessoa com o link poderá registrar.') && mtSaveCfg({ staffPw:'' });
 const mtStart = () => confirm('Iniciar o cronômetro agora?') && mtSaveCfg({ startedAt:new Date().toISOString(), endedAt:null, closed:false });
-const mtToggleClosed = () => mtSaveCfg(MT_CFG && MT_CFG.closed ? { closed:false, endedAt:null } : { closed:true, endedAt:new Date().toISOString() });
+async function mtToggleClosed() {
+  const closing = !(MT_CFG && MT_CFG.closed);
+  await mtSaveCfg(closing ? { closed:true, endedAt:new Date().toISOString() } : { closed:false, endedAt:null });
+  if (closing) await mtAwardBadge(true);
+}
+async function mtAwardBadge(auto) {
+  const bid = MT_CFG && MT_CFG.badge;
+  if (!bid) { if (!auto) toast('⚠️ Escolha um emblema e salve a configuração'); return; }
+  try { await mtLoadEntries(); } catch (e) {}
+  const a = await getSetting('badge_awards', {}), aw = (a && typeof a === 'object' && !Array.isArray(a)) ? a : {};
+  const list = aw[bid] || [], e = 'meta:' + MT_CFG.id, d = new Date().toISOString().slice(0,10);
+  let n = 0; const miss = [], seen = new Set();
+  MT_ENTRIES.forEach(en => {
+    const k = listaNorm(en.name); if (!k || seen.has(k)) return; seen.add(k);
+    const m = MEMBERS.find(x => listaNorm(x.name) === k);
+    if (!m) { miss.push(en.name); return; }
+    if (!list.some(x => x.m === m.id && x.e === e)) { list.push({ m:m.id, d, s:MT_CFG.title || 'Meta coletiva', e }); n++; }
+  });
+  aw[bid] = list;
+  if (n && !(await setSetting('badge_awards', aw))) return;
+  BADGE_AWARDS = aw; try { renderBadgesPublic(); renderRanking(); } catch (err) {}
+  toast(n ? `🎖️ Emblema concedido a ${n} participante(s)` + (miss.length ? ` · ${miss.length} sem cadastro de membro` : '') : 'ℹ️ Ninguém novo para receber o emblema');
+}
+
 const mtNewChallenge = () => confirm('Criar um novo desafio? Os registros atuais deixam de aparecer no link.') && (MT_CFG = null, mtSaveCfg());
 function mtRegLinks() {
   const half = document.getElementById('mta-half').checked, base = location.origin + location.pathname + '?meta=1&reg=';
@@ -3106,6 +3181,7 @@ function mtLogoPick(inp) {
 }
 
 // ── DISTINTIVOS (guardados em app_settings: "badges" e "badge_awards") ──
+let TROPHY_LOG = [], BD_LOADED = false;
 let BADGES = [], BADGE_AWARDS = {}, bdShape = 'shield', bdEditId = null, bdUid = 0;
 const BD_SEL = new Set();
 const BD_SHAPES = { wcRound:'🎨 Aquarela redondo', wcShield:'🎨 Aquarela escudo', wcHex:'🎨 Aquarela hexágono', embShield:'🛡️ Emblema escudo', embRound:'🔘 Emblema selo', embStar:'⭐ Emblema estrela', embBanner:'🎗️ Emblema faixa', bravus:'⚔️ Bravus (ouro velho)', shield:'Escudo', medal:'Medalha', star:'Estrela', hex:'Hexágono', diamond:'Losango', seal:'Selo' };
@@ -3117,6 +3193,9 @@ async function loadBadges() {
   const b = await getSetting('badges', []), a = await getSetting('badge_awards', {});
   BADGES = Array.isArray(b) ? b : [];
   BADGE_AWARDS = (a && typeof a === 'object' && !Array.isArray(a)) ? a : {};
+  const t = await getSetting('trophy_log', []);
+  TROPHY_LOG = Array.isArray(t) ? t : [];
+  BD_LOADED = true;
 }
 function bdRGB(h) { h = String(h||'#e8ff00').replace('#',''); if (h.length===3) h = h.split('').map(x=>x+x).join(''); return [0,2,4].map(i => parseInt(h.substr(i,2),16)||0); }
 function bdLum(h) { const [r,g,b] = bdRGB(h); return .299*r + .587*g + .114*b; }
@@ -3244,25 +3323,104 @@ ${bdShapeEl(k, `fill="url(#${id})" stroke="${lo}" stroke-width="3"`)}
 <text x="100" y="${ty}" text-anchor="middle" fill="${tx}" font-family="'Bebas Neue','Outfit',sans-serif" font-weight="800" font-size="${ts}" letter-spacing="1">${esc(title)}</text>
 <text x="100" y="${sy}" text-anchor="middle" fill="${tx}" fill-opacity=".85" font-family="'Outfit',sans-serif" font-weight="700" font-size="${ss}">${esc(sub)}</text></svg>`;
 }
-function bdHolders(id) { return (BADGE_AWARDS[id]||[]).filter(a => MEMBERS.some(m => m.id===a.m)); }
-function bdMini(mid) {
-  const own = BADGES.filter(b => (BADGE_AWARDS[b.id]||[]).some(a => a.m===mid));
-  return own.length ? `<span class="bd-mini">${own.slice(0,4).map(b=>bdSVG(b,20)).join('')}${own.length>4?'+'+(own.length-4):''}</span>` : '';
+function bdHolders(id) {   // pessoas únicas que já conquistaram (inclui meses anteriores); cada item: {m, n, items}
+  const seen = new Map();
+  (BADGE_AWARDS[id]||[]).forEach(a => { if (!MEMBERS.some(m => m.id===a.m)) return; const h = seen.get(a.m) || { m:a.m, n:0, items:[] }; h.n++; h.items.push(a); seen.set(a.m, h); });
+  return [...seen.values()];
+}
+function bdActive(mid) { return BADGES.filter(b => (BADGE_AWARDS[b.id]||[]).some(a => a.m===mid && !a.r)); }   // só o mês vigente (some do ranking ao zerar)
+function bdMini(mid) { const own = bdActive(mid); return own.length ? `<span class="bd-mini">${own.slice(0,3).map(b=>bdSVG(b,14)).join('')}${own.length>3?'+'+(own.length-3):''}</span>` : ''; }
+function bdFmtDate(d) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d||''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; }
+// Ícones do ranking: tudo num único selo pequeno; ao tocar abre o cartão com os detalhes
+function rkChips(m) {
+  const own = bdActive(m.id), de = m.desafioCount||0, ev = m.eventoCount||0;
+  if (!own.length && !de && !ev) return '';
+  const em = own.slice(0,3).map(b => bdSVG(b,14)).join('') + (own.length>3 ? `<span>+${own.length-3}</span>` : '');
+  const cat = (de ? '🔥' + (de>1?de:'') : '') + (ev ? (de?' ':'') + '⭐' + (ev>1?ev:'') : '');
+  return `<span class="rk-mini" onclick="rkOpen(${m.id})" title="Toque para ver">${em}${cat?`<span>${cat}</span>`:''}</span>`;
+}
+function rkOpen(mid) {
+  const m = MEMBERS.find(x => x.id===mid); if (!m) return;
+  const rows = bdActive(mid).map(b => {
+    const aw = (BADGE_AWARDS[b.id]||[]).filter(a => a.m===mid && !a.r);
+    const info = aw.map(a => `${a.s ? listaEsc(a.s) + ' · ' : ''}${bdFmtDate(a.d)}`).join('<br>');
+    return `<details class="rk-det"><summary>${bdSVG(b,30)}<span style="flex:1">${listaEsc(b.name||'')}</span><span style="color:var(--muted);font-size:11px">▾</span></summary><div class="rk-det-body">${bdSVG(b,120)}${b.desc?`<div style="margin-top:6px;white-space:pre-line">${listaEsc(b.desc)}</div>`:''}<div style="margin-top:6px;color:var(--accent);font-weight:700">${info}</div></div></details>`;
+  }).join('');
+  const de = m.desafioCount||0, ev = m.eventoCount||0;
+  const cats = (de || ev) ? `<div style="margin-top:12px;font-size:13px">${de?`🔥 ${de} desafio(s)`:''}${de&&ev?' · ':''}${ev?`⭐ ${ev} evento(s)`:''}</div>` + ((m.lastTag && m.lastTag.reason) ? `<div class="challenge-tag" style="margin-top:6px">${m.lastTag.category==='evento'?'⭐':'🔥'} ${listaEsc(m.lastTag.reason)}</div>` : '') : '';
+  document.getElementById('bd-box').innerHTML = `<div style="font-size:34px">${m.emoji||''}</div><div style="font-weight:800;font-size:18px">${listaEsc(m.name)}</div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">${m.points} pts neste mês</div>${rows}${cats}
+    <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.4">Estes ícones saem do ranking quando os pontos são zerados, mas ficam guardados na 🏆 Sala de troféus.</div>
+    <button class="btn-sm-danger" style="margin-top:12px;width:100%;padding:12px" onclick="document.getElementById('bd-ov').classList.remove('open')">Fechar</button>`;
+  document.getElementById('bd-ov').classList.add('open');
+}
+// Sala de troféus: conquistas por pessoa (emblemas de todos os meses + 🔥/⭐ guardados ao zerar)
+function trophyPeopleHtml() {
+  const by = new Map(), get = id => { if (!by.has(id)) by.set(id, { emb:[], log:[] }); return by.get(id); };
+  BADGES.forEach(b => (BADGE_AWARDS[b.id]||[]).forEach(a => get(a.m).emb.push({ b, a })));
+  TROPHY_LOG.forEach(t => get(t.m).log.push(t));
+  const rows = [...by.entries()].map(([id, v]) => ({ m:MEMBERS.find(x => x.id===id), v })).filter(r => r.m).sort((x, y) => (y.v.emb.length + y.v.log.length) - (x.v.emb.length + x.v.log.length) || x.m.name.localeCompare(y.m.name, 'pt-BR'));
+  if (!rows.length) return '';
+  return `<div class="section-label" style="margin-top:22px">👥 Conquistas por pessoa</div>` + rows.map(({ m, v }) => {
+    const de = v.log.filter(t => t.c==='desafio').length, ev = v.log.filter(t => t.c==='evento').length;
+    const sum = `${v.emb.length ? '🏅' + v.emb.length : ''}${de ? ' 🔥' + de : ''}${ev ? ' ⭐' + ev : ''}`;
+    const body = v.emb.map(({ b, a }) => `<div class="tl-line" style="display:flex;align-items:center;gap:8px">${bdSVG(b,22)}<span><b style="color:var(--text)">${listaEsc(b.name||'')}</b>${a.s?' · ' + listaEsc(a.s):''}${a.d?' · ' + bdFmtDate(a.d):''}</span></div>`).join('')
+      + v.log.map(t => `<div class="tl-line">${t.c==='evento'?'⭐':'🔥'} ${listaEsc(t.r||'')}${t.d?' · ' + bdFmtDate(t.d):''}</div>`).join('');
+    return `<details class="rk-det"><summary><span>${m.emoji||''}</span><span style="flex:1">${listaEsc(m.name)}</span><span style="font-size:12px;color:var(--muted)">${sum}</span></summary><div class="rk-det-body" style="text-align:left">${body}</div></details>`;
+  }).join('');
 }
 function renderBadgesPublic() {
   const wrap = document.getElementById('badges-wrap'); if (!wrap) return;
-  wrap.style.display = BADGES.length ? 'block' : 'none';
+  wrap.style.display = (BADGES.length || TROPHY_LOG.length) ? 'block' : 'none';
   document.getElementById('badges-grid').innerHTML = BADGES.map(b => { const n = bdHolders(b.id).length;
     return `<div class="bd-card" onclick="bdOpen('${b.id}')">${bdSVG(b,96)}<div class="bd-name">${listaEsc(b.name||b.title||'')}</div><div class="bd-count">${n?n+(n===1?' pessoa':' pessoas'):'ninguém ainda'}</div></div>`; }).join('');
+  const pl = document.getElementById('trophy-people'); if (pl) pl.innerHTML = trophyPeopleHtml();
 }
 function bdOpen(id) {
   const b = BADGES.find(x => x.id===id); if (!b) return;
-  const hs = bdHolders(id).map(a => { const m = MEMBERS.find(x => x.id===a.m); return `<span class="bd-chip">${m.emoji||''} ${listaEsc(m.name)}</span>`; }).join('');
+  const hs = bdHolders(id).map(h => { const m = MEMBERS.find(x => x.id===h.m); const tip = h.items.map(a => (a.s ? a.s + ' · ' : '') + bdFmtDate(a.d)).join(' | ');
+    return `<span class="bd-chip" title="${listaEsc(tip)}">${m.emoji||''} ${listaEsc(m.name)}${h.n>1?' ×'+h.n:''}</span>`; }).join('');
   document.getElementById('bd-box').innerHTML = `${bdSVG(b,150)}<div style="font-weight:800;font-size:18px;margin-top:8px">${listaEsc(b.name||'')}</div>
     ${b.desc?`<div style="font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-line">${listaEsc(b.desc)}</div>`:''}
     <div class="section-label" style="margin-top:16px">Quem conquistou</div><div>${hs||'<span style="color:var(--muted);font-size:13px">Ninguém ainda.</span>'}</div>
     <button class="btn-sm-danger" style="margin-top:16px;width:100%;padding:12px" onclick="document.getElementById('bd-ov').classList.remove('open')">Fechar</button>`;
   document.getElementById('bd-ov').classList.add('open');
+}
+// Emblema atrelado a evento/meta: quem recebe presença ganha o emblema (e perde se a presença for desmarcada)
+async function bdAwardAttendance(reg, info, subKey, attended) {
+  try {
+    if (!reg || !reg.is_member || !reg.member_id || !info) return false;
+    const bid = info.is_dual ? (subKey === '2' ? info.badge_id_2 : info.badge_id_1) : info.badge_id;
+    if (!bid) return false;
+    const e = 'ev:' + (info.id || '') + ':' + (info.is_dual ? subKey : '0');
+    const a = await getSetting('badge_awards', {}), aw = (a && typeof a === 'object' && !Array.isArray(a)) ? a : {};
+    const list = aw[bid] || [], has = list.some(x => x.m === reg.member_id && x.e === e);
+    if (attended === true && !has) {
+      const sub = info.is_dual ? (subKey === '2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
+      list.push({ m:reg.member_id, d:new Date().toISOString().slice(0,10), s:(info.name || '') + (sub ? ' · ' + sub : ''), e });
+      aw[bid] = list;
+    } else if (attended !== true && has) { aw[bid] = list.filter(x => !(x.m === reg.member_id && x.e === e)); }
+    else return false;
+    if (!(await setSetting('badge_awards', aw))) return false;
+    BADGE_AWARDS = aw;
+    try { renderBadgesPublic(); renderRanking(); } catch (err) {}
+    return true;
+  } catch (err) { console.error('emblema', err); return false; }
+}
+async function evBadgeBackfill() {
+  const info = await getEventInfo(); if (!info || !info.id) return toast('⚠️ Salve o evento primeiro');
+  let n = 0;
+  for (const r of EVENT_REGISTRATIONS.filter(x => x.event_id === info.id)) {
+    if (info.is_dual) { for (const k of ['1','2']) if (r['attended_' + k] === true && await bdAwardAttendance(r, info, k, true)) n++; }
+    else if (r.attended === true && await bdAwardAttendance(r, info, '', true)) n++;
+  }
+  toast(n ? `🎖️ Emblema concedido a ${n} presença(s)` : 'ℹ️ Nada novo para conceder (confira se salvou o emblema no evento)');
+}
+function bdFillSelects() {
+  ['ev-cfg-badge', 'ev-cfg-badge-1', 'ev-cfg-badge-2', 'mta-badge'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return; const cur = el.value;
+    el.innerHTML = '<option value="">— sem emblema —</option>' + BADGES.map(b => `<option value="${b.id}">${listaEsc(b.name || b.title || '')}</option>`).join('');
+    el.value = cur;
+  });
 }
 // — admin —
 function bdForm() { return { shape:bdShape, color:document.getElementById('bd-color').value, name:document.getElementById('bd-name').value.trim(), emoji:document.getElementById('bd-emoji').value.trim(), wash:document.getElementById('bd-wash').value, top:document.getElementById('bd-top').value.trim(), accent:document.getElementById('bd-accent-on').checked ? document.getElementById('bd-accent').value : '', title:document.getElementById('bd-title').value.trim(), sub:document.getElementById('bd-sub').value.trim(), desc:document.getElementById('bd-desc').value.trim() }; }
@@ -3295,7 +3453,7 @@ function bdEdit(id) {
 }
 async function bdPersist() {
   const ok = await setSetting('badges', BADGES) && await setSetting('badge_awards', BADGE_AWARDS);
-  renderBadgesPublic(); renderRanking(); bdRenderList(); bdRenderAwardSelect();
+  renderBadgesPublic(); renderRanking(); bdRenderList(); bdRenderAwardSelect(); bdFillSelects();
   return ok;
 }
 async function bdSave() {
@@ -3329,7 +3487,7 @@ function bdRenderAwardSelect() {
 function bdToggle(id, on) { on ? BD_SEL.add(id) : BD_SEL.delete(id); bdRenderMembers(true); }
 function bdRenderMembers(keep) {
   const bid = document.getElementById('bd-award-badge').value, q = listaNorm(document.getElementById('bd-search').value);
-  const held = new Set((BADGE_AWARDS[bid]||[]).map(a => a.m));
+  const held = new Set((BADGE_AWARDS[bid]||[]).filter(a => !a.r).map(a => a.m));
   document.getElementById('bd-members').innerHTML = MEMBERS.slice().sort((a,b) => a.name.localeCompare(b.name,'pt-BR')).filter(m => !q || listaNorm(m.name).includes(q)).map(m =>
     `<label class="bd-mem"><input type="checkbox" style="width:20px;height:20px" ${held.has(m.id)?'checked disabled':BD_SEL.has(m.id)?'checked':''} onchange="bdToggle(${m.id},this.checked)"> ${m.emoji||''} ${listaEsc(m.name)}${held.has(m.id)?' <span style="color:var(--green);font-size:11px">✓ já tem</span>':''}</label>`).join('');
   const n = BD_SEL.size, btn = document.getElementById('bd-award-btn');
@@ -3339,11 +3497,11 @@ async function bdAward() {
   const bid = document.getElementById('bd-award-btn') && document.getElementById('bd-award-badge').value;
   if (!bid || !BD_SEL.size) return;
   const d = new Date().toISOString().slice(0,10), list = BADGE_AWARDS[bid] || [];
-  BD_SEL.forEach(m => { if (!list.some(a => a.m===m)) list.push({ m, d }); });
+  BD_SEL.forEach(m => { if (!list.some(a => a.m===m && !a.r)) list.push({ m, d }); });
   BADGE_AWARDS[bid] = list; const n = BD_SEL.size; BD_SEL.clear();
   if (await bdPersist()) toast(`🎖️ Distintivo concedido a ${n} pessoa${n===1?'':'s'}!`);
 }
-function bdInit() { bdDrawOpts(); bdPreview(); bdRenderList(); bdRenderAwardSelect(); }
+function bdInit() { bdFillSelects(); bdDrawOpts(); bdPreview(); bdRenderList(); bdRenderAwardSelect(); }
 
 function renderDesafiosView() {
   renderBadgesPublic();
@@ -4045,6 +4203,7 @@ async function renderEventAdminView() {
   document.getElementById('ev-cfg-dual').checked = !!info.is_dual;
   document.getElementById('ev-cfg-sub1').value = info.sub1_name || '';
   document.getElementById('ev-cfg-sub2').value = info.sub2_name || '';
+  bdFillSelects();
 
   if (info.is_dual) {
     // Campos duplicados por sub-evento
@@ -4054,6 +4213,8 @@ async function renderEventAdminView() {
     document.getElementById('ev-cfg-desc-2').value = info.desc_2 || '';
     document.getElementById('ev-cfg-points-1').value = info.points_1 ?? 10;
     document.getElementById('ev-cfg-points-2').value = info.points_2 ?? 10;
+    document.getElementById('ev-cfg-badge-1').value = info.badge_id_1 || '';
+    document.getElementById('ev-cfg-badge-2').value = info.badge_id_2 || '';
     document.getElementById('ev-cfg-result-type-1').value = info.result_type_1 || '';
     document.getElementById('ev-cfg-result-type-2').value = info.result_type_2 || '';
     document.getElementById('ev-cfg-max-1').value = info.max_1 || '';
@@ -4068,6 +4229,7 @@ async function renderEventAdminView() {
     document.getElementById('ev-cfg-max').value = info.max || '';
     document.getElementById('ev-cfg-active').value = info.active === false ? 'false' : 'true';
     document.getElementById('ev-cfg-points').value = info.points ?? 10;
+    document.getElementById('ev-cfg-badge').value = info.badge_id || '';
     document.getElementById('ev-cfg-result-type').value = info.result_type || '';
     document.getElementById('ev-cfg-allow-visitor').value = info.allow_visitor === false ? 'false' : 'true';
     document.getElementById('ev-cfg-custom-q-enabled').checked = !!info.custom_question_enabled;
@@ -4277,6 +4439,8 @@ async function updateEventConfig() {
     };
   }
 
+  if (isDual) { newInfo.badge_id_1 = document.getElementById('ev-cfg-badge-1').value || ''; newInfo.badge_id_2 = document.getElementById('ev-cfg-badge-2').value || ''; }
+  else newInfo.badge_id = document.getElementById('ev-cfg-badge').value || '';
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -4359,6 +4523,7 @@ async function startNewEvent() {
   document.getElementById('ev-cfg-desc').value = '';
   document.getElementById('ev-cfg-max').value = '';
   document.getElementById('ev-cfg-points').value = '';
+  ['ev-cfg-badge','ev-cfg-badge-1','ev-cfg-badge-2'].forEach(i => { const e = document.getElementById(i); if (e) e.value = ''; });
   document.getElementById('ev-cfg-result-type').value = '';
   document.getElementById('ev-cfg-active').value = 'true';
   document.getElementById('ev-cfg-dual').checked = false;
@@ -4703,6 +4868,7 @@ async function toggleAttendance(id, attended, subCtx) {
   const { error } = await sb.from('event_registrations').update({ [attendedField]: attended }).eq('id', id);
   if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
   reg[attendedField] = attended;
+  await bdAwardAttendance(reg, info, subCtx || '', attended);
 
   let pointsMsg = '';
   if (attended === true && reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
@@ -4954,6 +5120,7 @@ async function commitResultCore(regId, value, opts) {
 async function commitResultExtras(ctx, noteVal) {
   const { reg, info, suffix } = ctx;
   const pointsAwardedField = 'points_awarded' + suffix;
+  await bdAwardAttendance(reg, info, info.is_dual ? currentSubEventContext : '', true);
   if (noteVal !== undefined) await saveResultNote(reg.id, suffix, noteVal);
   let pointsMsg = '';
   if (reg.is_member && reg.member_id && !reg[pointsAwardedField]) {
@@ -6007,15 +6174,27 @@ async function changePass() {
 }
 
 async function resetPts() {
-  if(!confirm('Zerar TODOS os pontos?')) return;
+  if(!confirm('Zerar TODOS os pontos?\n\nOs ícones/emblemas saem do ranking, mas ficam guardados na Sala de troféus.')) return;
+  // guarda na Sala de troféus os 🔥/⭐ do mês (vêm do histórico, que será apagado) e tira os emblemas do ranking
+  try {
+    await loadBadges();
+    const { data: hist, error: he } = await sb.from('history').select('member_id, created_at, reason, category').in('category', ['desafio', 'evento']);
+    if (he) throw he;
+    if (hist && hist.length) TROPHY_LOG = TROPHY_LOG.concat(hist.map(h => ({ m:h.member_id, c:h.category, r:h.reason || '', d:(h.created_at || '').slice(0,10) })));
+    Object.keys(BADGE_AWARDS).forEach(k => (BADGE_AWARDS[k] || []).forEach(a => { a.r = 1; }));
+    const ok = await setSetting('trophy_log', TROPHY_LOG) && await setSetting('badge_awards', BADGE_AWARDS);
+    if (!ok) return;
+  } catch (err) { console.error(err); return toast('⚠️ Não consegui guardar na Sala de troféus — os pontos NÃO foram zerados'); }
   for (const m of MEMBERS) {
+
     await sb.from('members').update({ points:0 }).eq('id', m.id);
     m.points = 0;
   }
   await sb.from('history').delete().neq('id', 0);
   HISTORY = [];
   renderMembersList(); renderAdminSelect(); renderRecentHistory(); renderRanking();
-  toast('🔄 Pontos zerados!');
+  try { await loadMembers(); renderBadgesPublic(); renderRanking(); } catch (e) {}
+  toast('🔄 Pontos zerados! Ícones e emblemas continuam na Sala de troféus.');
 }
 
 // ── TOAST ──
@@ -6589,6 +6768,7 @@ async function lancarLoad() {
   await loadEventRegistrations();
   try { await ensureBibs(info); } catch (e) { console.error(e); }
   await loadResultNotes();
+  await loadResultStrava();
   const live = info.live_sub || '';
   const valid = live === '1' || (live === '2' && info.is_dual);
   const none = document.getElementById('lancar-none');
@@ -6663,8 +6843,8 @@ function lancarRenderList() {
   const v = clkView(info, key, Date.now());
   const capUp = v.timeUp;
   const bibCell = r => `<div class="lv-bib">${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
-  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
-  const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div></div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
+  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}<button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button>${lancarStravaBtn(r, sfx)}</div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
+  const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
   box.innerHTML =
     `<div class="lv-count">Faltam finalizar: ${pending.length}</div>` +
     (pending.length ? pending.map(rowP).join('') : '<div class="lv-hint" style="padding:10px 0">Ninguém pendente 🎉</div>') +
@@ -6764,6 +6944,102 @@ async function lancarMarkRemainingCap() {
   toast(`🚫 TIME CAP marcado em ${n} participante(s)`);
 }
 
+
+// ══════════════════════════════════════════════
+//  STRAVA POR PARTICIPANTE (tela Lançar resultados)
+// ══════════════════════════════════════════════
+// Link do Strava + km + tempo total ficam em app_settings ('result_strava'), então NÃO precisa criar coluna nova no banco.
+// Chave: id da inscrição + sufixo do sub-evento ('' | '_1' | '_2'), igual às descrições.
+let RESULT_STRAVA = {}, LV_SV_KEY = null;
+async function loadResultStrava() {
+  const v = await getSetting('result_strava', {});
+  RESULT_STRAVA = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+const lvSvOk = l => /^https?:\/\/([a-z0-9-]+\.)?strava\.(com|app\.link)\//i.test(l);
+function lvSvParseKm(t) {
+  t = String(t || '').trim().toLowerCase().replace(/km$/, '').trim().replace(',', '.');
+  if (!t) return '';
+  const n = parseFloat(t);
+  return (isFinite(n) && n >= 0 && /^\d+(\.\d+)?$/.test(t)) ? n : null;
+}
+function lvSvParseTime(t) {   // aceita 32:10 · 1:05:30 · 45 (minutos). Devolve texto padronizado, '' (vazio) ou null (inválido)
+  t = String(t || '').trim();
+  if (!t) return '';
+  if (/^\d{1,3}$/.test(t)) t += ':00';
+  const p = t.split(':');
+  if (p.length < 2 || p.length > 3 || p.some(x => !/^\d{1,3}$/.test(x))) return null;
+  let h = 0, m, sec;
+  if (p.length === 3) { h = +p[0]; m = +p[1]; sec = +p[2]; } else { m = +p[0]; sec = +p[1]; }
+  if (sec > 59 || (p.length === 3 && m > 59)) return null;
+  const two = n => String(n).padStart(2, '0');
+  return h ? `${h}:${two(m)}:${two(sec)}` : `${two(m)}:${two(sec)}`;
+}
+function lvSvSeconds(t) { if (!t) return 0; const p = t.split(':').map(Number); return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1]; }
+function lvSvPace(km, time) {
+  const sec = lvSvSeconds(time); if (!(km > 0) || !(sec > 0)) return '';
+  const ps = Math.round(sec / km), m = Math.floor(ps / 60), s = ps % 60;
+  return `${m}:${String(s).padStart(2, '0')}/km`;
+}
+function lvSvKmTxt(km) { return String(+(+km).toFixed(2)).replace('.', ','); }
+function lancarStravaSummary(r, sfx) {
+  const d = RESULT_STRAVA[r.id + (sfx || '')]; if (!d) return '';
+  const parts = [];
+  if (d.km !== '' && d.km != null) parts.push(lvSvKmTxt(d.km) + ' km');
+  if (d.time) parts.push(tvEsc(d.time));
+  const pace = lvSvPace(d.km, d.time); if (pace) parts.push(pace);
+  const link = d.link ? `<a href="${tvEsc(d.link)}" target="_blank" rel="noopener">🔗 Strava</a>` : '';
+  return `<div class="lv-sv">📎 ${parts.join(' · ')}${link}</div>`;
+}
+function lancarStravaBtn(r, sfx) {
+  const has = !!RESULT_STRAVA[r.id + (sfx || '')];
+  return `<button class="lv-sv-btn ${has ? 'has' : ''}" onclick="lancarStravaOpen(${r.id})">${has ? '✏️ Editar Strava' : '📎 Strava'}</button>`;
+}
+function lancarStravaSfx() { const info = EVENT_INFO; return (info && info.is_dual && info.live_sub) ? '_' + info.live_sub : ''; }
+function lancarStravaPaceHint() {
+  const km = lvSvParseKm(document.getElementById('lv-sv-km').value), tm = lvSvParseTime(document.getElementById('lv-sv-time').value);
+  const pace = (km && tm) ? lvSvPace(km, tm) : '';
+  document.getElementById('lv-sv-pace').textContent = pace ? '⚡ Ritmo médio: ' + pace : '';
+}
+function lancarStravaOpen(regId) {
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  const key = regId + lancarStravaSfx(), d = RESULT_STRAVA[key] || {};
+  LV_SV_KEY = key;
+  document.getElementById('lv-sv-who').textContent = reg.name;
+  document.getElementById('lv-sv-link').value = d.link || '';
+  document.getElementById('lv-sv-km').value = (d.km !== '' && d.km != null) ? lvSvKmTxt(d.km) : '';
+  document.getElementById('lv-sv-time').value = d.time || '';
+  document.getElementById('lv-sv-del').style.display = RESULT_STRAVA[key] ? '' : 'none';
+  lancarStravaPaceHint();
+  ['lv-sv-km', 'lv-sv-time'].forEach(id => { document.getElementById(id).oninput = lancarStravaPaceHint; });
+  document.getElementById('lv-sv-ov').classList.add('open');
+}
+function lancarStravaClose() { document.getElementById('lv-sv-ov').classList.remove('open'); LV_SV_KEY = null; }
+async function lancarStravaSave() {
+  if (!LV_SV_KEY) return;
+  const link = document.getElementById('lv-sv-link').value.trim();
+  const km = lvSvParseKm(document.getElementById('lv-sv-km').value);
+  const time = lvSvParseTime(document.getElementById('lv-sv-time').value);
+  if (link && !lvSvOk(link)) return toast('⚠️ Cole um link válido do Strava');
+  if (km === null) return toast('⚠️ Distância inválida (ex: 5,2)');
+  if (time === null) return toast('⚠️ Tempo inválido (ex: 32:10 ou 1:05:30)');
+  if (!link && km === '' && !time) return toast('⚠️ Preencha o link, a distância ou o tempo');
+  await loadResultStrava();
+  RESULT_STRAVA[LV_SV_KEY] = { link, km, time, at: new Date().toISOString() };
+  if (!(await setSetting('result_strava', RESULT_STRAVA))) return;
+  lancarStravaClose();
+  lancarRenderList();
+  toast('📎 Strava salvo!');
+}
+async function lancarStravaRemove() {
+  if (!LV_SV_KEY || !confirm('Remover o Strava deste participante?')) return;
+  await loadResultStrava();
+  delete RESULT_STRAVA[LV_SV_KEY];
+  if (!(await setSetting('result_strava', RESULT_STRAVA))) return;
+  lancarStravaClose();
+  lancarRenderList();
+  toast('🗑 Strava removido');
+}
+
 // Vigilância: troca de evento/liberação recarrega; relógio e lista só se atualizam
 async function lancarWatch() {
   if (!lancarUnlocked()) return;
@@ -6774,6 +7050,7 @@ async function lancarWatch() {
     lancarApplyClock();
     if (++LANCAR_TICKS % 2 === 0) {
       await loadEventRegistrations();
+      if (!document.getElementById('lv-sv-ov').classList.contains('open')) await loadResultStrava();
       if (!document.getElementById('result-select').value) populateResultSelect();
       lancarRenderList();
     }
@@ -6833,7 +7110,7 @@ async function start() {
   }
 
   await loadMembers();
-  try { await loadBadges(); } catch (e) { console.error('badges', e); }
+  try { await loadBadges(); bdFillSelects(); } catch (e) { console.error('badges', e); }
   renderRanking();
   const params = new URLSearchParams(location.search);
   const urlTab = params.get('tab');
