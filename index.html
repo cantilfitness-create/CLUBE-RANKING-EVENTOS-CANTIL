@@ -475,7 +475,9 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-clock { font-family:'Bebas Neue',sans-serif; font-size:clamp(64px,22vw,110px); line-height:1; text-align:center; letter-spacing:3px; font-variant-numeric:tabular-nums; margin:2px 0; }
 .lv-clock-sub { text-align:center; font-size:13px; color:var(--muted); margin-bottom:14px; }
 .lv-hint { font-size:12.5px; color:var(--muted); line-height:1.45; text-align:center; }
-#lv-search { margin-bottom:10px; }
+#lv-search { margin-bottom:14px; width:100%; box-sizing:border-box; -webkit-appearance:none; appearance:none; font-size:19px; font-weight:600; padding:18px 18px; min-height:60px; border-radius:16px; background:var(--s2); color:var(--text); border:2px solid var(--border); font-family:'Outfit',sans-serif; }
+#lv-search:focus { outline:none; border-color:var(--accent); }
+#lv-search::placeholder { font-size:17px; font-weight:500; color:var(--muted); }
 .lv-count { font-size:12px; font-weight:800; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin:6px 2px; }
 .lv-row { display:flex; align-items:center; gap:10px; padding:10px 2px; border-bottom:1px solid var(--border); }
 .lv-bib { flex:0 0 46px; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--gold); line-height:1; }
@@ -488,7 +490,9 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 /* Strava por participante (tela Lançar resultados) */
 .lv-sv { margin-top:5px; font-size:12px; font-weight:700; color:var(--accent); line-height:1.4; }
 .lv-sv a { text-decoration:none; margin-left:4px; }
-.lv-sv-btn { margin-top:6px; margin-left:6px; background:none; border:1px solid var(--border); color:var(--muted); border-radius:10px; padding:6px 10px; font-size:12px; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; }
+.lv-act { flex:0 0 auto; display:flex; flex-direction:column; align-items:stretch; }
+.lv-act .lv-abs { margin-top:18px; padding:8px 10px; font-size:12px; text-align:center; color:#ff8a8a; border-color:rgba(255,90,90,.35); }
+.lv-sv-btn { margin-top:10px; margin-left:0; background:none; border:1px solid var(--border); color:var(--muted); border-radius:12px; padding:11px 16px; font-size:14px; font-weight:700; font-family:'Outfit',sans-serif; cursor:pointer; }
 .lv-sv-btn.has { border-color:rgba(232,255,0,.45); color:var(--accent); }
 .lv-runner-st-only .lv-fin { display:none; }
 .lv-sv-ov { position:fixed; inset:0; background:rgba(5,5,5,.94); z-index:9999; display:none; align-items:center; justify-content:center; padding:20px; }
@@ -721,13 +725,22 @@ textarea { resize:vertical;min-height:72px; }
         <div id="lv-st-rule" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
         <div id="lv-st-prog" style="font-size:13px;margin-bottom:12px"></div>
         <div id="lv-st-add">
-          <div class="field-group"><label class="field-label">Link do Strava que o participante enviou</label>
-            <div style="display:flex;gap:8px"><input type="text" id="lv-st-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off" autocomplete="off" oninput="lancarStationLinkChanged()"><button class="mt-tiny" style="flex:0 0 auto" onclick="lancarStationPaste()">📋 Colar</button></div></div>
-          <div id="lv-st-status" style="font-size:13px;margin:-4px 0 10px;line-height:1.4"></div>
+          <div class="field-group"><label class="field-label">📷 Foto do Strava (comprovante)</label>
+            <div style="display:flex;gap:8px">
+              <label class="btn btn-blue" style="flex:1;text-align:center;cursor:pointer;margin:0;padding:12px 8px">📷 Tirar foto<input type="file" id="lv-st-file" accept="image/*" capture="environment" style="display:none" onchange="lancarStationPhoto(event)"></label>
+              <label class="btn btn-blue" style="flex:1;text-align:center;cursor:pointer;margin:0;padding:12px 8px">🖼 Da galeria<input type="file" id="lv-st-file2" accept="image/*" style="display:none" onchange="lancarStationPhoto(event)"></label>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><img id="lv-st-thumb" alt="" style="display:none;height:64px;border-radius:8px;border:1px solid var(--border)"><span id="lv-st-imgnote" style="font-size:11px;color:var(--muted)">Vira uma miniatura bem leve. O print que o participante enviou pelo WhatsApp também serve (galeria).</span></div></div>
           <div class="field-group"><label class="field-label" id="lv-st-kmlabel">Km da estação</label>
             <input type="text" id="lv-st-km" inputmode="decimal" placeholder="ex: 1"></div>
-          <div class="field-group"><label class="field-label">Foto do Strava (opcional · vira miniatura leve)</label>
-            <div style="display:flex;gap:10px;align-items:center"><label class="mt-tiny" style="flex:0 0 auto;cursor:pointer">📷 Tirar foto<input type="file" id="lv-st-file" accept="image/*" capture="environment" style="display:none" onchange="lancarStationPhoto(event)"></label><img id="lv-st-thumb" alt="" style="display:none;height:52px;border-radius:8px;border:1px solid var(--border)"></div></div>
+          <details id="lv-st-more" style="margin:0 0 12px;border:1px solid var(--border);border-radius:12px;background:var(--s2)">
+            <summary style="padding:10px 12px;cursor:pointer;font-weight:700;font-size:13px;color:var(--muted)">⚙️ Mais opções: link do Strava</summary>
+            <div style="padding:0 12px 12px">
+              <label class="field-label">Link do Strava que o participante enviou</label>
+              <div style="display:flex;gap:8px"><input type="text" id="lv-st-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off" autocomplete="off" oninput="lancarStationLinkChanged()"><button class="mt-tiny" style="flex:0 0 auto" onclick="lancarStationPaste()">📋 Colar</button></div>
+              <div id="lv-st-status" style="font-size:13px;margin-top:8px;line-height:1.4"></div>
+            </div>
+          </details>
           <button class="btn btn-gold" style="width:100%" onclick="lancarStationAdd()">✅ Validar estação</button>
         </div>
         <div id="lv-st-hist" style="margin-top:10px"></div>
@@ -4562,7 +4575,7 @@ async function startNewEvent() {
   const toKeep = currentRegs.filter(isNoShow);
 
   const msg = toDelete.length
-    ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Antes de apagar, um arquivo com todos os resultados fica salvo com link permanente. Continuar?`
+    ? `Isso vai APAGAR ${toDelete.length} inscrição(ões) deste evento (mantendo ${toKeep.length} faltante(s) na lista de bloqueio). Antes de apagar, um arquivo com todos os resultados fica salvo com link permanente. As fotos de estação desses participantes também são apagadas para liberar espaço. Continuar?`
     : 'Isso limpa o formulário pra você preencher um evento novo. Continuar?';
   if (!confirm(msg)) return;
 
@@ -4587,6 +4600,7 @@ async function startNewEvent() {
     EVENT_REGISTRATIONS = EVENT_REGISTRATIONS.filter(r => !idsToDelete.includes(r.id));
   }
 
+    try { await stCleanupForRegs(toDelete.map(r => r.id)); } catch (e) { console.error('limpeza estações', e); }
   // Limpa TODOS os campos do formulário — evento único e evento duplo
   document.getElementById('ev-cfg-name').value = '';
   document.getElementById('ev-cfg-meta').value = '';
@@ -6920,7 +6934,7 @@ function lancarRenderList() {
   const v = clkView(info, key, Date.now());
   const capUp = v.timeUp;
   const bibCell = r => `<div class="lv-bib">${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
-  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}<button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button>${lancarStravaBtn(r, sfx)}</div><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button></div>`;
+  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-act"><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div></div>`;
   const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
   box.innerHTML =
     `<div class="lv-count">Faltam finalizar: ${pending.length}</div>` +
@@ -7163,6 +7177,7 @@ function lancarStationOpen(regId) {
   const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
   LV_ST_REG = regId; LV_ST_IMG = null; LV_ST_VER = null;
   document.getElementById('lv-st-link').value = '';
+  document.getElementById('lv-st-more').open = false;
   lancarStationRender();
   document.getElementById('lv-st-ov').classList.add('open');
 }
@@ -7189,16 +7204,29 @@ async function lancarStationLookup(silentFail) {
   if (!lvSvOk(link)) { if (!silentFail) toast('⚠️ Cole o link do Strava'); return null; }
   if (LV_ST_VER && LV_ST_VER.link === link) return LV_ST_VER;
   box.innerHTML = '<span style="color:var(--muted)">🔎 Lendo o link no Strava…</span>';
+  let why = '';
   try {
     const { data, error } = await sb.functions.invoke('strava-link', { body: { url: link } });
-    if (error || !data || !data.ok || !(data.km > 0)) throw new Error((data && data.error) || (error && error.message) || 'sem dados');
+    if (error) {
+      const st = error.context && error.context.status;
+      why = st === 404 ? 'a função strava-link não foi encontrada neste projeto do Supabase'
+          : (st === 401 || st === 403) ? 'a função recusou a chave (desligue "Verify JWT" nas configurações da função)'
+          : ('erro ao chamar a função' + (st ? ' (' + st + ')' : '') + (error.message ? ': ' + error.message : ''));
+      throw new Error(why);
+    }
+    if (!data || !data.ok || !(data.km > 0)) {
+      why = (data && data.error) || 'a função não devolveu dados';
+      if (data && data.raw) why += ' · Strava devolveu: ' + String(data.raw).slice(0, 120);
+      if (data && data.final) why += ' · página lida: ' + String(data.final).slice(0, 80);
+      throw new Error(why);
+    }
     LV_ST_VER = { link, km: +data.km, time: data.time || '', title: data.title || '' };
     document.getElementById('lv-st-km').value = stKm(LV_ST_VER.km);
     box.innerHTML = `<span style="color:var(--green,#3de89a);font-weight:700">✔ Verificado no Strava: ${stKm(LV_ST_VER.km)} km${LV_ST_VER.time ? ' · ' + tvEsc(LV_ST_VER.time) : ''}</span>${LV_ST_VER.title ? `<div style="font-size:11px;color:var(--muted)">${tvEsc(LV_ST_VER.title)}</div>` : ''}`;
     return LV_ST_VER;
   } catch (e) {
     LV_ST_VER = null;
-    box.innerHTML = '<span style="color:var(--muted);font-size:12px">⚠️ Não consegui ler esse link sozinho (atividade privada ou leitura automática não instalada). Confira o km no Strava e digite, ou tire uma foto.</span>';
+    box.innerHTML = `<span style="color:var(--muted);font-size:12px">⚠️ Não consegui ler esse link sozinho. Confira o km no Strava e digite, ou tire uma foto.</span><div style="font-size:11px;color:var(--muted);margin-top:4px;word-break:break-word">Motivo: ${tvEsc(why || e.message || 'desconhecido')}</div>`;
     return null;
   }
 }
@@ -7217,7 +7245,7 @@ function stCompressThumb(file) {
       c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       let q = 0.6, d = c.toDataURL('image/jpeg', q);
-      while (d.length > 60000 && q > 0.25) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      while (d.length > 50000 && q > 0.25) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
       URL.revokeObjectURL(url); res(d);
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('imagem inválida')); };
@@ -7244,7 +7272,7 @@ async function lancarStationAdd() {
   const cfg = stCfgReg(info, reg); if (!cfg.count) return toast('⚠️ Este nível não tem estações configuradas');
   const link = stLinkFrom(document.getElementById('lv-st-link').value);
   if (link && !lvSvOk(link)) return toast('⚠️ Esse não parece um link do Strava');
-  if (!link && !LV_ST_IMG) return toast('⚠️ Cole o link do Strava ou tire uma foto');
+  if (!link && !LV_ST_IMG) return toast('⚠️ Tire a foto do Strava (ou use o link em Mais opções)');
   if (link) await lancarStationLookup(true);                       // tenta verificar antes de validar
   const ver = (LV_ST_VER && LV_ST_VER.link === link) ? LV_ST_VER : null;
   const kmRaw = document.getElementById('lv-st-km').value, km = ver ? ver.km : (kmRaw.trim() ? lvSvParseKm(kmRaw) : cfg.km);
@@ -7295,6 +7323,17 @@ function lancarStationUndo() {
   if (!LV_ST_REG) return;
   const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG);
   if (reg && confirm(`Desfazer a última estação de ${reg.name}?`)) lancarStationUndoFor(LV_ST_REG);
+}
+// Ao encerrar o evento: apaga as fotos e o progresso de estações de quem teve a inscrição apagada
+async function stCleanupForRegs(ids) {
+  const set = new Set(ids.map(String)); if (!set.size) return;
+  const { data } = await sb.from('app_settings').select('key').like('key', 'station_img_%');
+  const keys = (data || []).map(r => r.key).filter(k => { const m = /^station_img_(\d+)(?:_[12])?_\d+$/.exec(k); return m && set.has(m[1]); });
+  for (let i = 0; i < keys.length; i += 50) await sb.from('app_settings').delete().in('key', keys.slice(i, i + 50));
+  await loadStationLog();
+  let changed = false;
+  Object.keys(STATION_LOG).forEach(k => { if (set.has(String(parseInt(k)))) { delete STATION_LOG[k]; changed = true; } });
+  if (changed) await setSetting('station_log', STATION_LOG);
 }
 // Painel ao vivo (TV e tela pública): quem está em qual estação e o saldo de km
 function stationRows(info) {
