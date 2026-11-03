@@ -475,6 +475,9 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-clock { font-family:'Bebas Neue',sans-serif; font-size:clamp(64px,22vw,110px); line-height:1; text-align:center; letter-spacing:3px; font-variant-numeric:tabular-nums; margin:2px 0; }
 .lv-clock-sub { text-align:center; font-size:13px; color:var(--muted); margin-bottom:14px; }
 .lv-hint { font-size:12.5px; color:var(--muted); line-height:1.45; text-align:center; }
+#lv-groups { display:flex; gap:8px; margin-bottom:14px; }
+.lv-gchip { flex:1 1 0; min-width:0; padding:12px 4px; border-radius:12px; border:1px solid var(--border); background:var(--s2); color:var(--text); font-weight:800; font-size:13px; font-family:'Outfit',sans-serif; cursor:pointer; line-height:1.25; }
+.lv-gchip.on { border-color:var(--accent); color:var(--accent); background:rgba(232,255,0,.08); }
 #lv-search { margin-bottom:14px; width:100%; box-sizing:border-box; -webkit-appearance:none; appearance:none; font-size:19px; font-weight:600; padding:18px 18px; min-height:60px; border-radius:16px; background:var(--s2); color:var(--text); border:2px solid var(--border); font-family:'Outfit',sans-serif; }
 #lv-search:focus { outline:none; border-color:var(--accent); }
 #lv-search::placeholder { font-size:17px; font-weight:500; color:var(--muted); }
@@ -774,6 +777,7 @@ textarea { resize:vertical;min-height:72px; }
               <div class="lv-clock-sub" id="lv-clock-sub"></div>
               <div id="lv-finish-area">
                 <input type="search" id="lv-search" placeholder="🔎 Buscar por nome ou nº…" oninput="lancarRenderList()" autocomplete="off">
+                <div id="lv-groups"></div>
                 <button class="lv-capall" id="lv-capall" style="display:none" onclick="lancarMarkRemainingCap()">🚫 Marcar TIME CAP em quem não terminou</button>
                 <div id="lv-runner-list"></div>
               </div>
@@ -1668,6 +1672,7 @@ textarea { resize:vertical;min-height:72px; }
             </div>
           </div>
           <button class="btn btn-blue" onclick="updateEventConfig()" style="margin-bottom:8px">💾 Salvar Evento</button>
+          <button class="btn-sm-danger" onclick="renumberBibsByLevel()" style="width:100%;padding:12px;margin-bottom:8px">🔢 Renumerar pulseiras por cor (Verde 01, Amarelo 01, Laranja 01…)</button>
           <button class="btn-sm-danger" onclick="evBadgeBackfill()" style="width:100%;padding:12px;margin-bottom:8px">🎖️ Conceder emblema a quem já teve presença</button>
           <button class="btn-sm-danger" onclick="startNewEvent()" style="margin-bottom:20px">🆕 Encerrar e começar evento novo</button>
           <hr class="divider">
@@ -4240,12 +4245,12 @@ async function submitEventRegistration() {
     const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
     const parts = [];
     if (mine) {
-      if (evRegInSub(mine, n1, n2)) parts.push(n1 + (bibOf(mine, '1') != null ? ` (nº ${bibPad(bibOf(mine, '1'))})` : ''));
-      if (evRegInSub(mine, n2, n1)) parts.push(n2 + (bibOf(mine, '2') != null ? ` (nº ${bibPad(bibOf(mine, '2'))})` : ''));
+      if (evRegInSub(mine, n1, n2)) parts.push(n1 + (bibOf(mine, '1') != null ? ` (${bibCode(mine, '1')})` : ''));
+      if (evRegInSub(mine, n2, n1)) parts.push(n2 + (bibOf(mine, '2') != null ? ` (${bibCode(mine, '2')})` : ''));
     }
     successDetail = `Você está inscrito(a) em: ${parts.length ? parts.join(' + ') : subEvents}`;
   } else {
-    successDetail = `${name}, sua vaga em ${info.name} está garantida!` + ((mine && bibOf(mine, '0') != null) ? ` Seu número de inscrição: ${bibPad(bibOf(mine, '0'))}` : '');
+    successDetail = `${name}, sua vaga em ${info.name} está garantida!` + ((mine && bibOf(mine, '0') != null) ? ` Seu número de inscrição: ${bibCode(mine, '0')}` : '');
   }
   showRegistrationConfirm(successDetail);
 }
@@ -4898,7 +4903,7 @@ function renderRegistrationsList() {
         <div class="attend-dual-wrap">
           ${inSub1 ? `
           <div class="attend-dual-row">
-            <span class="attend-dual-label">${sub1Name}${bibOf(r, '1') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">nº ${bibPad(bibOf(r, '1'))}</span>` : ''}</span>
+            <span class="attend-dual-label">${sub1Name}${bibOf(r, '1') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">${bibCode(r, '1')}</span>` : ''}</span>
             <div class="attend-btns">
               <button class="attend-btn yes ${r.attended_1===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '1')">✓</button>
               <button class="attend-btn no ${r.attended_1===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '1')">✕</button>
@@ -4907,7 +4912,7 @@ function renderRegistrationsList() {
           </div>` : ''}
           ${inSub2 ? `
           <div class="attend-dual-row">
-            <span class="attend-dual-label">${sub2Name}${bibOf(r, '2') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">nº ${bibPad(bibOf(r, '2'))}</span>` : ''}</span>
+            <span class="attend-dual-label">${sub2Name}${bibOf(r, '2') != null ? `<span class="bib-badge" style="margin:0 0 0 6px">${bibCode(r, '2')}</span>` : ''}</span>
             <div class="attend-btns">
               <button class="attend-btn yes ${r.attended_2===true?'active':''}" onclick="toggleAttendance(${r.id}, true, '2')">✓</button>
               <button class="attend-btn no ${r.attended_2===false?'active':''}" onclick="toggleAttendance(${r.id}, false, '2')">✕</button>
@@ -4927,7 +4932,7 @@ function renderRegistrationsList() {
     return `
     <div class="reg-chip">
       <div class="reg-chip-info">
-        <div class="reg-chip-name">${(!info.is_dual && bibOf(r, '0') != null) ? `<span class="bib-badge">nº ${bibPad(bibOf(r, '0'))}</span>` : ''}${r.name} ${badges}</div>
+        <div class="reg-chip-name">${(!info.is_dual && bibOf(r, '0') != null) ? `<span class="bib-badge">${bibCode(r, '0')}</span>` : ''}${r.name} ${badges}</div>
         <div class="reg-chip-meta">${r.age?r.age+' anos · ':''}${r.fitness_level||''} · ${r.phone}</div>
         <div class="reg-chip-meta" style="margin-top:2px">🕒 Inscrito em ${fmtRegWhen(r.created_at)}</div>
         ${r.custom_answer ? `<div style="font-size:11.5px;color:var(--gold);margin-top:4px;background:rgba(255,208,96,0.08);border-left:2px solid var(--gold);padding:6px 10px;border-radius:6px">📝 ${r.custom_answer}</div>` : ''}
@@ -5406,7 +5411,7 @@ async function printEventReport() {
     rows = regs.map((r,i) => `
       <tr>
         <td>${i+1}</td>
-        <td>${bibOf(r, '0') != null ? bibPad(bibOf(r, '0')) : '—'}</td>
+        <td>${bibOf(r, '0') != null ? bibCode(r, '0') : '—'}</td>
         <td>${r.name}</td>
         <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
         <td>${r.age||'—'}</td>
@@ -6491,7 +6496,10 @@ async function startTvResults(params) {
 let BIBS = {};
 const bibPad = n => String(n).padStart(2, '0');
 function bibOf(r, sub) { const n = BIBS[r.id + ':' + sub]; return n == null ? null : n; }
-function bibTxt(r, sub) { const n = bibOf(r, sub); return n == null ? '' : ' · nº ' + bibPad(n); }
+const bibLvl = r => (r && r.fitness_level) || 'Iniciante';
+// Código da pulseira = cor + número (cada cor tem a sua própria sequência: Verde 01, Amarelo 01, Laranja 01…)
+function bibCode(r, sub) { const n = bibOf(r, sub); if (n == null) return ''; const c = levelColor(bibLvl(r)); return c.emoji + ' ' + c.name + ' ' + bibPad(n); }
+function bibTxt(r, sub) { const n = bibOf(r, sub); return n == null ? '' : ' · ' + bibCode(r, sub); }
 function fmtRegWhen(createdAt) {
   if (!createdAt) return '—';
   const d = new Date(createdAt);
@@ -6521,19 +6529,45 @@ async function ensureBibs(info) {
   await loadBibs(info);
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).slice()
     .sort((a, b) => (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
-  const maxBy = {};
-  Object.keys(BIBS).forEach(k => { const sub = k.split(':')[1]; maxBy[sub] = Math.max(maxBy[sub] || 0, BIBS[k]); });
+  const maxBy = {}, regById = {};                                  // sequência separada por prova E por cor (nível)
+  regs.forEach(r => { regById[r.id] = r; });
+  Object.keys(BIBS).forEach(k => { const pr = k.split(':'), rg = regById[pr[0]]; if (!rg) return; const g = pr[1] + '|' + bibLvl(rg); maxBy[g] = Math.max(maxBy[g] || 0, BIBS[k]); });
   const rows = [], keys = [];
   regs.forEach(r => bibSubsFor(r, info).forEach(sub => {
     const k = r.id + ':' + sub;
     if (BIBS[k] == null) {
-      const n = (maxBy[sub] || 0) + 1; maxBy[sub] = n; BIBS[k] = n; keys.push(k);
+      const g = sub + '|' + bibLvl(r), n = (maxBy[g] || 0) + 1; maxBy[g] = n; BIBS[k] = n; keys.push(k);
       rows.push({ key: `bib:${info.id}:${sub}:${r.id}`, value: String(n), updated_at: new Date().toISOString() });
     }
   }));
   if (!rows.length) return;
   const { error } = await sb.from('app_settings').upsert(rows, { onConflict: 'key' });
   if (error) { console.error(error); keys.forEach(k => delete BIBS[k]); }
+}
+// Renumera TODAS as pulseiras do evento por cor: cada cor começa em 01 (mantém a ordem atual dentro de cada cor)
+async function renumberBibsByLevel() {
+  const info = EVENT_INFO || await getEventInfo(); if (!info || !info.id) return toast('⚠️ Salve o evento primeiro');
+  if (!confirm('Renumerar as pulseiras por cor?\n\nVerde, Amarelo e Laranja passam a ter cada um a sua sequência (01, 02, 03…). Os números atuais mudam — só faça isso ANTES de entregar as pulseiras, ou depois reimprima/reenvie os códigos.')) return;
+  await loadBibs(info);
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).slice()
+    .sort((a, b) => (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
+  const rows = [], now = new Date().toISOString();
+  const subs = info.is_dual ? ['1', '2'] : ['0'];
+  subs.forEach(sub => {
+    const groups = {};
+    regs.filter(r => bibSubsFor(r, info).includes(sub)).forEach(r => { (groups[bibLvl(r)] = groups[bibLvl(r)] || []).push(r); });
+    Object.values(groups).forEach(list => {
+      list.sort((a, b) => ((BIBS[a.id + ':' + sub] == null ? 1e9 : BIBS[a.id + ':' + sub]) - (BIBS[b.id + ':' + sub] == null ? 1e9 : BIBS[b.id + ':' + sub])) || (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
+      list.forEach((r, i) => { rows.push({ key: 'bib:' + info.id + ':' + sub + ':' + r.id, value: String(i + 1), updated_at: now }); });
+    });
+  });
+  for (let i = 0; i < rows.length; i += 200) {
+    const { error } = await sb.from('app_settings').upsert(rows.slice(i, i + 200), { onConflict: 'key' });
+    if (error) { console.error(error); return toast('⚠️ Erro ao renumerar'); }
+  }
+  await loadBibs(info);
+  try { renderRegistrationsList(); } catch (e) {}
+  toast('🔢 Pulseiras renumeradas por cor');
 }
 async function setRegBib(reg, sub, raw, info) {
   raw = String(raw == null ? '' : raw).trim();
@@ -6547,8 +6581,8 @@ async function setRegBib(reg, sub, raw, info) {
   const n = parseInt(raw, 10);
   if (isNaN(n) || n < 0) { toast('⚠️ Número inválido'); return false; }
   if (BIBS[reg.id + ':' + sub] === n) return true;
-  const dup = EVENT_REGISTRATIONS.find(o => o.id !== reg.id && o.event_id === info.id && BIBS[o.id + ':' + sub] === n);
-  if (dup && !confirm(`O número ${bibPad(n)} já é de ${dup.name}. Salvar mesmo assim?`)) return false;
+  const dup = EVENT_REGISTRATIONS.find(o => o.id !== reg.id && o.event_id === info.id && bibLvl(o) === bibLvl(reg) && BIBS[o.id + ':' + sub] === n);
+  if (dup && !confirm(`${levelColor(bibLvl(reg)).name} ${bibPad(n)} já é de ${dup.name}. Salvar mesmo assim?`)) return false;
   const { error } = await sb.from('app_settings').upsert({ key, value: String(n), updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (error) { toast('⚠️ Erro ao salvar o número'); console.error(error); return false; }
   BIBS[reg.id + ':' + sub] = n;
@@ -6910,6 +6944,9 @@ function lancarApplyClock() {
 }
 
 // Lista de participantes com botão Finalizar (ordem do nº de pulseira)
+let LV_GROUP = '';   // filtro por cor: '' (todos) | 'Avançado' (laranja) | 'Iniciante' (verde) | 'Intermediário' (amarelo)
+const LV_GROUPS = [['', '👥 Todos'], ['Avançado', '🟠 Laranja'], ['Iniciante', '🟢 Verde'], ['Intermediário', '🟡 Amarelo']];
+function lancarSetGroup(g) { LV_GROUP = g; lancarRenderList(); }
 function lancarRenderList() {
   const info = EVENT_INFO, box = document.getElementById('lv-runner-list');
   if (!info || !box || !info.live_sub) return;
@@ -6925,15 +6962,21 @@ function lancarRenderList() {
     if (/^\d+$/.test(q) && bibOf(r, sub) != null && bibOf(r, sub) === parseInt(q, 10)) return true;
     return r.name.toLowerCase().includes(q);
   };
-  const byBib = (a, b) => ((bibOf(a, sub) == null ? 1e9 : bibOf(a, sub)) - (bibOf(b, sub) == null ? 1e9 : bibOf(b, sub))) || a.name.localeCompare(b.name);
-  const all = regs.filter(match);
+  const lvRank = { 'Avançado': 0, 'Iniciante': 1, 'Intermediário': 2 };
+  const byBib = (a, b) => ((lvRank[bibLvl(a)] || 0) - (lvRank[bibLvl(b)] || 0)) || ((bibOf(a, sub) == null ? 1e9 : bibOf(a, sub)) - (bibOf(b, sub) == null ? 1e9 : bibOf(b, sub))) || a.name.localeCompare(b.name);
   const attField = 'attended' + sfx;
+  const gbox = document.getElementById('lv-groups');
+  if (gbox) {
+    const cnt = g => regs.filter(r => match(r) && !r[field] && r[attField] !== false && (!g || bibLvl(r) === g)).length;
+    gbox.innerHTML = LV_GROUPS.map(([g, label]) => '<button class="lv-gchip' + (LV_GROUP === g ? ' on' : '') + '" onclick="lancarSetGroup(\'' + g + '\')">' + label + '<br><span style="font-weight:600;font-size:12px;opacity:.85">faltam ' + cnt(g) + '</span></button>').join('');
+  }
+  const all = regs.filter(match).filter(r => !LV_GROUP || bibLvl(r) === LV_GROUP);
   const pending = all.filter(r => !r[field] && r[attField] !== false).sort(byBib);
   const absent = all.filter(r => !r[field] && r[attField] === false).sort(byBib);
   const done = all.filter(r => r[field]).sort(byBib);
   const v = clkView(info, key, Date.now());
   const capUp = v.timeUp;
-  const bibCell = r => `<div class="lv-bib">${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
+  const bibCell = r => `<div class="lv-bib"><span style="display:block;font-size:15px;line-height:1.1;margin-bottom:2px">${levelColor(bibLvl(r)).emoji}</span>${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
   const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-act"><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div></div>`;
   const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
   box.innerHTML =
