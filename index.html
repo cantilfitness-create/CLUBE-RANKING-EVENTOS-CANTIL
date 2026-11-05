@@ -475,6 +475,10 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .lv-clock { font-family:'Bebas Neue',sans-serif; font-size:clamp(64px,22vw,110px); line-height:1; text-align:center; letter-spacing:3px; font-variant-numeric:tabular-nums; margin:2px 0; }
 .lv-clock-sub { text-align:center; font-size:13px; color:var(--muted); margin-bottom:14px; }
 .lv-hint { font-size:12.5px; color:var(--muted); line-height:1.45; text-align:center; }
+/* Inscrição: nome em destaque enquanto estiver em branco */
+.ev-hl-label { color:var(--accent) !important; font-size:15px !important; font-weight:800 !important; letter-spacing:.5px; }
+#ev-member-select:invalid, #ev-name:placeholder-shown { border:2px solid var(--accent) !important; box-shadow:0 0 0 4px rgba(232,255,0,.14); }
+#ev-name::placeholder { color:var(--accent); opacity:.75; font-weight:700; }
 #lv-groups { display:flex; gap:8px; margin-bottom:14px; }
 .lv-gchip { flex:1 1 0; min-width:0; padding:12px 4px; border-radius:12px; border:1px solid var(--border); background:var(--s2); color:var(--text); font-weight:800; font-size:13px; font-family:'Outfit',sans-serif; cursor:pointer; line-height:1.25; }
 .lv-gchip.on { border-color:var(--accent); color:var(--accent); background:rgba(232,255,0,.08); }
@@ -976,12 +980,12 @@ textarea { resize:vertical;min-height:72px; }
       </div>
 
       <div class="field-group" id="ev-member-select-wrap" style="display:none">
-        <label class="field-label">Selecione seu nome</label>
-        <select id="ev-member-select"></select>
+        <label class="field-label ev-hl-label">👇 Escolha o SEU nome na lista</label>
+        <select id="ev-member-select" required></select>
       </div>
       <div class="field-group" id="ev-name-wrap">
-        <label class="field-label">Nome</label>
-        <input type="text" id="ev-name" placeholder="Seu nome completo">
+        <label class="field-label ev-hl-label">✍️ Escreva o SEU nome completo</label>
+        <input type="text" id="ev-name" placeholder="Digite aqui o seu nome" autocomplete="name">
       </div>
       <div class="field-group" id="ev-age-wrap">
         <label class="field-label">Idade</label>
@@ -1722,7 +1726,7 @@ textarea { resize:vertical;min-height:72px; }
           <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
           <div id="event-registrations-list"></div>
           <hr class="divider">
-          <div class="section-label">🚫 Faltantes de eventos anteriores <span style="font-weight:400;color:var(--muted);font-size:11px">(só você vê essa lista)</span></div>
+          <div class="section-label">🚫 Faltantes de eventos anteriores <span style="font-weight:400;color:var(--muted);font-size:11px">(só você vê · cada nome fica 30 dias)</span></div>
           <div id="event-noshow-list"></div>
         </div>
 
@@ -4042,7 +4046,7 @@ async function renderEventPublicView() {
 
   // populate member select
   const sel = document.getElementById('ev-member-select');
-  sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join('');
+  sel.innerHTML = '<option value="" selected disabled>👆 Toque aqui e escolha o SEU nome</option>' + MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}">${m.emoji} ${m.name}</option>`).join('');
 
   // Sempre remove a mensagem de "fechado/esgotado" antiga antes de decidir se
   // precisa mostrar uma nova — evita que várias mensagens empilhem na tela
@@ -4124,7 +4128,7 @@ function toggleInternalFields() {
   if (isClube) {
     const sel = document.getElementById('ev-member-select');
     if (sel) {
-      sel.innerHTML = MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name))
+      sel.innerHTML = '<option value="" selected disabled>👆 Toque aqui e escolha o SEU nome</option>' + MEMBERS.slice().sort((a,b)=>a.name.localeCompare(b.name))
         .map(m=>`<option value="${m.id}">${m.emoji||''} ${m.name}</option>`).join('');
     }
   }
@@ -4198,12 +4202,17 @@ async function submitEventRegistration() {
   let blocked = null;
   if (isClube && memberId) {
     const { data } = await sb.from('event_registrations')
-      .select('id').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('member_id', memberId).limit(1);
+      .select('id, attended, attended_1, attended_2').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('member_id', memberId).limit(50);
     blocked = data;
   } else if (phone) {
     const { data } = await sb.from('event_registrations')
-      .select('id').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('phone', phone).limit(1);
+      .select('id, attended, attended_1, attended_2').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('phone', phone).limit(50);
     blocked = data;
+  }
+  if (blocked && blocked.length) {                   // só bloqueia se a falta ainda estiver dentro dos 30 dias
+    await loadNoShowAt();
+    await noShowStampMissing(blocked);
+    blocked = blocked.filter(noShowActive);
   }
   if (blocked && blocked.length) {
     document.getElementById('ev-blocked').style.display = 'block';
@@ -4575,7 +4584,8 @@ async function updateEventRules() {
 async function startNewEvent() {
   const info = EVENT_INFO || defaultEventInfo();
   const currentRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
-  const isNoShow = r => r.attended === false || r.attended_1 === false || r.attended_2 === false;
+  await loadNoShowAt();
+  const isNoShow = r => noShowActive(r);
   const toDelete = currentRegs.filter(r => !isNoShow(r));
   const toKeep = currentRegs.filter(isNoShow);
 
@@ -4957,6 +4967,7 @@ async function toggleAttendance(id, attended, subCtx) {
   const { error } = await sb.from('event_registrations').update({ [attendedField]: attended }).eq('id', id);
   if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
   reg[attendedField] = attended;
+  await noShowSync(reg);
   await bdAwardAttendance(reg, info, subCtx || '', attended);
 
   let pointsMsg = '';
@@ -4980,15 +4991,46 @@ async function toggleAttendance(id, attended, subCtx) {
   else toast(attended ? `✅ Presença confirmada${pointsMsg}` : '🚫 Marcado como faltante');
 }
 
+// ── Faltantes: ficam na lista por 30 dias a contar do dia em que receberam a marcação de ausência ──
+const NOSHOW_DAYS = 30;
+let NOSHOW_AT = {};   // { "<id da inscrição>": "<data ISO da marcação de ausência>" }  (guardado em app_settings 'noshow_at')
+const nsAny = r => r.attended === false || r.attended_1 === false || r.attended_2 === false;
+async function loadNoShowAt() { const v = await getSetting('noshow_at', {}); NOSHOW_AT = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; }
+// ainda vale (dentro dos 30 dias)? Sem data registrada = a contagem começa agora
+function noShowActive(r) {
+  if (!nsAny(r)) return false;
+  const t = NOSHOW_AT[r.id]; if (!t) return true;
+  return (Date.now() - new Date(t).getTime()) < NOSHOW_DAYS * 86400000;
+}
+const noShowDaysLeft = r => { const t = NOSHOW_AT[r.id]; return t ? Math.max(0, Math.ceil(NOSHOW_DAYS - (Date.now() - new Date(t).getTime()) / 86400000)) : NOSHOW_DAYS; };
+// registra/remove a data da marcação conforme o estado atual da inscrição
+async function noShowSync(reg) {
+  try {
+    await loadNoShowAt();
+    const has = !!NOSHOW_AT[reg.id];
+    if (nsAny(reg) && !has) NOSHOW_AT[reg.id] = new Date().toISOString();
+    else if (!nsAny(reg) && has) delete NOSHOW_AT[reg.id];
+    else return;
+    await setSetting('noshow_at', NOSHOW_AT);
+  } catch (e) { console.error('noshow', e); }
+}
+// quem foi marcado antes desta regra e ainda não tem data: a contagem dos 30 dias começa na primeira vez que é visto
+async function noShowStampMissing(regs) {
+  const miss = regs.filter(r => nsAny(r) && !NOSHOW_AT[r.id]); if (!miss.length) return;
+  const now = new Date().toISOString(); miss.forEach(r => { NOSHOW_AT[r.id] = now; });
+  await setSetting('noshow_at', NOSHOW_AT);
+}
 function renderNoShowList() {
   const el = document.getElementById('event-noshow-list');
-  const noShows = EVENT_REGISTRATIONS.filter(r => r.attended === false || r.attended_1 === false || r.attended_2 === false);
+  const noShows = EVENT_REGISTRATIONS.filter(noShowActive);
+  loadNoShowAt().then(async () => { await noShowStampMissing(EVENT_REGISTRATIONS); if (EVENT_REGISTRATIONS.filter(noShowActive).length !== noShows.length) renderNoShowList(); }).catch(() => {});
   if (!noShows.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Ninguém na lista de faltantes.</div>'; return; }
   el.innerHTML = noShows.map(r => `
     <div class="reg-chip">
       <div class="reg-chip-info">
         <div class="reg-chip-name">${r.name}</div>
         <div class="reg-chip-meta">${r.phone} · faltou em: ${r.event_name||'—'}</div>
+        <div class="reg-chip-meta">⏳ sai da lista em ${noShowDaysLeft(r)} dia(s)</div>
       </div>
       <button class="btn-sm-danger" onclick="deleteRegistration(${r.id})" title="Remover da lista (libera pra próxima inscrição)">✕</button>
     </div>`).join('');
@@ -5202,7 +5244,7 @@ async function commitResultCore(regId, value, opts) {
     await loadEventRegistrations();
     return { conflict: true };
   }
-  reg[resultField] = value; reg[attendedField] = true;
+  reg[resultField] = value; reg[attendedField] = true; noShowSync(reg);
   return { reg, info, suffix, value };
 }
 // Complemento: descrição, pontos do ranking e atualização das telas
@@ -7049,6 +7091,7 @@ async function lancarSetAttendance(regId, value) {
     const { error } = await sb.from('event_registrations').update({ [att]: value }).eq('id', regId);
     if (error) { toast('⚠️ Erro ao salvar presença'); console.error(error); return; }
     reg[att] = value;
+    noShowSync(reg);
     lancarRenderList();
     if (value === false) {
       lancarSnack(`<span>🚫 <b>${tvEsc(reg.name)}</b> — ausente</span><button onclick="lancarSetAttendance(${regId}, null)">↩ Desfazer</button>`);
