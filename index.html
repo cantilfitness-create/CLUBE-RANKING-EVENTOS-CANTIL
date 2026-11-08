@@ -776,6 +776,11 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
     </div>
     <div class="lv-sv-ov" id="lv-img-ov" onclick="this.classList.remove('open')"><img id="lv-img-view" alt="Foto do Strava" style="max-width:100%;max-height:88vh;border-radius:12px"></div>
     <div id="lancar-main" style="display:none">
+          <div class="live-ctl" id="live-ctl">
+            <div class="section-label">🔴 Controle ao vivo</div>
+            <div id="live-ctl-rows"></div>
+            <div class="live-hint">Libere o evento que está acontecendo e toque em ▶ Começar: o cronômetro roda sozinho até você pausar ou encerrar, ou até estourar o Time Cap. A equipe só toca em “Finalizar” em cada participante e o tempo de prova sai na hora. Não precisa salvar o evento.</div>
+          </div>
       <div class="lv-bar">
         <button class="btn-sm" onclick="lancarLoad()">🔄 Atualizar lista</button>
         <button class="btn-sm" id="lancar-logout" onclick="lancarLogout()">🔓 Sair</button>
@@ -1456,10 +1461,8 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
         </div>
 
         <div class="adm-panel" id="tab-evento">
-          <div class="live-ctl" id="live-ctl">
-            <div class="section-label">🔴 Controle ao vivo</div>
-            <div id="live-ctl-rows"></div>
-            <div class="live-hint">Libere o evento que está acontecendo e toque em ▶ Começar: o cronômetro roda sozinho até você pausar ou encerrar, ou até estourar o Time Cap. A equipe só toca em “Finalizar” em cada participante e o tempo de prova sai na hora. Não precisa salvar o evento.</div>
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px;font-size:12px;color:var(--muted);line-height:1.5">
+            🔴 O <b>Controle ao vivo</b> (liberar, começar, pausar, encerrar) agora fica na tela da equipe. Use o link <b>“Lançar resultados”</b> mais abaixo.
           </div>
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
@@ -4990,7 +4993,7 @@ async function clearSubEvent(sub) {
   const msg = `Encerrar "${nm}"?\n\n• ${inSub.length} inscrição(ões) deste evento saem da lista`
     + (alsoOther ? `\n• ${alsoOther} pessoa(s) também inscritas em "${on}" continuam lá, intactas` : '')
     + (keepNs ? `\n• ${keepNs} faltante(s) ficam na lista de bloqueio` : '')
-    + `\n\nAntes de apagar, os resultados ficam salvos num link permanente.\n"${on}" NÃO é alterado.`;
+    + `\n\nAntes de apagar, os resultados ficam salvos num link permanente.\nDepois, "${on}" passa a ser o evento único (inscritos, resultados e pulseiras são mantidos).`;
   if (!confirm(msg)) return;
 
   // 1) arquivo permanente só com este evento
@@ -5038,27 +5041,97 @@ async function clearSubEvent(sub) {
     if (ch) await setSetting('result_notes', RESULT_NOTES);
   } catch (e) { console.error('limpeza notas', e); }
 
-  // 4) fecha as inscrições deste evento (o outro continua como estava)
-  try {
-    const newInfo = { ...info, ['active_' + sub]: false };
-    if (await setSetting('event_info', newInfo)) EVENT_INFO = newInfo;
-    const sel = document.getElementById('ev-cfg-active-' + sub); if (sel) sel.value = 'false';
-  } catch (e) { console.error(e); }
+  // 4) o evento que sobrou vira o evento ÚNICO (dados, inscritos, pulseiras, estações, cronômetro)
+  await loadEventRegistrations();
+  const promoted = await promoteRemainingToSingle(info, o, sub, ids);
+  try { await loadBibs(EVENT_INFO || info); } catch (e) {}
 
   // 5) atualiza telas
   eventRegLoaded = false;
   await loadEventRegistrations();
-  try { await loadBibs(EVENT_INFO || info); } catch (e) {}
   REG_SUB_FILTER = 'all';
+  try { await renderEventAdminView(); } catch (e) { console.error(e); }
   try { renderRegistrationsList(); renderNoShowList(); } catch (e) { console.error(e); }
   try { if (typeof populateResultSelect === 'function') populateResultSelect(); } catch (e) {}
   try { await renderEventPublicView(); } catch (e) { console.error(e); }
 
-  toast(`🗑️ "${nm}" encerrado — "${on}" não foi alterado.`);
+  toast(promoted ? `🗑️ "${nm}" encerrado — "${on}" agora é o evento único.` : `⚠️ "${nm}" apagado, mas houve erro ao converter "${on}" em evento único. Recarregue a página e confira.`);
   if (archiveUrl) setTimeout(() => {
     if (confirm(`📎 Link permanente dos resultados de "${nm}":\n\n${archiveUrl}\n\nCopiar agora?`))
       navigator.clipboard?.writeText(archiveUrl).then(() => toast('📋 Link copiado!')).catch(() => {});
   }, 400);
+}
+
+// Converte o evento duplo em evento único usando os dados do evento que ficou (o)
+async function promoteRemainingToSingle(info, o, cleared, clearedIds) {
+  try {
+    const fixKeys = async (like, mapFn) => {                      // renomeia chaves de app_settings
+      const { data } = await sb.from('app_settings').select('key').like('key', like).limit(5000);
+      const pairs = (data || []).map(x => [x.key, mapFn(x.key)]).filter(p => p[1] && p[1] !== p[0]);
+      for (let i = 0; i < pairs.length; i += 5) {
+        const chunk = pairs.slice(i, i + 5);
+        const { data: vals } = await sb.from('app_settings').select('key,value').in('key', chunk.map(p => p[0]));
+        const rows = (vals || []).map(v => ({ key: chunk.find(p => p[0] === v.key)[1], value: v.value, updated_at: new Date().toISOString() }));
+        if (rows.length) await sb.from('app_settings').upsert(rows, { onConflict: 'key' });
+        await sb.from('app_settings').delete().in('key', chunk.map(p => p[0]));
+      }
+    };
+    // pulseiras: bib:<ev>:<o>:<insc>  ->  bib:<ev>:0:<insc>
+    await fixKeys(`bib:${info.id}:${o}:%`, k => { const p = k.split(':'); return p.length === 4 ? `bib:${p[1]}:0:${p[3]}` : null; });
+    // fotos de estação: station_img_<insc>_<o>_<n>  ->  station_img_<insc>_<n>
+    await fixKeys('station_img_%', k => { const m = /^station_img_(\d+)_([12])_(\d+)$/.exec(k); return (m && m[2] === o) ? `station_img_${m[1]}_${m[3]}` : null; });
+
+    // mapas guardados em um único registro: renomeia "<insc>_<o>" para "<insc>" (e limpa o do evento apagado)
+    const idSet = new Set((clearedIds || []).map(String));
+    const remap = (obj) => {
+      let ch = false;
+      Object.keys(obj).forEach(k => {
+        const m = /^(\d+)_([12])$/.exec(k); if (!m) return;
+        if (m[2] === o) { obj[m[1]] = obj[k]; delete obj[k]; ch = true; }
+        else if (m[2] === cleared && idSet.has(m[1])) { delete obj[k]; ch = true; }
+      });
+      return ch;
+    };
+    await loadStationLog(); if (remap(STATION_LOG)) await setSetting('station_log', STATION_LOG);
+    await loadResultNotes(); if (remap(RESULT_NOTES)) await setSetting('result_notes', RESULT_NOTES);
+    await loadResultStrava(); if (remap(RESULT_STRAVA)) await setSetting('result_strava', RESULT_STRAVA);
+    const aw = await getSetting('badge_awards', {});
+    if (aw && typeof aw === 'object' && !Array.isArray(aw)) {
+      let ch = false; const from = `ev:${info.id}:${o}`, to = `ev:${info.id}:0`;
+      Object.keys(aw).forEach(b => (aw[b] || []).forEach(x => { if (x.e === from) { x.e = to; ch = true; } }));
+      if (ch) await setSetting('badge_awards', aw);
+    }
+
+    // inscrições: resultado/presença do evento que ficou passam para os campos do evento único
+    const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+    const results = await Promise.all(regs.map(r => sb.from('event_registrations').update({
+      sub_events: null,
+      attended: r['attended_' + o] === undefined ? null : r['attended_' + o],
+      result_value: r['result_value_' + o] || null,
+      points_awarded: !!r['points_awarded_' + o],
+      ['attended_' + o]: null, ['result_value_' + o]: null, ['points_awarded_' + o]: false
+    }).eq('id', r.id)));
+    const bad = results.find(x => x && x.error);
+    if (bad) { console.error(bad.error); return false; }
+
+    // dados do evento
+    const g = k => info[k + '_' + o];
+    const newInfo = { ...info };
+    ['meta', 'desc', 'points', 'result_type', 'max', 'active', 'time_cap_seconds', 'badge_id'].forEach(k => { newInfo[k] = g(k); });
+    newInfo.name = info['sub' + o + '_name'] || info.name;
+    newInfo.active = g('active') !== false;
+    newInfo.points = g('points') || 0; newInfo.max = g('max') || 0; newInfo.time_cap_seconds = g('time_cap_seconds') || 0;
+    newInfo.badge_id = g('badge_id') || '';
+    newInfo.is_dual = false; newInfo.sub1_name = ''; newInfo.sub2_name = '';
+    newInfo.allow_visitor = true; newInfo.custom_question_enabled = false; newInfo.custom_question_label = '';
+    ['meta', 'desc', 'points', 'result_type', 'max', 'active', 'time_cap_seconds', 'badge_id'].forEach(k => { delete newInfo[k + '_1']; delete newInfo[k + '_2']; });
+    const clk = info.clk || {};
+    newInfo.clk = clk[o] ? { '1': clk[o] } : {};
+    newInfo.live_sub = info.live_sub === o ? '1' : '';
+    if (!(await setSetting('event_info', newInfo))) return false;
+    EVENT_INFO = newInfo;
+    return true;
+  } catch (e) { console.error('promoção p/ evento único', e); return false; }
 }
 
 function renderRegistrationsList() {
@@ -6967,6 +7040,7 @@ async function clkAction(key, action) {
   EVENT_INFO = newInfo;
   renderLiveControls(newInfo);
   toast(msg);
+  try { if (document.getElementById('lancar-view').classList.contains('on')) lancarLoad(); } catch (e) {}
 }
 
 // Relógios de tela (admin e equipe) andam a cada segundo
@@ -7095,6 +7169,7 @@ async function lancarLoad() {
   EVENT_INFO = null;
   const info = await getEventInfo();
   LANCAR_SIG = lancarSig(info);
+  try { renderLiveControls(info); } catch (e) { console.error(e); }
   await loadEventRegistrations();
   try { await ensureBibs(info); } catch (e) { console.error(e); }
   await loadResultNotes();
