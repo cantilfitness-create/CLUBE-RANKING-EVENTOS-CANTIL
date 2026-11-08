@@ -1464,6 +1464,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
           <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px;font-size:12px;color:var(--muted);line-height:1.5">
             🔴 O <b>Controle ao vivo</b> (liberar, começar, pausar, encerrar) agora fica na tela da equipe. Use o link <b>“Lançar resultados”</b> mais abaixo.
           </div>
+          <div id="ev-manage-box" style="display:none"></div>
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
             <label class="field-label">Nome do evento</label>
@@ -4957,6 +4958,20 @@ function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
 function renderRegSubTools(info, allRegs) {
   const box = document.getElementById('reg-sub-tools');
   const btn = document.getElementById('ev-report-btn');
+  const mg = document.getElementById('ev-manage-box');
+  if (mg) {
+    if (info.is_dual && info.id) {
+      const a = info.sub1_name || 'Evento 1', b = info.sub2_name || 'Evento 2';
+      mg.style.display = '';
+      mg.innerHTML = `<div class="reg-sub-card" style="margin-bottom:20px">
+        <div class="reg-sub-name">🗂️ Encerrar um dos eventos</div>
+        <div class="reg-sub-count" style="line-height:1.5">Apaga um evento e o outro continua sozinho, como evento único (com os inscritos, resultados e pulseiras dele).</div>
+        <div class="reg-sub-actions" style="flex-direction:column">
+          <button class="btn-sm-danger" style="width:100%" onclick="clearSubEvent('1')">🗑️ Excluir “${tvEsc(a)}” e ficar só com “${tvEsc(b)}”</button>
+          <button class="btn-sm-danger" style="width:100%" onclick="clearSubEvent('2')">🗑️ Excluir “${tvEsc(b)}” e ficar só com “${tvEsc(a)}”</button>
+        </div></div>`;
+    } else { mg.style.display = 'none'; mg.innerHTML = ''; }
+  }
   if (!box) return;
   if (!info.is_dual) { box.style.display = 'none'; box.innerHTML = ''; if (btn) btn.style.display = ''; REG_SUB_FILTER = 'all'; return; }
   if (btn) btn.style.display = 'none';
@@ -4980,12 +4995,12 @@ function renderRegSubTools(info, allRegs) {
 // Encerra UM dos dois eventos: arquiva, apaga só as inscrições dele e NÃO mexe no outro evento
 async function clearSubEvent(sub) {
   const info = EVENT_INFO || defaultEventInfo();
-  if (!info.is_dual || !info.id) return toast('⚠️ Disponível só para evento com 2 provas.');
+  if (!info.is_dual) return toast('⚠️ Este botão só funciona quando o evento tem 2 provas.');
+  if (!info.id) return toast('⚠️ Salve o evento primeiro (botão “Salvar evento”) e depois exclua um deles.');
   const o = sub === '1' ? '2' : '1';
   const nm = sub === '1' ? (info.sub1_name || 'Evento 1') : (info.sub2_name || 'Evento 2');
   const on = o === '1' ? (info.sub1_name || 'Evento 1') : (info.sub2_name || 'Evento 2');
   const inSub = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && evRegInSub(r, nm, on));
-  if (!inSub.length) return toast('⚠️ Nenhuma inscrição em "' + nm + '".');
   await loadNoShowAt();
   const isNs = r => r['attended_' + sub] === false && noShowActive(r);
   const keepNs = inSub.filter(isNs).length;
@@ -5000,8 +5015,8 @@ async function clearSubEvent(sub) {
   const snapInfo = { ...info, name: info.name ? `${info.name} — ${nm}` : nm };
   const copies = inSub.map(r => ({ ...r, sub_events: nm, ['attended_' + o]: null, ['result_value_' + o]: null, ['result_note_' + o]: null }));
   let archiveUrl = null;
-  try { archiveUrl = await archiveEventResults(snapInfo, copies); } catch (e) { console.error(e); }
-  if (!archiveUrl && !confirm('⚠️ NÃO foi possível salvar o arquivo de resultados. Continuar e apagar SEM backup?')) return;
+  if (copies.length) { try { archiveUrl = await archiveEventResults(snapInfo, copies); } catch (e) { console.error(e); } }
+  if (copies.length && !archiveUrl && !confirm('⚠️ NÃO foi possível salvar o arquivo de resultados. Continuar e apagar SEM backup?')) return;
 
   // 2) apaga / atualiza só as linhas deste evento
   const delIds = [], ops = [];
