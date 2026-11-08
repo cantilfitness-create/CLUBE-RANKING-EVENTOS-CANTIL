@@ -7104,9 +7104,14 @@ setInterval(clkTickAll, 1000);
 // ══════════════════════════════════════════════
 // Guardada em app_settings ('staff_pw' = { h: hash }). Enquanto nunca for definida aqui,
 // continua valendo a senha antiga cadastrada na Meta (mesmo hash), então nada para de funcionar.
-let STAFF_PW = null;
+let STAFF_PW = null, STAFF_ERR = false;
 async function loadStaffPw() {
-  const v = await getSetting('staff_pw', null);
+  // lê direto do banco: se der erro de leitura NÃO libera (a tela da equipe fica trancada)
+  const { data, error } = await sb.from('app_settings').select('value').eq('key', 'staff_pw').order('updated_at', { ascending: false }).limit(1);
+  if (error) { console.error(error); STAFF_ERR = true; return; }
+  STAFF_ERR = false;
+  let v = null;
+  if (data && data.length) { try { v = JSON.parse(data[0].value); } catch { v = null; } }
   STAFF_PW = (v && typeof v === 'object' && 'h' in v) ? v : null;
 }
 function staffHash() {
@@ -7154,13 +7159,15 @@ fillTeamLinks();
 // ── Tela de lançamento da equipe ──
 const LANCAR_KEY = 'ev_unlock';
 function lancarUnlocked() {
+  if (STAFF_ERR) return false;                                        // não conseguiu ler a senha: mantém trancado
   const sh = staffHash();
   if (!sh) return true;
-  try { if (hasValidAdminSession()) return true; } catch (e) {}      // quem acabou de entrar como admin não precisa digitar de novo
   try { const u = JSON.parse(localStorage.getItem(LANCAR_KEY) || 'null'); return !!u && u.h === sh && u.e > Date.now(); } catch (e) { return false; }
 }
 async function lancarUnlock() {
   const inp = document.getElementById('lancar-pw');
+  await loadStaffPw();
+  if (STAFF_ERR) return toast('⚠️ Não foi possível verificar a senha agora. Confira a internet e tente de novo.');
   const h = await mtHash(inp.value.trim());
   if (h !== staffHash()) { inp.value = ''; return toast('❌ Senha incorreta'); }
   localStorage.setItem(LANCAR_KEY, JSON.stringify({ h, e: Date.now() + 12 * 3600e3 }));
