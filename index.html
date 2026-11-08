@@ -1257,6 +1257,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
           <button class="adm-tab" onclick="admTab('meta')">🏁 Meta</button>
           <button class="adm-tab" onclick="admTab('evento')">🏁 Evento</button>
           <button class="adm-tab" onclick="admTab('arquivados')">📁 Encerrados</button>
+          <button class="adm-tab" onclick="admTab('inventario')">📦 Inventário</button>
           <button class="adm-tab" onclick="admTab('subscribers')">🔒 Assinante</button>
           <button class="adm-tab" onclick="admTab('settings')">Config</button>
         </div>
@@ -1465,6 +1466,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
             🔴 O <b>Controle ao vivo</b> (liberar, começar, pausar, encerrar) agora fica na tela da equipe. Use o link <b>“Lançar resultados”</b> mais abaixo.
           </div>
           <div id="ev-manage-box" style="display:none"></div>
+          <div id="ev-checklist-box" style="display:none"></div>
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
             <label class="field-label">Nome do evento</label>
@@ -1752,6 +1754,12 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
           <hr class="divider">
           <div class="section-label">🚫 Faltantes de eventos anteriores <span style="font-weight:400;color:var(--muted);font-size:11px">(só você vê · cada nome fica 30 dias)</span></div>
           <div id="event-noshow-list"></div>
+        </div>
+
+        <!-- INVENTÁRIO (pulseiras e materiais) -->
+        <div class="adm-panel" id="tab-inventario">
+          <div class="section-label">📦 Inventário</div>
+          <div id="inv-box" style="font-size:13px;color:var(--muted)">Carregando…</div>
         </div>
 
         <!-- EVENTOS ENCERRADOS (editar resultados arquivados) -->
@@ -4951,6 +4959,266 @@ async function updateArchiveResult(idx, subCtx, newValue) {
   toast('✅ Resultado atualizado no arquivo!');
 }
 
+// ══════════════════════════════════════════════
+//  INVENTÁRIO: pulseiras (por cor e número) e materiais
+// ══════════════════════════════════════════════
+// Guardado em app_settings, chave 'inventory':
+//   bands[cor] = { from, to, m: { <nº>: { s:'participante'|'extraviada'|'danificada', note } } }
+//   items = [ { id, name, total, out, lost, note } ]
+// "Atribuída" é automático (pulseira já designada a uma inscrição do evento atual); o resto é marcado à mão.
+let INV = null, INV_SEL = null, INV_FILTER = 'all';
+const INV_COLORS = [{ k: 'Verde', emoji: '🟢' }, { k: 'Amarelo', emoji: '🟡' }, { k: 'Laranja', emoji: '🟠' }];
+const INV_ST = {
+  disponivel:   { l: 'Disponível',       c: 'var(--muted)', bg: 'transparent' },
+  atribuida:    { l: 'Atribuída',        c: '#5aa9ff',      bg: 'rgba(90,169,255,.15)' },
+  participante: { l: 'Com participante', c: '#f5c542',      bg: 'rgba(245,197,66,.18)' },
+  extraviada:   { l: 'Extraviada',       c: '#ff5c5c',      bg: 'rgba(255,92,92,.18)' },
+  danificada:   { l: 'Danificada',       c: '#a78bfa',      bg: 'rgba(167,139,250,.18)' }
+};
+async function invLoad() {
+  const v = await getSetting('inventory', null);
+  INV = (v && typeof v === 'object') ? v : {};
+  INV.bands = INV.bands || {}; INV.items = Array.isArray(INV.items) ? INV.items : [];
+  INV_COLORS.forEach(c => { const b = INV.bands[c.k] = INV.bands[c.k] || { from: 1, to: 0, m: {} }; b.m = b.m || {}; b.from = b.from || 1; b.to = b.to || 0; });
+}
+const invSave = () => setSetting('inventory', INV);
+function invAssigned(info) {
+  const out = {};
+  if (!info || !info.id) return out;
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => bibSubsFor(r, info).forEach(sub => {
+    const n = bibOf(r, sub); if (n == null) return;
+    const k = levelColor(bibLvl(r)).name + ':' + n;
+    (out[k] = out[k] || []).push(r.name + (info.is_dual ? ' (' + (sub === '1' ? n1 : n2) + ')' : ''));
+  }));
+  return out;
+}
+function invStatus(color, n, assigned) {
+  const m = INV.bands[color].m[n];
+  if (m && INV_ST[m.s]) return m.s;
+  return assigned[color + ':' + n] ? 'atribuida' : 'disponivel';
+}
+async function renderInventory() {
+  const box = document.getElementById('inv-box'); if (!box) return;
+  try {
+    if (!INV) await invLoad();
+    const info = EVENT_INFO || await getEventInfo();
+    if (!eventRegLoaded) await loadEventRegistrations();
+    try { await loadBibs(info); } catch (e) {}
+    const assigned = invAssigned(info);
+    const inp = 'width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:14px';
+    let html = `<div style="line-height:1.5;margin-bottom:14px">Toque em um número para marcar se está <b>com o participante</b>, <b>extraviada</b> ou <b>danificada</b>. “Atribuída” é automático (número já dado a um inscrito do evento atual).</div>`;
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">` +
+      [['all', 'Todas'], ['disponivel', 'Disponíveis'], ['atribuida', 'Atribuídas'], ['participante', 'Com participante'], ['extraviada', 'Extraviadas'], ['danificada', 'Danificadas']]
+        .map(([k, l]) => `<button class="btn-sm ${INV_FILTER === k ? 'on' : ''}" style="padding:7px 10px;font-size:12px;${INV_FILTER === k ? 'border-color:var(--accent);color:var(--accent)' : ''}" onclick="invFilter('${k}')">${l}</button>`).join('') + `</div>`;
+
+    INV_COLORS.forEach(c => {
+      const b = INV.bands[c.k];
+      const cnt = { disponivel: 0, atribuida: 0, participante: 0, extraviada: 0, danificada: 0 };
+      const nums = [];
+      for (let n = b.from; b.to >= b.from && n <= b.to && n - b.from < 2000; n++) { const st = invStatus(c.k, n, assigned); cnt[st]++; nums.push([n, st]); }
+      const total = nums.length;
+      const outRange = Object.keys(assigned).filter(k => { const p = k.split(':'); return p[0] === c.k && (+p[1] < b.from || +p[1] > b.to); }).length;
+      const probs = nums.filter(([n, st]) => st === 'participante' || st === 'extraviada' || st === 'danificada');
+      html += `<div class="reg-sub-card" style="margin-bottom:14px">
+        <div class="reg-sub-name">${c.emoji} Pulseiras ${c.k}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin:10px 0">
+          <span style="font-size:12px;color:var(--muted)">Tenho do nº</span>
+          <input type="number" id="inv-from-${c.k}" value="${b.from}" min="0" style="${inp};width:80px" onchange="invSetRange('${c.k}')">
+          <span style="font-size:12px;color:var(--muted)">até</span>
+          <input type="number" id="inv-to-${c.k}" value="${b.to || ''}" min="0" placeholder="0" style="${inp};width:80px" onchange="invSetRange('${c.k}')">
+        </div>`;
+      if (!total) html += `<div style="font-size:12px;color:var(--muted)">Informe a faixa de números que você tem (ex: 1 até 60).</div>`;
+      else {
+        html += `<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px;margin-bottom:10px">` +
+          `<span style="padding:4px 9px;border-radius:99px;border:1px solid var(--border)"><b>${total}</b> no total</span>` +
+          Object.keys(cnt).map(k => `<span style="padding:4px 9px;border-radius:99px;border:1px solid ${INV_ST[k].c};color:${INV_ST[k].c}"><b>${cnt[k]}</b> ${INV_ST[k].l.toLowerCase()}</span>`).join('') + `</div>`;
+        if (outRange) html += `<div style="font-size:12px;color:#ff5c5c;margin-bottom:10px">⚠️ ${outRange} inscrito(s) com nº fora da faixa que você tem — faltam pulseiras ${c.k}.</div>`;
+        html += `<div style="display:flex;flex-wrap:wrap;gap:6px">` + nums.filter(([n, st]) => INV_FILTER === 'all' || INV_FILTER === st).map(([n, st]) => {
+          const sel = INV_SEL && INV_SEL.c === c.k && INV_SEL.n === n;
+          return `<button onclick="invPick('${c.k}',${n})" style="min-width:42px;padding:8px 0;border-radius:10px;font-size:13px;font-weight:700;border:2px solid ${sel ? '#fff' : INV_ST[st].c};background:${INV_ST[st].bg};color:${st === 'disponivel' ? 'inherit' : INV_ST[st].c};${st === 'danificada' ? 'text-decoration:line-through' : ''}">${bibPad(n)}</button>`;
+        }).join('') + `</div>`;
+        if (INV_SEL && INV_SEL.c === c.k) {
+          const n = INV_SEL.n, st = invStatus(c.k, n, assigned), m = b.m[n] || {}, who = assigned[c.k + ':' + n];
+          html += `<div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)">
+            <div style="font-weight:800;margin-bottom:4px">${c.emoji} ${c.k} ${bibPad(n)} — <span style="color:${INV_ST[st].c}">${INV_ST[st].l}</span></div>
+            ${who ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Designada a: ${tvEsc(who.join(', '))}</div>` : ''}
+            <input id="inv-note" type="text" placeholder="Nome do participante / observação" value="${tvEsc(m.note || '')}" style="${inp};margin-bottom:8px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'')">✅ Disponível</button>
+              <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'participante')">🙋 Com participante</button>
+              <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'extraviada')">❌ Extraviada</button>
+              <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'danificada')">🛠️ Danificada</button>
+            </div></div>`;
+        }
+        if (probs.length) html += `<div style="margin-top:12px;font-size:12px;line-height:1.7">` + probs.map(([n, st]) => `<div><span style="color:${INV_ST[st].c};font-weight:700">${bibPad(n)} · ${INV_ST[st].l}</span>${(b.m[n] && b.m[n].note) ? ' — ' + tvEsc(b.m[n].note) : ''}</div>`).join('') + `</div>`;
+      }
+      html += `</div>`;
+    });
+
+    // materiais em geral
+    html += `<div class="section-label" style="margin-top:22px">🧰 Outros materiais</div>`;
+    if (!INV.items.length) html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Nenhum material cadastrado (cones, cronômetros, camisetas, medalhas…).</div>`;
+    INV.items.forEach(it => {
+      const disp = (+it.total || 0) - (+it.out || 0) - (+it.lost || 0);
+      const num = (f, l) => `<label style="flex:1;font-size:11px;color:var(--muted)">${l}<input type="number" min="0" value="${+it[f] || 0}" style="${inp};margin-top:3px" onchange="invItemSet('${it.id}','${f}',this.value)"></label>`;
+      html += `<div class="reg-sub-card">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div class="reg-sub-name">${tvEsc(it.name)}</div>
+          <button class="btn-sm-danger" style="padding:6px 10px" onclick="invItemDel('${it.id}')">🗑️</button></div>
+        <div style="font-size:12px;margin:6px 0 10px;color:${disp < 0 ? '#ff5c5c' : 'var(--muted)'}"><b>${disp}</b> disponível(is)</div>
+        <div style="display:flex;gap:8px">${num('total', 'Total')}${num('out', 'Com participante / emprestado')}${num('lost', 'Extraviado / danificado')}</div>
+        <input type="text" placeholder="Observação" value="${tvEsc(it.note || '')}" style="${inp};margin-top:8px" onchange="invItemSet('${it.id}','note',this.value)"></div>`;
+    });
+    html += `<div style="display:flex;gap:8px;margin-top:10px">
+      <input id="inv-new-name" type="text" placeholder="Novo material (ex: Cones)" style="${inp};flex:2">
+      <input id="inv-new-qty" type="number" min="0" placeholder="Qtd" style="${inp};flex:1">
+      <button class="btn btn-blue" style="margin:0;flex:0 0 auto;padding:0 16px" onclick="invItemAdd()">＋</button></div>`;
+    box.innerHTML = html;
+  } catch (e) { console.error(e); box.textContent = '⚠️ Erro ao carregar o inventário.'; }
+}
+function invFilter(k) { INV_FILTER = k; renderInventory(); }
+function invPick(c, n) { INV_SEL = (INV_SEL && INV_SEL.c === c && INV_SEL.n === n) ? null : { c, n }; renderInventory(); }
+async function invSetRange(c) {
+  const b = INV.bands[c];
+  b.from = Math.max(0, parseInt(document.getElementById('inv-from-' + c).value, 10) || 0);
+  b.to = Math.max(0, parseInt(document.getElementById('inv-to-' + c).value, 10) || 0);
+  await invSave(); renderInventory();
+}
+async function invSetStatus(c, n, st) {
+  const b = INV.bands[c];
+  if (!st) delete b.m[n];
+  else b.m[n] = { s: st, note: (document.getElementById('inv-note').value || '').trim() };
+  if (await invSave()) toast('📦 ' + c + ' ' + bibPad(n) + ' atualizada');
+  renderInventory();
+}
+async function invItemAdd() {
+  const name = document.getElementById('inv-new-name').value.trim();
+  if (!name) return toast('⚠️ Digite o nome do material');
+  INV.items.push({ id: 'i' + Date.now().toString(36), name, total: parseInt(document.getElementById('inv-new-qty').value, 10) || 0, out: 0, lost: 0, note: '' });
+  await invSave(); renderInventory();
+}
+async function invItemSet(id, f, v) {
+  const it = INV.items.find(x => x.id === id); if (!it) return;
+  it[f] = f === 'note' ? String(v).trim() : Math.max(0, parseInt(v, 10) || 0);
+  await invSave(); renderInventory();
+}
+async function invItemDel(id) {
+  const it = INV.items.find(x => x.id === id);
+  if (!it || !confirm('Remover "' + it.name + '" do inventário?')) return;
+  INV.items = INV.items.filter(x => x.id !== id);
+  await invSave(); renderInventory();
+}
+
+// ══════════════════════════════════════════════
+//  CHECKLIST PRÉ-EVENTO (um por evento: '1', '2' ou '0' se for evento único)
+// ══════════════════════════════════════════════
+// Itens automáticos (calculados na hora) + itens manuais marcáveis e editáveis.
+// Guardado em app_settings: 'checklist:<evento>:<prova>'
+let CK = null, CK_KEY = null, CK_SUB = null;
+const CK_DEFAULT = [
+  'Local liberado e montado (sinalização, áreas de estação)',
+  'Material das estações separado e conferido',
+  'Cronômetro / relógio testado',
+  'Pulseiras separadas por cor e número',
+  'Lista de inscritos impressa (relatório)',
+  'Equipe confirmada e orientada',
+  'Água e kit de primeiros socorros',
+  'Som / música e energia',
+  'Profissional de Educação Física escalado',
+  'Plano para chuva / clima'
+];
+function ckSubInfo(info, sub) {
+  const dual = !!info.is_dual, n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  const name = dual ? (sub === '1' ? n1 : n2) : (info.name || 'Evento');
+  const other = sub === '1' ? n2 : n1;
+  const g = k => dual ? info[k + '_' + sub] : info[k];
+  return { dual, name, other, g };
+}
+async function ckAuto(info, sub) {
+  const { dual, name, other, g } = ckSubInfo(info, sub);
+  const out = [];
+  out.push({ ok: !!(name && g('meta')), t: 'Dados do evento preenchidos (nome, data/local)', d: g('meta') ? '' : 'Falta data/local no cadastro' });
+  out.push({ ok: g('active') !== false, t: 'Inscrições abertas', d: g('active') !== false ? '' : 'Estão fechadas — reabra nas configurações' });
+  if (!eventRegLoaded) await loadEventRegistrations();
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && (!dual || evRegInSub(r, name, other)));
+  const max = +g('max') || 0;
+  out.push({ ok: regs.length > 0, warn: regs.length === 0, t: `Inscritos: ${regs.length}${max ? ' de ' + max + ' vagas' : ''}`, d: regs.length ? '' : 'Ninguém inscrito ainda' });
+  // pulseiras x inventário
+  try {
+    await ensureBibs(info);
+    if (!INV) await invLoad();
+    const bs = dual ? sub : '0';
+    let semNum = 0, fora = 0, indisp = 0, semFaixa = false;
+    regs.forEach(r => {
+      const n = bibOf(r, bs); if (n == null) { semNum++; return; }
+      const c = levelColor(bibLvl(r)).name, b = INV.bands[c];
+      if (!b || !(b.to >= b.from && b.to > 0)) { semFaixa = true; return; }
+      if (n < b.from || n > b.to) { fora++; return; }
+      const m = b.m[n]; if (m && (m.s === 'extraviada' || m.s === 'danificada')) indisp++;
+    });
+    const bad = semNum + fora + indisp;
+    out.push({ ok: !bad && !semFaixa, warn: semFaixa && !bad, t: 'Pulseiras suficientes para os inscritos',
+      d: semFaixa ? 'Cadastre a faixa de pulseiras no Inventário' : [semNum && `${semNum} inscrito(s) sem nº`, fora && `${fora} com nº fora da faixa que você tem`, indisp && `${indisp} com pulseira extraviada/danificada`].filter(Boolean).join(' · ') });
+  } catch (e) { console.error(e); }
+  try { await loadStaffPw(); out.push({ ok: !!staffHash(), t: 'Senha da equipe definida', d: staffHash() ? '' : 'Sem senha: qualquer pessoa com o link controla o evento' }); } catch (e) {}
+  try {
+    if (!INV) await invLoad();
+    const neg = INV.items.filter(it => (+it.total || 0) - (+it.out || 0) - (+it.lost || 0) < 0);
+    const low = INV.items.filter(it => (+it.total || 0) - (+it.out || 0) - (+it.lost || 0) === 0);
+    out.push({ ok: !neg.length, warn: !neg.length && !!low.length, t: 'Materiais do inventário em ordem', d: neg.length ? 'Conta não fecha: ' + neg.map(i => i.name).join(', ') : low.length ? 'Zerados: ' + low.map(i => i.name).join(', ') : '' });
+  } catch (e) {}
+  return out;
+}
+async function openChecklist(sub) {
+  const info = EVENT_INFO || await getEventInfo();
+  if (!info || !info.id) return toast('⚠️ Salve o evento primeiro');
+  CK_SUB = sub; CK_KEY = `checklist:${info.id}:${sub}`;
+  const v = await getSetting(CK_KEY, null);
+  CK = (v && Array.isArray(v.items)) ? v : { items: CK_DEFAULT.map((t, i) => ({ id: 'd' + i, t, done: false })) };
+  await renderChecklist(true);
+}
+async function renderChecklist(scroll) {
+  const box = document.getElementById('ev-checklist-box'); if (!box || !CK) return;
+  const info = EVENT_INFO || await getEventInfo();
+  const { name } = ckSubInfo(info, CK_SUB);
+  box.style.display = ''; box.innerHTML = '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Conferindo…</div>';
+  const auto = await ckAuto(info, CK_SUB);
+  const done = CK.items.filter(i => i.done).length, okAuto = auto.filter(a => a.ok).length;
+  const total = CK.items.length + auto.length, sum = done + okAuto;
+  const pct = total ? Math.round(sum / total * 100) : 0;
+  const inp = 'width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:14px';
+  let h = `<div class="reg-sub-card" style="margin-bottom:20px;border-color:${pct === 100 ? '#3ce89b' : 'var(--border)'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div class="reg-sub-name">✅ Checklist — ${tvEsc(name)}</div>
+      <button class="btn-sm" style="padding:6px 10px" onclick="ckClose()">✕</button></div>
+    <div style="height:8px;border-radius:99px;background:rgba(255,255,255,.1);margin:10px 0 4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#3ce89b' : 'var(--accent)'}"></div></div>
+    <div style="font-size:12px;color:${pct === 100 ? '#3ce89b' : 'var(--muted)'};margin-bottom:12px">${pct === 100 ? '🎉 Tudo conferido — pode abrir o evento!' : `${sum} de ${total} itens conferidos`}</div>
+    <div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">AUTOMÁTICO</div>` +
+    auto.map(a => `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${a.ok ? '✅' : a.warn ? '⚠️' : '❌'}</span><div><div>${tvEsc(a.t)}</div>${a.d ? `<div style="font-size:12px;color:${a.ok ? 'var(--muted)' : '#ff9d5c'}">${tvEsc(a.d)}</div>` : ''}</div></div>`).join('') +
+    `<div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin:14px 0 6px">CONFERIR NO LOCAL</div>` +
+    CK.items.map(i => `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <input type="checkbox" ${i.done ? 'checked' : ''} onchange="ckToggle('${i.id}')" style="width:22px;height:22px;flex:0 0 auto;accent-color:#3ce89b">
+      <div style="flex:1;${i.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${tvEsc(i.t)}</div>
+      <button class="btn-sm" style="padding:4px 9px" onclick="ckDel('${i.id}')">✕</button></div>`).join('') +
+    `<div style="display:flex;gap:8px;margin-top:12px"><input id="ck-new" type="text" placeholder="Adicionar item" style="${inp};flex:1">
+      <button class="btn btn-blue" style="margin:0;flex:0 0 auto;padding:0 16px" onclick="ckAdd()">＋</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn-sm" onclick="ckReset()">↺ Desmarcar tudo</button>
+      <button class="btn-sm" onclick="renderChecklist()">🔄 Reconferir automáticos</button></div></div>`;
+  box.innerHTML = h;
+  if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+const ckSave = () => setSetting(CK_KEY, CK);
+async function ckToggle(id) { const i = CK.items.find(x => x.id === id); if (!i) return; i.done = !i.done; await ckSave(); renderChecklist(); }
+async function ckAdd() {
+  const t = document.getElementById('ck-new').value.trim(); if (!t) return;
+  CK.items.push({ id: 'c' + Date.now().toString(36), t, done: false }); await ckSave(); renderChecklist();
+}
+async function ckDel(id) { CK.items = CK.items.filter(x => x.id !== id); await ckSave(); renderChecklist(); }
+async function ckReset() { if (!confirm('Desmarcar todos os itens?')) return; CK.items.forEach(i => i.done = false); await ckSave(); renderChecklist(); }
+function ckClose() { const b = document.getElementById('ev-checklist-box'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } }
+
 let REG_SUB_FILTER = 'all';
 function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
 
@@ -4960,16 +5228,24 @@ function renderRegSubTools(info, allRegs) {
   const btn = document.getElementById('ev-report-btn');
   const mg = document.getElementById('ev-manage-box');
   if (mg) {
-    if (info.is_dual && info.id) {
+    if (info.id) {
       const a = info.sub1_name || 'Evento 1', b = info.sub2_name || 'Evento 2';
-      mg.style.display = '';
-      mg.innerHTML = `<div class="reg-sub-card" style="margin-bottom:20px">
+      let h = `<div class="reg-sub-card" style="margin-bottom:14px">
+        <div class="reg-sub-name">✅ Checklist antes do evento</div>
+        <div class="reg-sub-count">Confira tudo antes de abrir o evento.</div>
+        <div class="reg-sub-actions" style="flex-direction:column">` + (info.is_dual
+          ? `<button class="btn btn-blue" style="width:100%" onclick="openChecklist('1')">✅ Checklist — ${tvEsc(a)}</button>
+             <button class="btn btn-blue" style="width:100%" onclick="openChecklist('2')">✅ Checklist — ${tvEsc(b)}</button>`
+          : `<button class="btn btn-blue" style="width:100%" onclick="openChecklist('0')">✅ Checklist — ${tvEsc(info.name || 'Evento')}</button>`) + `</div></div>`;
+      if (info.is_dual) h += `<div class="reg-sub-card" style="margin-bottom:20px">
         <div class="reg-sub-name">🗂️ Encerrar um dos eventos</div>
         <div class="reg-sub-count" style="line-height:1.5">Apaga um evento e o outro continua sozinho, como evento único (com os inscritos, resultados e pulseiras dele).</div>
         <div class="reg-sub-actions" style="flex-direction:column">
           <button class="btn-sm-danger" style="width:100%" onclick="clearSubEvent('1')">🗑️ Excluir “${tvEsc(a)}” e ficar só com “${tvEsc(b)}”</button>
           <button class="btn-sm-danger" style="width:100%" onclick="clearSubEvent('2')">🗑️ Excluir “${tvEsc(b)}” e ficar só com “${tvEsc(a)}”</button>
         </div></div>`;
+      else h += `<div style="margin-bottom:20px"></div>`;
+      mg.style.display = ''; mg.innerHTML = h;
     } else { mg.style.display = 'none'; mg.innerHTML = ''; }
   }
   if (!box) return;
@@ -6072,7 +6348,7 @@ async function checkPass() {
 
 async function admTab(name) {
   document.querySelectorAll('.adm-tab').forEach((b,i)=>{
-    b.classList.toggle('active',['quick','pts','historico','members','challenges','distintivos','meta','evento','arquivados','subscribers','settings'][i]===name);
+    b.classList.toggle('active',['quick','pts','historico','members','challenges','distintivos','meta','evento','arquivados','inventario','subscribers','settings'][i]===name);
   });
   document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
@@ -6080,6 +6356,7 @@ async function admTab(name) {
   if(name==='pts'){renderAdminSelect();renderRecentHistory();}
   if(name==='historico'){renderHistoryManagerList();}
   if(name==='arquivados'){renderArchivedEventsAdminList();}
+  if(name==='inventario'){renderInventory();}
   if(name==='quick'){renderQuickTap();}
   if(name==='challenges'){loadChallengeVideos().then(renderChallengesAdminList);}
   if(name==='distintivos'){loadBadges().then(bdInit);}
