@@ -584,7 +584,7 @@ body.meta-mode::before,body.meta-mode::after{display:none !important}
 .emoji-picker-cat-label { grid-column:1/-1;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:6px 0 2px;padding-top:4px;border-top:1px solid var(--border); }
 .emoji-picker-cat-label:first-child { border-top:none;margin-top:0; }
 .field-label { font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px;display:block; }
-input[type="password"],input[type="text"],input[type="number"],select,textarea { width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s; }
+input[type="password"],input[type="text"],input[type="number"],input[type="tel"],select,textarea { width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .2s; }
 input:focus,select:focus,textarea:focus { border-color:var(--accent); }
 
 /* ── Contraste: setinha dos selects, bordas dos campos e checkboxes ── */
@@ -599,7 +599,7 @@ select {
 }
 select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(232,255,0,0.12); }
 option { background:#1c1c1c; color:#f4f4ef; }
-input[type="password"],input[type="text"],input[type="number"],textarea { border-color:rgba(255,255,255,0.18); }
+input[type="password"],input[type="text"],input[type="number"],input[type="tel"],textarea { border-color:rgba(255,255,255,0.18); }
 input[type="checkbox"],input[type="radio"] { accent-color:#e8ff00; }
 input::placeholder,textarea::placeholder { color:var(--muted); }
 textarea { resize:vertical;min-height:72px; }
@@ -673,6 +673,25 @@ textarea { resize:vertical;min-height:72px; }
   .modal-body{padding:16px 20px 24px}
   .modal-header{padding:20px 20px 0}
 }
+
+/* ── Formulário: campo obrigatório com erro / placeholder de select / telefone ── */
+.field-error { border-color:#ff5c5c !important; box-shadow:0 0 0 3px rgba(255,92,92,0.18) !important; }
+select.is-placeholder { color:var(--muted); }
+select option { color:#fff; background:#14161f; }
+input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5px; }
+.req-star { color:#ff5c5c; margin-left:2px; }
+.field-hint { font-size:11px; color:var(--muted); margin-top:5px; }
+/* ── Admin: inscrições separadas por evento ── */
+.reg-sub-tools { margin-bottom:14px; }
+.reg-sub-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.reg-sub-filter button { padding:8px 12px; font-size:12px; }
+.reg-sub-filter button.on { border-color:var(--accent); color:var(--accent); }
+.reg-sub-card { background:var(--s2); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+.reg-sub-name { font-weight:800; font-size:14px; }
+.reg-sub-count { font-size:12px; color:var(--muted); margin:2px 0 10px; }
+.reg-sub-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.reg-sub-actions .btn { flex:1 1 140px; margin:0; }
+.reg-sub-actions .btn-sm-danger { flex:1 1 140px; padding:12px; }
 </style>
 </head>
 <body>
@@ -996,16 +1015,16 @@ textarea { resize:vertical;min-height:72px; }
         <select id="ev-level"></select>
       </div>
       <div class="field-group" id="ev-phone-wrap">
-        <label class="field-label">Telefone (WhatsApp)</label>
-        <input type="tel" id="ev-phone" placeholder="(21) 90000-0000">
+        <label class="field-label">Telefone (WhatsApp) <span class="req-star">*</span></label>
+        <input type="tel" id="ev-phone" placeholder="(21) 90000-0000" inputmode="numeric" autocomplete="tel-national" maxlength="15">
+        <div class="field-hint">📲 Com DDD — vamos te enviar os informes do evento por aqui.</div>
       </div>
       <div class="field-group" id="ev-source-wrap">
-        <label class="field-label">Como ficou sabendo do nosso evento?</label>
-        <select id="ev-source" onchange="toggleReferralField()">
+        <label class="field-label">Como ficou sabendo do nosso evento? <span class="req-star">*</span></label>
+        <select id="ev-source" class="is-placeholder" onchange="toggleReferralField()" required>
+          <option value="" selected disabled>Selecione uma opção</option>
           <option value="Instagram">📷 Instagram</option>
-          <option value="WhatsApp">💬 WhatsApp</option>
           <option value="Indicação de amigo(a)">🗣️ Indicação de amigo(a)</option>
-          <option value="Já sou aluno(a)">🏋️ Já sou aluno(a) da Cantil</option>
           <option value="Outro">✨ Outro</option>
         </select>
       </div>
@@ -1723,7 +1742,8 @@ textarea { resize:vertical;min-height:72px; }
             <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.4">A senha da equipe (a mesma da Meta) é definida na aba <b>Config</b>. A TV atualiza sozinha a cada 15 s, em ordem alfabética e sem medalhas. Para classificar por tempo (com medalhas), acrescente <b>&amp;ordem=tempo</b> no fim do link.</div>
           </div>
           <div class="section-label">📋 Inscritos (<span id="ev-count">0</span>)</div>
-          <button class="btn btn-blue" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
+          <button class="btn btn-blue" id="ev-report-btn" onclick="printEventReport()" style="margin-bottom:14px">🖨️ Gerar relatório para impressão</button>
+          <div id="reg-sub-tools" class="reg-sub-tools" style="display:none"></div>
           <div id="event-registrations-list"></div>
           <hr class="divider">
           <div class="section-label">🚫 Faltantes de eventos anteriores <span style="font-weight:400;color:var(--muted);font-size:11px">(só você vê · cada nome fica 30 dias)</span></div>
@@ -4103,8 +4123,11 @@ function setEventPersonType(isInternal) {
   document.getElementById('ev-age-wrap').style.display = isInternal ? 'none' : '';
   document.getElementById('ev-source-wrap').style.display = isInternal ? 'none' : '';
   document.getElementById('ev-referral-wrap').style.display = 'none';
+  document.getElementById('ev-source').value = '';   // sem opção pré-selecionada: o visitante precisa escolher
+  document.getElementById('ev-source').classList.add('is-placeholder');
+  document.getElementById('ev-source').classList.remove('field-error');
   if (isInternal) {
-    document.getElementById('ev-source').value = 'Instagram';
+    // (membro/aluno não responde "como ficou sabendo")
   } else {
     document.getElementById('ev-is-clube').checked = false;
     document.getElementById('ev-is-ct').checked = false;
@@ -4135,9 +4158,30 @@ function toggleInternalFields() {
 }
 
 function toggleReferralField() {
-  const isReferral = document.getElementById('ev-source').value === 'Indicação de amigo(a)';
+  const sel = document.getElementById('ev-source');
+  const isReferral = sel.value === 'Indicação de amigo(a)';
   document.getElementById('ev-referral-wrap').style.display = isReferral ? '' : 'none';
+  sel.classList.toggle('is-placeholder', !sel.value);
+  if (sel.value) sel.classList.remove('field-error');
 }
+
+// ── Telefone: máscara brasileira (21) 90000-0000 ──
+function maskPhoneBR(v) {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2);
+  d = d.slice(0, 11);
+  if (!d.length) return '';
+  if (d.length <= 2) return '(' + d;
+  if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+  if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+}
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!t || (t.id !== 'ev-phone' && t.id !== 'er-phone')) return;
+  t.value = maskPhoneBR(t.value);
+  t.classList.remove('field-error');
+});
 
 async function submitEventRegistration() {
   const info = await getEventInfo();
@@ -4176,7 +4220,15 @@ async function submitEventRegistration() {
   const heardFrom = eventIsMember ? null : document.getElementById('ev-source').value;
   const isReferral = !eventIsMember && heardFrom === 'Indicação de amigo(a)';
   const referredBy = isReferral ? document.getElementById('ev-referral').value.trim() : null;
-  if (needsPhone && !phone) return toast('⚠️ Digite seu telefone!');
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (needsPhone && !phone) { document.getElementById('ev-phone').classList.add('field-error'); return toast('⚠️ Digite seu telefone!'); }
+  if (needsPhone && (phoneDigits.length < 10 || phoneDigits.length > 11)) { document.getElementById('ev-phone').classList.add('field-error'); return toast('⚠️ Telefone inválido — digite com DDD, ex: (21) 90000-0000'); }
+  if (!eventIsMember && !heardFrom) {
+    const srcEl = document.getElementById('ev-source');
+    srcEl.classList.add('field-error');
+    srcEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return toast('⚠️ Selecione como você ficou sabendo do evento!');
+  }
   if (isReferral && !referredBy) return toast('⚠️ Digite o nome de quem indicou!');
   if (!document.getElementById('ev-consent').checked) return toast('⚠️ Você precisa concordar com os termos pra continuar!');
 
@@ -4206,7 +4258,7 @@ async function submitEventRegistration() {
     blocked = data;
   } else if (phone) {
     const { data } = await sb.from('event_registrations')
-      .select('id, attended, attended_1, attended_2').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').eq('phone', phone).limit(50);
+      .select('id, attended, attended_1, attended_2').or('attended.eq.false,attended_1.eq.false,attended_2.eq.false').in('phone', [phone, phoneDigits]).limit(50);
     blocked = data;
   }
   if (blocked && blocked.length) {                   // só bloqueia se a falta ainda estiver dentro dos 30 dias
@@ -4233,6 +4285,8 @@ async function submitEventRegistration() {
   document.getElementById('ev-name').value='';
   document.getElementById('ev-age').value='';
   document.getElementById('ev-phone').value='';
+  document.getElementById('ev-source').value='';
+  toggleReferralField();
   document.getElementById('ev-referral').value='';
   document.getElementById('ev-consent').checked = false;
   document.getElementById('ev-is-clube').checked = false;
@@ -4893,11 +4947,131 @@ async function updateArchiveResult(idx, subCtx, newValue) {
   toast('✅ Resultado atualizado no arquivo!');
 }
 
+let REG_SUB_FILTER = 'all';
+function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
+
+// Cartões por evento (só aparece quando há 2 eventos): filtro, relatório próprio e "encerrar e apagar" independente
+function renderRegSubTools(info, allRegs) {
+  const box = document.getElementById('reg-sub-tools');
+  const btn = document.getElementById('ev-report-btn');
+  if (!box) return;
+  if (!info.is_dual) { box.style.display = 'none'; box.innerHTML = ''; if (btn) btn.style.display = ''; REG_SUB_FILTER = 'all'; return; }
+  if (btn) btn.style.display = 'none';
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  const c1 = allRegs.filter(r => evRegInSub(r, n1, n2)).length;
+  const c2 = allRegs.filter(r => evRegInSub(r, n2, n1)).length;
+  const chip = (k, label, n) => `<button class="btn-sm ${REG_SUB_FILTER === k ? 'on' : ''}" onclick="setRegSubFilter('${k}')">${tvEsc(label)} (${n})</button>`;
+  const card = (k, name, n) => `
+    <div class="reg-sub-card">
+      <div class="reg-sub-name">${tvEsc(name)}</div>
+      <div class="reg-sub-count">${n} inscrito(s) neste evento</div>
+      <div class="reg-sub-actions">
+        <button class="btn btn-blue" onclick="printEventReport('${k}')">🖨️ Relatório</button>
+        <button class="btn-sm-danger" onclick="clearSubEvent('${k}')">🗑️ Encerrar e apagar</button>
+      </div>
+    </div>`;
+  box.style.display = '';
+  box.innerHTML = `<div class="reg-sub-filter">${chip('all', 'Todos', allRegs.length)}${chip('1', n1, c1)}${chip('2', n2, c2)}</div>${card('1', n1, c1)}${card('2', n2, c2)}`;
+}
+
+// Encerra UM dos dois eventos: arquiva, apaga só as inscrições dele e NÃO mexe no outro evento
+async function clearSubEvent(sub) {
+  const info = EVENT_INFO || defaultEventInfo();
+  if (!info.is_dual || !info.id) return toast('⚠️ Disponível só para evento com 2 provas.');
+  const o = sub === '1' ? '2' : '1';
+  const nm = sub === '1' ? (info.sub1_name || 'Evento 1') : (info.sub2_name || 'Evento 2');
+  const on = o === '1' ? (info.sub1_name || 'Evento 1') : (info.sub2_name || 'Evento 2');
+  const inSub = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && evRegInSub(r, nm, on));
+  if (!inSub.length) return toast('⚠️ Nenhuma inscrição em "' + nm + '".');
+  await loadNoShowAt();
+  const isNs = r => r['attended_' + sub] === false && noShowActive(r);
+  const keepNs = inSub.filter(isNs).length;
+  const alsoOther = inSub.filter(r => evRegInSub(r, on, nm)).length;
+  const msg = `Encerrar "${nm}"?\n\n• ${inSub.length} inscrição(ões) deste evento saem da lista`
+    + (alsoOther ? `\n• ${alsoOther} pessoa(s) também inscritas em "${on}" continuam lá, intactas` : '')
+    + (keepNs ? `\n• ${keepNs} faltante(s) ficam na lista de bloqueio` : '')
+    + `\n\nAntes de apagar, os resultados ficam salvos num link permanente.\n"${on}" NÃO é alterado.`;
+  if (!confirm(msg)) return;
+
+  // 1) arquivo permanente só com este evento
+  const snapInfo = { ...info, name: info.name ? `${info.name} — ${nm}` : nm };
+  const copies = inSub.map(r => ({ ...r, sub_events: nm, ['attended_' + o]: null, ['result_value_' + o]: null, ['result_note_' + o]: null }));
+  let archiveUrl = null;
+  try { archiveUrl = await archiveEventResults(snapInfo, copies); } catch (e) { console.error(e); }
+  if (!archiveUrl && !confirm('⚠️ NÃO foi possível salvar o arquivo de resultados. Continuar e apagar SEM backup?')) return;
+
+  // 2) apaga / atualiza só as linhas deste evento
+  const delIds = [], ops = [];
+  inSub.forEach(r => {
+    const ns = isNs(r), both = evRegInSub(r, on, nm);
+    if (both) {
+      ops.push(sb.from('event_registrations').update({
+        sub_events: on, ['result_value_' + sub]: null, ['points_awarded_' + sub]: false,
+        ['attended_' + sub]: ns ? false : null
+      }).eq('id', r.id));
+    } else if (ns) {
+      ops.push(sb.from('event_registrations').update({ event_id: null, event_name: nm }).eq('id', r.id));
+    } else delIds.push(r.id);
+  });
+  if (delIds.length) ops.push(sb.from('event_registrations').delete().in('id', delIds));
+  const results = await Promise.all(ops);
+  const failed = results.find(x => x && x.error);
+  if (failed) { console.error(failed.error); return toast('⚠️ Erro ao apagar inscrições deste evento'); }
+
+  // 3) limpa dados auxiliares só deste evento (fotos de estação, pulseiras, descrições)
+  const ids = inSub.map(r => r.id), idSet = new Set(ids.map(String));
+  try {
+    const { data } = await sb.from('app_settings').select('key').like('key', 'station_img_%');
+    const keys = (data || []).map(x => x.key).filter(k => { const m = /^station_img_(\d+)_([12])_\d+$/.exec(k); return m && m[2] === sub && idSet.has(m[1]); });
+    for (let i = 0; i < keys.length; i += 50) await sb.from('app_settings').delete().in('key', keys.slice(i, i + 50));
+    await loadStationLog();
+    let ch = false; ids.forEach(id => { if (STATION_LOG[id + '_' + sub]) { delete STATION_LOG[id + '_' + sub]; ch = true; } });
+    if (ch) await setSetting('station_log', STATION_LOG);
+  } catch (e) { console.error('limpeza estações', e); }
+  try {
+    const bibKeys = ids.map(id => `bib:${info.id}:${sub}:${id}`);
+    for (let i = 0; i < bibKeys.length; i += 50) await sb.from('app_settings').delete().in('key', bibKeys.slice(i, i + 50));
+  } catch (e) { console.error('limpeza pulseiras', e); }
+  try {
+    await loadResultNotes();
+    let ch = false; ids.forEach(id => { if (RESULT_NOTES[id + '_' + sub] !== undefined) { delete RESULT_NOTES[id + '_' + sub]; ch = true; } });
+    if (ch) await setSetting('result_notes', RESULT_NOTES);
+  } catch (e) { console.error('limpeza notas', e); }
+
+  // 4) fecha as inscrições deste evento (o outro continua como estava)
+  try {
+    const newInfo = { ...info, ['active_' + sub]: false };
+    if (await setSetting('event_info', newInfo)) EVENT_INFO = newInfo;
+    const sel = document.getElementById('ev-cfg-active-' + sub); if (sel) sel.value = 'false';
+  } catch (e) { console.error(e); }
+
+  // 5) atualiza telas
+  eventRegLoaded = false;
+  await loadEventRegistrations();
+  try { await loadBibs(EVENT_INFO || info); } catch (e) {}
+  REG_SUB_FILTER = 'all';
+  try { renderRegistrationsList(); renderNoShowList(); } catch (e) { console.error(e); }
+  try { if (typeof populateResultSelect === 'function') populateResultSelect(); } catch (e) {}
+  try { await renderEventPublicView(); } catch (e) { console.error(e); }
+
+  toast(`🗑️ "${nm}" encerrado — "${on}" não foi alterado.`);
+  if (archiveUrl) setTimeout(() => {
+    if (confirm(`📎 Link permanente dos resultados de "${nm}":\n\n${archiveUrl}\n\nCopiar agora?`))
+      navigator.clipboard?.writeText(archiveUrl).then(() => toast('📋 Link copiado!')).catch(() => {});
+  }, 400);
+}
+
 function renderRegistrationsList() {
   const el = document.getElementById('event-registrations-list');
   const info = EVENT_INFO || defaultEventInfo();
-  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
-  document.getElementById('ev-count').textContent = regs.length;
+  const allRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  renderRegSubTools(info, allRegs);
+  let regs = allRegs;
+  if (info.is_dual && REG_SUB_FILTER !== 'all') {
+    const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+    regs = allRegs.filter(r => REG_SUB_FILTER === '1' ? evRegInSub(r, n1, n2) : evRegInSub(r, n2, n1));
+  }
+  document.getElementById('ev-count').textContent = allRegs.length;
   if (!regs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhuma inscrição ainda.</div>'; return; }
 
   el.innerHTML = regs.map(r => {
@@ -4907,8 +5081,8 @@ function renderRegistrationsList() {
     if (info.is_dual) {
       const sub1Name = info.sub1_name || 'Evento 1';
       const sub2Name = info.sub2_name || 'Evento 2';
-      const inSub1 = (r.sub_events||'').includes(sub1Name);
-      const inSub2 = (r.sub_events||'').includes(sub2Name);
+      const inSub1 = evRegInSub(r, sub1Name, sub2Name) && REG_SUB_FILTER !== '2';
+      const inSub2 = evRegInSub(r, sub2Name, sub1Name) && REG_SUB_FILTER !== '1';
       attendanceHtml = `
         <div class="attend-dual-wrap">
           ${inSub1 ? `
@@ -5406,96 +5580,89 @@ document.addEventListener('keydown', e => {
   if (e.key==='Escape' && document.getElementById('edit-reg-overlay')?.classList.contains('open')) closeEditRegistration();
 });
 
-async function printEventReport() {
+async function printEventReport(subKey) {
   const info = EVENT_INFO || defaultEventInfo();
-  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  const isDual = !!info.is_dual;
+  if (isDual && subKey !== '1' && subKey !== '2') return toast('⚠️ Escolha de qual evento é o relatório.');
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  const mine = isDual ? (subKey === '1' ? n1 : n2) : (info.name || 'Evento');
+  const other = subKey === '1' ? n2 : n1;
+  const meta = isDual ? (info['meta_' + subKey] || '') : (info.meta || '');
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+  if (isDual) regs = regs.filter(r => evRegInSub(r, mine, other));
   if (!regs.length) return toast('⚠️ Não há inscritos nesse evento ainda.');
 
   try { await ensureBibs(info); } catch (e) { console.error(e); }
-  const groupDescs = await getSetting('level_descriptions', {});
-  const levelLabel = (key) => (groupDescs[key] && groupDescs[key].trim()) ? groupDescs[key] : (key || '—');
-  const formatWhen = (createdAt) => {
-    if (!createdAt) return '—';
-    const d = new Date(createdAt);
-    return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  };
+  regs = regs.slice().sort((a, b) => String(a.name).localeCompare(String(b.name), 'pt-BR'));
 
-  let attendedCount, noShowCount, pendingCount, rows, headerCols;
+  const esc = tvEsc;
+  const bibSub = isDual ? subKey : '0';
+  const att = r => isDual ? r['attended_' + subKey] : r.attended;
+  const resv = r => (isDual ? r['result_value_' + subKey] : r.result_value) || '';
+  const total = regs.length;
+  const presentes = regs.filter(r => att(r) === true).length;
+  const faltaram = regs.filter(r => att(r) === false).length;
+  const pendentes = total - presentes - faltaram;
+  const byLevel = {};
+  regs.forEach(r => { const k = r.fitness_level || '—'; byLevel[k] = (byLevel[k] || 0) + 1; });
+  const levelsTxt = Object.keys(byLevel).map(k => `${esc(k)}: <b>${byLevel[k]}</b>`).join(' &nbsp;·&nbsp; ');
 
-  if (info.is_dual) {
-    const sub1 = info.sub1_name || 'Evento 1';
-    const sub2 = info.sub2_name || 'Evento 2';
-    attendedCount = regs.filter(r=>r.attended_1===true || r.attended_2===true).length;
-    noShowCount = regs.filter(r=>r.attended_1===false || r.attended_2===false).length;
-    pendingCount = regs.filter(r=>(r.attended_1==null)&&(r.attended_2==null)).length;
+  const hasBib = regs.some(r => bibOf(r, bibSub) != null);
+  const hasRes = regs.some(r => resv(r));
+  const hasCustomQ = !isDual && !!(info.custom_question_enabled && info.custom_question_label);
+  const cols = [{ h: '#', f: (r, i) => i + 1 }];
+  if (hasBib) cols.push({ h: 'Pulseira', f: r => bibOf(r, bibSub) != null ? esc(bibCode(r, bibSub)) : '—' });
+  cols.push(
+    { h: 'Nome', f: r => `<b>${esc(r.name)}</b>` },
+    { h: 'Perfil', f: r => esc([r.is_member ? 'Clube' : null, r.is_ct_student ? 'Aluno CT' : null].filter(Boolean).join(' + ') || 'Visitante') },
+    { h: 'Categoria', f: r => esc(r.fitness_level || '—') },
+    { h: 'Idade', f: r => r.age || '—' },
+    { h: 'Telefone', f: r => esc(r.phone || '—') },
+    { h: 'Como soube', f: r => r.heard_from ? esc(r.heard_from) + (r.referred_by ? ' (' + esc(r.referred_by) + ')' : '') : '—' },
+    { h: 'Presença', f: r => att(r) === true ? '✅ Presente' : att(r) === false ? '❌ Faltou' : '—' }
+  );
+  if (hasRes) cols.push({ h: 'Resultado', f: r => esc(resv(r) || '—') });
+  if (hasCustomQ) cols.push({ h: info.custom_question_label, f: r => esc(r.custom_answer || '—') });
 
-    const presLabel = (v) => v===true?'✅ Presente':v===false?'❌ Faltou':'—';
-    rows = regs.map((r,i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td>${r.name}</td>
-        <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
-        <td>${(() => { const p = []; if (evRegInSub(r, sub1, sub2)) p.push(sub1 + bibTxt(r, '1')); if (evRegInSub(r, sub2, sub1)) p.push(sub2 + bibTxt(r, '2')); return p.length ? p.join('<br>') : (r.sub_events || '—'); })()}</td>
-        <td>${r.age||'—'}</td>
-        <td>${levelLabel(r.fitness_level)}</td>
-        <td>${r.phone||'—'}</td>
-        <td>${presLabel(r.attended_1)}${r.result_value_1?' ('+r.result_value_1+')':''}</td>
-        <td>${presLabel(r.attended_2)}${r.result_value_2?' ('+r.result_value_2+')':''}</td>
-        <td>${formatWhen(r.created_at)}</td>
-      </tr>`).join('');
-    headerCols = `<th>#</th><th>Nome</th><th>Tipo</th><th>Inscrito em</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>${sub1}</th><th>${sub2}</th><th>Inscrição em</th>`;
-  } else {
-    attendedCount = regs.filter(r=>r.attended===true).length;
-    noShowCount = regs.filter(r=>r.attended===false).length;
-    pendingCount = regs.filter(r=>r.attended==null).length;
-
-    const hasCustomQ = !!(info.custom_question_enabled && info.custom_question_label);
-    rows = regs.map((r,i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td>${bibOf(r, '0') != null ? bibCode(r, '0') : '—'}</td>
-        <td>${r.name}</td>
-        <td>${[r.is_member?'Membro do Clube':null, r.is_ct_student?'Aluno do CT':null].filter(Boolean).join(' + ') || 'Visitante'}</td>
-        <td>${r.age||'—'}</td>
-        <td>${levelLabel(r.fitness_level)}</td>
-        <td>${r.phone||'—'}</td>
-        <td>${r.heard_from||'—'}${r.referred_by?' ('+r.referred_by+')':''}</td>
-        <td>${r.attended===true?'✅ Presente':r.attended===false?'❌ Faltou':'—'}</td>
-        ${hasCustomQ ? `<td>${r.custom_answer||'—'}</td>` : ''}
-        <td>${formatWhen(r.created_at)}</td>
-      </tr>`).join('');
-    headerCols = `<th>#</th><th>Nº insc.</th><th>Nome</th><th>Tipo</th><th>Idade</th><th>Categoria</th><th>Telefone</th><th>Como soube</th><th>Presença</th>${hasCustomQ ? `<th>${info.custom_question_label}</th>` : ''}<th>Inscrição em</th>`;
-  }
+  const headerCols = cols.map(c => `<th>${esc(c.h)}</th>`).join('');
+  const rows = regs.map((r, i) => `<tr>${cols.map(c => `<td>${c.f(r, i)}</td>`).join('')}</tr>`).join('');
+  const now = new Date();
+  const gerado = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   let hiddenPre = []; try { hiddenPre = JSON.parse(localStorage.getItem('rep_hidden_cols') || '[]'); } catch (e) {}
   const preJson = JSON.stringify(hiddenPre).replace(/</g, '\\u003c');
   const html = `
-    <html><head><meta charset="utf-8"><title>Relatório — ${info.name}</title>
+    <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório — ${esc(mine)}</title>
     <style>
-      body{font-family:Arial,sans-serif;padding:24px;color:#111}
-      h1{font-size:20px;margin-bottom:2px}
-      .meta{color:#555;font-size:13px;margin-bottom:14px}
-      .summary{display:flex;gap:18px;margin-bottom:18px;font-size:13px}
-      .summary b{font-size:16px;display:block}
+      @page{size:A4 landscape;margin:12mm}
+      body{font-family:Arial,sans-serif;padding:20px;color:#111}
+      h1{font-size:20px;margin:0 0 2px}
+      .meta{color:#555;font-size:12px;margin-bottom:12px}
+      .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+      .summary div{border:1px solid #ccc;border-radius:8px;padding:6px 14px;font-size:12px;text-align:center;min-width:80px}
+      .summary b{font-size:18px;display:block}
+      .lv{font-size:12px;color:#333;margin-bottom:14px}
       table{width:100%;border-collapse:collapse;font-size:12px}
-      th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+      th,td{border:1px solid #ccc;padding:5px 7px;text-align:left}
       th{background:#f0f0f0}
-      .bar{margin:0 0 14px;padding:10px 12px;border:1px solid #ccc;border-radius:8px;background:#fafafa;font-size:12px}
+      tr:nth-child(even) td{background:#fafafa}
+      .bar{margin:0 0 14px;padding:8px 12px;border:1px solid #ccc;border-radius:8px;background:#fafafa;font-size:12px}
       .bar-t{font-weight:bold;margin-bottom:6px}
-      .bar label{display:inline-block;margin:0 14px 6px 0;cursor:pointer}
+      .bar label{display:inline-block;margin:0 12px 4px 0;cursor:pointer}
       .bar button{margin:4px 8px 0 0;padding:5px 10px;font-size:12px}
-      @media print{ button,.bar{display:none} }
+      @media print{ button,.bar{display:none} body{padding:0} }
     </style></head>
     <body>
-      <h1>${info.name}</h1>
-      <div class="meta">${info.meta||''} — Relatório gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <h1>${esc(mine)}</h1>
+      <div class="meta">${meta ? esc(meta) + ' — ' : ''}Relatório gerado em ${gerado}</div>
       <div class="summary">
-        <div><b>${regs.length}</b>Inscritos</div>
-        <div><b>${attendedCount}</b>Presentes</div>
-        <div><b>${noShowCount}</b>Faltantes</div>
-        <div><b>${pendingCount}</b>Sem marcação</div>
+        <div><b>${total}</b>Inscritos</div>
+        <div><b>${presentes}</b>Presentes</div>
+        <div><b>${faltaram}</b>Faltaram</div>
+        <div><b>${pendentes}</b>Sem marcação</div>
       </div>
-      <div class="bar"><div class="bar-t">Colunas que vão sair no documento (impressão e PDF)</div><div id="collist"></div>
+      <div class="lv">${levelsTxt}</div>
+      <div class="bar"><div class="bar-t">Colunas do documento (impressão e PDF)</div><div id="collist"></div>
         <button onclick="colAll()">Mostrar tudo</button><button onclick="colPrivacy()">🔒 Ocultar dados pessoais (telefone, idade, como soube)</button></div>
       <style id="colstyle"></style>
       <table>
