@@ -946,6 +946,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
 
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
+  <div id="pairs-public" style="display:none"></div>
   <div class="results-board" id="stations-board" style="display:none"><div class="section-label">📍 Estações · ao vivo</div><div id="stations-body"></div></div>
   <div class="results-board" id="results-board" style="display:none">
     <div class="section-label results-toggle" id="results-toggle" role="button" tabindex="0" aria-expanded="false" onclick="toggleResultsBoard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleResultsBoard()}">🏁 Resultados<span class="results-chev" id="results-chev">▾</span></div>
@@ -989,7 +990,6 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
         </button>
       </div>
 
-      <div id="pairs-public" style="display:none"></div>
       <div id="event-fields-wrap">
       <div class="field-group" id="ev-internal-checks-wrap" style="display:none">
         <label class="field-label">Marque uma ou as duas opções</label>
@@ -5463,7 +5463,7 @@ async function renderPairsPublic() {
       const a = EVENT_REGISTRATIONS.find(r => r.id === p.a), b = EVENT_REGISTRATIONS.find(r => r.id === p.b); if (!a || !b) return '';
       const lv = r => levelColor(r.fitness_level).name.toUpperCase();
       return `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</div>
-        <div style="font-size:10px;color:var(--muted);letter-spacing:.5px">NÍVEL: ${lv(a)} / ${lv(b)} · DUPLA: ${tvEsc(p.cat || 'A DEFINIR')}</div></div>`;
+        <div style="font-size:10px;color:var(--muted);letter-spacing:.5px">NÍVEL: ${tvEsc(p.cat || 'A DEFINIR')}</div></div>`;
     }).filter(Boolean);
     if (!list.length) return;
     h += (info.is_dual ? `<div style="font-size:10px;letter-spacing:1px;color:var(--accent);margin:8px 0 2px">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('');
