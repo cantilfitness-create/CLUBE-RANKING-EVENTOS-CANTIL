@@ -4966,7 +4966,7 @@ async function updateArchiveResult(idx, subCtx, newValue) {
 //   bands[cor] = { from, to, m: { <nº>: { s:'participante'|'extraviada'|'danificada', note } } }
 //   items = [ { id, name, total, out, lost, note } ]
 // "Atribuída" é automático (pulseira já designada a uma inscrição do evento atual); o resto é marcado à mão.
-let INV = null, INV_SEL = null, INV_FILTER = 'all';
+let INV = null, INV_SEL = null, INV_FILTER = 'all', INV_EDIT = null;
 const INV_COLORS = [{ k: 'Verde', emoji: '🟢' }, { k: 'Amarelo', emoji: '🟡' }, { k: 'Laranja', emoji: '🟠' }];
 const INV_ST = {
   disponivel:   { l: 'Disponível',       c: 'var(--muted)', bg: 'transparent' },
@@ -5006,7 +5006,7 @@ async function renderInventory() {
     if (!eventRegLoaded) await loadEventRegistrations();
     try { await loadBibs(info); } catch (e) {}
     const assigned = invAssigned(info);
-    const inp = 'width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:14px';
+    const inp = 'width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:16px;font-family:inherit';
     let html = `<div style="line-height:1.5;margin-bottom:14px">Toque em um número para marcar se está <b>com o participante</b>, <b>extraviada</b> ou <b>danificada</b>. “Atribuída” é automático (número já dado a um inscrito do evento atual).</div>`;
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">` +
       [['all', 'Todas'], ['disponivel', 'Disponíveis'], ['atribuida', 'Atribuídas'], ['participante', 'Com participante'], ['extraviada', 'Extraviadas'], ['danificada', 'Danificadas']]
@@ -5043,7 +5043,7 @@ async function renderInventory() {
           html += `<div style="margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)">
             <div style="font-weight:800;margin-bottom:4px">${c.emoji} ${c.k} ${bibPad(n)} — <span style="color:${INV_ST[st].c}">${INV_ST[st].l}</span></div>
             ${who ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Designada a: ${tvEsc(who.join(', '))}</div>` : ''}
-            <input id="inv-note" type="text" placeholder="Nome do participante / observação" value="${tvEsc(m.note || '')}" style="${inp};margin-bottom:8px">
+            <textarea id="inv-note" rows="2" placeholder="Nome do participante / observação" style="${inp};margin-bottom:8px;resize:vertical">${tvEsc(m.note || '')}</textarea>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'')">✅ Disponível</button>
               <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'participante')">🙋 Com participante</button>
@@ -5051,7 +5051,7 @@ async function renderInventory() {
               <button class="btn-sm" onclick="invSetStatus('${c.k}',${n},'danificada')">🛠️ Danificada</button>
             </div></div>`;
         }
-        if (probs.length) html += `<div style="margin-top:12px;font-size:12px;line-height:1.7">` + probs.map(([n, st]) => `<div><span style="color:${INV_ST[st].c};font-weight:700">${bibPad(n)} · ${INV_ST[st].l}</span>${(b.m[n] && b.m[n].note) ? ' — ' + tvEsc(b.m[n].note) : ''}</div>`).join('') + `</div>`;
+        if (probs.length) html += `<div style="margin-top:12px;font-size:12px;line-height:1.7">` + probs.map(([n, st]) => `<div onclick="invPick('${c.k}',${n})" style="cursor:pointer;padding:3px 0"><span style="color:${INV_ST[st].c};font-weight:700">${bibPad(n)} · ${INV_ST[st].l}</span>${(b.m[n] && b.m[n].note) ? ' — ' + tvEsc(b.m[n].note) : ''} ✏️</div>`).join('') + `</div>`;
       }
       html += `</div>`;
     });
@@ -5061,18 +5061,33 @@ async function renderInventory() {
     if (!INV.items.length) html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Nenhum material cadastrado (cones, cronômetros, camisetas, medalhas…).</div>`;
     INV.items.forEach(it => {
       const disp = (+it.total || 0) - (+it.out || 0) - (+it.lost || 0);
-      const num = (f, l) => `<label style="flex:1;font-size:11px;color:var(--muted)">${l}<input type="number" min="0" value="${+it[f] || 0}" style="${inp};margin-top:3px" onchange="invItemSet('${it.id}','${f}',this.value)"></label>`;
+      const num = (f, l) => `<label style="flex:1;min-width:0;font-size:11px;color:var(--muted)">${l}<input type="number" inputmode="numeric" min="0" value="${+it[f] || 0}" style="${inp};margin-top:3px;padding:10px" onchange="invItemSet('${it.id}','${f}',this.value)"></label>`;
+      if (INV_EDIT === it.id) {
+        html += `<div class="reg-sub-card">
+          <div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">NOME DO MATERIAL</div>
+          <input id="inv-edit-name" type="text" value="${tvEsc(it.name)}" style="${inp}">
+          <div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin:10px 0 6px">OBSERVAÇÃO</div>
+          <textarea id="inv-edit-note" rows="3" placeholder="Ex: guardado no armário 2" style="${inp};resize:vertical">${tvEsc(it.note || '')}</textarea>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-blue" style="margin:0;flex:1;width:auto" onclick="invItemEditSave('${it.id}')">💾 Salvar</button>
+            <button class="btn-sm" style="flex:1" onclick="invItemEdit(null)">Cancelar</button></div></div>`;
+        return;
+      }
       html += `<div class="reg-sub-card">
-        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div class="reg-sub-name">${tvEsc(it.name)}</div>
-          <button class="btn-sm-danger" style="padding:6px 10px" onclick="invItemDel('${it.id}')">🗑️</button></div>
+        <div style="display:flex;gap:8px;align-items:center;min-width:0">
+          <div class="reg-sub-name" style="flex:1;min-width:0;word-break:break-word">${tvEsc(it.name)}</div>
+          <button class="btn-sm" style="flex:0 0 auto;padding:8px 10px" onclick="invItemEdit('${it.id}')">✏️</button>
+          <button class="btn-sm-danger" style="flex:0 0 auto;padding:8px 10px;width:auto" onclick="invItemDel('${it.id}')">🗑️</button></div>
         <div style="font-size:12px;margin:6px 0 10px;color:${disp < 0 ? '#ff5c5c' : 'var(--muted)'}"><b>${disp}</b> disponível(is)</div>
         <div style="display:flex;gap:8px">${num('total', 'Total')}${num('out', 'Com participante / emprestado')}${num('lost', 'Extraviado / danificado')}</div>
-        <input type="text" placeholder="Observação" value="${tvEsc(it.note || '')}" style="${inp};margin-top:8px" onchange="invItemSet('${it.id}','note',this.value)"></div>`;
+        ${it.note ? `<div style="font-size:12px;color:var(--muted);margin-top:10px;white-space:pre-wrap;word-break:break-word">📝 ${tvEsc(it.note)}</div>` : ''}</div>`;
     });
-    html += `<div style="display:flex;gap:8px;margin-top:10px">
-      <input id="inv-new-name" type="text" placeholder="Novo material (ex: Cones)" style="${inp};flex:2">
-      <input id="inv-new-qty" type="number" min="0" placeholder="Qtd" style="${inp};flex:1">
-      <button class="btn btn-blue" style="margin:0;flex:0 0 auto;padding:0 16px" onclick="invItemAdd()">＋</button></div>`;
+    html += `<div class="reg-sub-card">
+      <div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">NOVO MATERIAL</div>
+      <input id="inv-new-name" type="text" placeholder="Digite o nome (ex: Cones)" style="${inp}">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="inv-new-qty" type="number" inputmode="numeric" min="0" placeholder="Quantidade" style="${inp};flex:1;min-width:0;width:auto">
+        <button class="btn btn-blue" style="margin:0;flex:1;width:auto" onclick="invItemAdd()">＋ Adicionar</button></div></div>`;
     box.innerHTML = html;
   } catch (e) { console.error(e); box.textContent = '⚠️ Erro ao carregar o inventário.'; }
 }
@@ -5102,6 +5117,14 @@ async function invItemSet(id, f, v) {
   it[f] = f === 'note' ? String(v).trim() : Math.max(0, parseInt(v, 10) || 0);
   await invSave(); renderInventory();
 }
+function invItemEdit(id) { INV_EDIT = id; renderInventory(); setTimeout(() => { const e = document.getElementById('inv-edit-name'); if (e) e.focus(); }, 50); }
+async function invItemEditSave(id) {
+  const it = INV.items.find(x => x.id === id); if (!it) return;
+  const name = document.getElementById('inv-edit-name').value.trim();
+  if (!name) return toast('⚠️ O nome não pode ficar vazio');
+  it.name = name; it.note = document.getElementById('inv-edit-note').value.trim();
+  INV_EDIT = null; await invSave(); renderInventory();
+}
 async function invItemDel(id) {
   const it = INV.items.find(x => x.id === id);
   if (!it || !confirm('Remover "' + it.name + '" do inventário?')) return;
@@ -5114,7 +5137,7 @@ async function invItemDel(id) {
 // ══════════════════════════════════════════════
 // Itens automáticos (calculados na hora) + itens manuais marcáveis e editáveis.
 // Guardado em app_settings: 'checklist:<evento>:<prova>'
-let CK = null, CK_KEY = null, CK_SUB = null;
+let CK = null, CK_KEY = null, CK_SUB = null, CK_EDIT = null;
 const CK_DEFAULT = [
   'Local liberado e montado (sinalização, áreas de estação)',
   'Material das estações separado e conferido',
@@ -5186,7 +5209,7 @@ async function renderChecklist(scroll) {
   const done = CK.items.filter(i => i.done).length, okAuto = auto.filter(a => a.ok).length;
   const total = CK.items.length + auto.length, sum = done + okAuto;
   const pct = total ? Math.round(sum / total * 100) : 0;
-  const inp = 'width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:14px';
+  const inp = 'width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:16px;font-family:inherit';
   let h = `<div class="reg-sub-card" style="margin-bottom:20px;border-color:${pct === 100 ? '#3ce89b' : 'var(--border)'}">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
       <div class="reg-sub-name">✅ Checklist — ${tvEsc(name)}</div>
@@ -5197,12 +5220,21 @@ async function renderChecklist(scroll) {
     auto.map(a => `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
       <span>${a.ok ? '✅' : a.warn ? '⚠️' : '❌'}</span><div><div>${tvEsc(a.t)}</div>${a.d ? `<div style="font-size:12px;color:${a.ok ? 'var(--muted)' : '#ff9d5c'}">${tvEsc(a.d)}</div>` : ''}</div></div>`).join('') +
     `<div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin:14px 0 6px">CONFERIR NO LOCAL</div>` +
-    CK.items.map(i => `<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-      <input type="checkbox" ${i.done ? 'checked' : ''} onchange="ckToggle('${i.id}')" style="width:22px;height:22px;flex:0 0 auto;accent-color:#3ce89b">
-      <div style="flex:1;${i.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${tvEsc(i.t)}</div>
-      <button class="btn-sm" style="padding:4px 9px" onclick="ckDel('${i.id}')">✕</button></div>`).join('') +
-    `<div style="display:flex;gap:8px;margin-top:12px"><input id="ck-new" type="text" placeholder="Adicionar item" style="${inp};flex:1">
-      <button class="btn btn-blue" style="margin:0;flex:0 0 auto;padding:0 16px" onclick="ckAdd()">＋</button></div>
+    CK.items.map(i => CK_EDIT === i.id
+      ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <textarea id="ck-edit" rows="3" style="${inp};resize:vertical">${tvEsc(i.t)}</textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-blue" style="margin:0;flex:1;width:auto" onclick="ckEditSave('${i.id}')">💾 Salvar</button>
+            <button class="btn-sm" style="flex:1" onclick="ckEditCancel()">Cancelar</button></div></div>`
+      : `<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;min-width:0">
+          <input type="checkbox" ${i.done ? 'checked' : ''} onchange="ckToggle('${i.id}')" style="width:22px;height:22px;flex:0 0 auto;accent-color:#3ce89b">
+          <div style="flex:1;min-width:0;word-break:break-word;${i.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${tvEsc(i.t)}</div>
+          <button class="btn-sm" style="flex:0 0 auto;padding:8px 10px" onclick="ckEdit('${i.id}')">✏️</button>
+          <button class="btn-sm" style="flex:0 0 auto;padding:8px 10px" onclick="ckDel('${i.id}')">🗑️</button></div>`).join('') +
+    `<div style="margin-top:16px">
+      <div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">NOVO ITEM</div>
+      <textarea id="ck-new" rows="2" placeholder="Digite aqui o novo item…" style="${inp};resize:vertical"></textarea>
+      <button class="btn btn-blue" style="margin:8px 0 0;width:100%" onclick="ckAdd()">＋ Adicionar item</button></div>
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <button class="btn-sm" onclick="ckReset()">↺ Desmarcar tudo</button>
       <button class="btn-sm" onclick="renderChecklist()">🔄 Reconferir automáticos</button></div></div>`;
@@ -5212,12 +5244,24 @@ async function renderChecklist(scroll) {
 const ckSave = () => setSetting(CK_KEY, CK);
 async function ckToggle(id) { const i = CK.items.find(x => x.id === id); if (!i) return; i.done = !i.done; await ckSave(); renderChecklist(); }
 async function ckAdd() {
-  const t = document.getElementById('ck-new').value.trim(); if (!t) return;
+  const t = document.getElementById('ck-new').value.trim(); if (!t) return toast('⚠️ Digite o item primeiro');
   CK.items.push({ id: 'c' + Date.now().toString(36), t, done: false }); await ckSave(); renderChecklist();
 }
-async function ckDel(id) { CK.items = CK.items.filter(x => x.id !== id); await ckSave(); renderChecklist(); }
+async function ckDel(id) {
+  const i = CK.items.find(x => x.id === id);
+  if (!i || !confirm('Excluir este item?\n\n' + i.t)) return;
+  CK.items = CK.items.filter(x => x.id !== id); await ckSave(); renderChecklist();
+}
+function ckEdit(id) { CK_EDIT = id; renderChecklist(); setTimeout(() => { const e = document.getElementById('ck-edit'); if (e) { e.focus(); e.setSelectionRange(e.value.length, e.value.length); } }, 50); }
+function ckEditCancel() { CK_EDIT = null; renderChecklist(); }
+async function ckEditSave(id) {
+  const i = CK.items.find(x => x.id === id), t = document.getElementById('ck-edit').value.trim();
+  if (!i) return;
+  if (!t) return toast('⚠️ O item não pode ficar vazio');
+  i.t = t; CK_EDIT = null; await ckSave(); renderChecklist();
+}
 async function ckReset() { if (!confirm('Desmarcar todos os itens?')) return; CK.items.forEach(i => i.done = false); await ckSave(); renderChecklist(); }
-function ckClose() { const b = document.getElementById('ev-checklist-box'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } }
+function ckClose() { CK_EDIT = null; const b = document.getElementById('ev-checklist-box'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } }
 
 let REG_SUB_FILTER = 'all';
 function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
