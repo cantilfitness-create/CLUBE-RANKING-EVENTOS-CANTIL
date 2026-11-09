@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ranking de Pontos</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;900&family=Black+Ops+One&family=Archivo+Black&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;900&family=Black+Ops+One&family=Archivo+Black&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -751,7 +751,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
         <div id="lv-st-rule" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
         <div id="lv-st-prog" style="font-size:13px;margin-bottom:12px"></div>
         <div id="lv-st-add">
-          <div class="field-group"><label class="field-label">📷 Foto do Strava (comprovante)</label>
+          <div class="field-group"><label class="field-label" id="lv-st-photo-label">📷 Foto do Strava (comprovante)</label>
             <div style="display:flex;gap:8px">
               <label class="btn btn-blue" style="flex:1;text-align:center;cursor:pointer;margin:0;padding:12px 8px">📷 Tirar foto<input type="file" id="lv-st-file" accept="image/*" capture="environment" style="display:none" onchange="lancarStationPhoto(event)"></label>
               <label class="btn btn-blue" style="flex:1;text-align:center;cursor:pointer;margin:0;padding:12px 8px">🖼 Da galeria<input type="file" id="lv-st-file2" accept="image/*" style="display:none" onchange="lancarStationPhoto(event)"></label>
@@ -770,6 +770,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
           <button class="btn btn-gold" style="width:100%" onclick="lancarStationAdd()">✅ Validar estação</button>
         </div>
         <div id="lv-st-hist" style="margin-top:10px"></div>
+        <button class="btn btn-gold" id="lv-st-fin" style="display:none;width:100%;margin-top:8px" onclick="lancarStationFinish()">🏁 Concluir última estação</button>
         <button class="btn-sm-danger" id="lv-st-undo" style="display:none;width:100%;padding:10px;margin-top:8px" onclick="lancarStationUndo()">↩ Desfazer última estação</button>
         <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="lancarStationClose()">Fechar</button>
       </div>
@@ -988,6 +989,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
         </button>
       </div>
 
+      <div id="pairs-public" style="display:none"></div>
       <div id="event-fields-wrap">
       <div class="field-group" id="ev-internal-checks-wrap" style="display:none">
         <label class="field-label">Marque uma ou as duas opções</label>
@@ -1466,6 +1468,7 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
             🔴 O <b>Controle ao vivo</b> (liberar, começar, pausar, encerrar) agora fica na tela da equipe. Use o link <b>“Lançar resultados”</b> mais abaixo.
           </div>
           <div id="ev-manage-box" style="display:none"></div>
+          <div id="ev-options-box" style="display:none"></div>
           <div id="ev-checklist-box" style="display:none"></div>
           <div class="section-label">🏁 Configurar Evento</div>
           <div class="field-group">
@@ -4604,6 +4607,7 @@ async function updateEventConfig() {
     stBy[k] = { count, km: parseFloat(String(document.getElementById('ev-cfg-st-km-' + x).value).replace(',', '.')) || 1, ex: document.getElementById('ev-cfg-st-ex-' + x).value.trim() };
   });
   newInfo.stations_by_level = stBy; newInfo.stations_count = 0; newInfo.stations_km = 0;
+  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -5263,6 +5267,316 @@ async function ckEditSave(id) {
 async function ckReset() { if (!confirm('Desmarcar todos os itens?')) return; CK.items.forEach(i => i.done = false); await ckSave(); renderChecklist(); }
 function ckClose() { CK_EDIT = null; const b = document.getElementById('ev-checklist-box'); if (b) { b.style.display = 'none'; b.innerHTML = ''; } }
 
+// ══════════════════════════════════════════════
+//  DUPLAS (configurável por evento) + opções do evento + imagem de resultados
+// ══════════════════════════════════════════════
+// info.pairs (evento único) ou info.pairs_1 / info.pairs_2 (2 eventos) liga o modo dupla.
+// Duplas ficam em app_settings 'pairs:<evento>' = { "<prova>": [ { a:<id inscrição>, b:<id>, cat:'A DEFINIR' } ] }  ('0' = evento único)
+let PAIRS = {}, PAIRS_EV = null;
+async function loadPairs(info) {
+  if (!info || !info.id) { PAIRS = {}; PAIRS_EV = null; return; }
+  const v = await getSetting('pairs:' + info.id, {});
+  PAIRS = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; PAIRS_EV = info.id;
+}
+const savePairs = () => setSetting('pairs:' + PAIRS_EV, PAIRS);
+const pairsOn = (info, sub) => !!(info && (info.is_dual ? info['pairs_' + sub] : info.pairs));
+const pairsKey = (info, sub) => info.is_dual ? String(sub) : '0';
+const pairList = (info, sub) => PAIRS[pairsKey(info, sub)] || [];
+const pairOf = (info, sub, id) => pairList(info, sub).find(p => p.a === id || p.b === id) || null;
+const pairFirst = r => String((r && r.name) || '').trim().split(/\s+/)[0].toUpperCase();
+function stPairFor(r) {
+  const info = EVENT_INFO; if (!info || !info.live_sub || !r || !pairsOn(info, info.live_sub)) return null;
+  const p = pairOf(info, info.live_sub, r.id); return p ? { p, other: p.a === r.id ? p.b : p.a } : null;
+}
+// na tela da equipe a dupla vira UMA linha (nomes dos dois + nº das duas pulseiras)
+function lvPairVirtual(info, key, regs) {
+  if (!pairsOn(info, key)) return regs;
+  const sub = info.is_dual ? key : '0', out = [];
+  regs.forEach(r => {
+    const p = pairOf(info, key, r.id);
+    if (!p) { out.push(r); return; }
+    if (p.a === r.id) {
+      const b = regs.find(x => x.id === p.b);
+      const nb = x => bibOf(x, sub) != null ? ' ' + bibPad(bibOf(x, sub)) : '';
+      out.push(b ? { ...r, name: `${pairFirst(r)}${nb(r)} / ${pairFirst(b)}${nb(b)}` } : r);
+    } else if (!regs.some(x => x.id === p.a)) out.push(r);
+  });
+  return out;
+}
+// ações da equipe em uma dupla valem para os dois
+(function () {
+  const subKey = () => (EVENT_INFO && EVENT_INFO.live_sub) || '1';
+  const partner = id => { const i = EVENT_INFO; if (!i || !i.live_sub || !pairsOn(i, i.live_sub)) return null; const p = pairOf(i, i.live_sub, id); return p ? (p.a === id ? p.b : p.a) : null; };
+  const sfx = () => (EVENT_INFO && EVENT_INFO.is_dual) ? '_' + EVENT_INFO.live_sub : '';
+  const _fin = lancarFinish, _clr = lancarClearResult, _att = lancarSetAttendance, _undo = lancarStationUndoFor, _view = lancarStationViewImg, _rend = lancarStationRender;
+  lancarFinish = async function (regId) {
+    const tap = Date.now(), o = partner(regId);
+    await _fin(regId, tap);
+    if (o) {
+      await _fin(o, tap);
+      const a = EVENT_REGISTRATIONS.find(r => r.id === regId), b = EVENT_REGISTRATIONS.find(r => r.id === o), f = 'result_value' + sfx();
+      if (a && b && a[f]) lancarSnack(`<span>✅ <b>${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</b> — ${tvEsc(a[f])}</span><button onclick="lancarClearResult(${regId})">↩ Desfazer</button>`);
+    }
+  };
+  lancarClearResult = async function (regId, ask) {
+    const o = partner(regId), a = EVENT_REGISTRATIONS.find(r => r.id === regId), f = 'result_value' + sfx(), had = a && a[f];
+    await _clr(regId, ask);
+    if (o && had && a && !a[f]) await _clr(o, false);
+  };
+  lancarSetAttendance = async function (regId, value) {
+    const o = partner(regId), a = EVENT_REGISTRATIONS.find(r => r.id === regId), f = 'attended' + sfx();
+    await _att(regId, value);
+    if (o && a && a[f] === value) await _att(o, value);
+  };
+  lancarStationUndoFor = async function (regId) {
+    const o = partner(regId), key = regId + sfx();
+    await loadStationLog();
+    if (EVENT_INFO && EVENT_INFO.stations_run_first && STATION_DONE[key]) {          // primeiro desfaz o "última estação concluída"
+      delete STATION_DONE[key]; if (o) delete STATION_DONE[o + sfx()];
+      if (!(await setSetting('station_done', STATION_DONE))) return;
+      lancarRenderList(); if (LV_ST_REG === regId) lancarStationRender(); toast('↩ Conclusão desfeita'); return;
+    }
+    await _undo(regId);
+    if (o) await _undo(o);
+  };
+  lancarStationViewImg = async function (key, n) {
+    const e = (STATION_LOG[key] || []).find(x => x.n === n);
+    if (e && e.ref) key = e.ref + sfx();
+    return _view(key, n);
+  };
+  lancarStationRender = function () {
+    _rend();
+    try {
+      const info = EVENT_INFO, reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG); if (!reg) return;
+      const cfg = stCfgReg(info, reg), key = LV_ST_REG + sfx(), arr = STATION_LOG[key] || [], pr = stProg(info, key, arr, cfg), pr2 = stPairFor(reg);
+      if (pr2) {
+        const b = EVENT_REGISTRATIONS.find(x => x.id === pr2.other);
+        document.getElementById('lv-st-who').textContent = `👥 ${pairFirst(reg)} / ${pairFirst(b)}`;
+        document.getElementById('lv-st-photo-label').textContent = '📷 Foto da dupla (obrigatória para avançar)';
+      } else document.getElementById('lv-st-photo-label').textContent = '📷 Foto do Strava (comprovante)';
+      const finBtn = document.getElementById('lv-st-fin'), runFirst = !!(info && info.stations_run_first);
+      finBtn.style.display = (runFirst && arr.length >= cfg.count && !pr.fin) ? '' : 'none';
+      if (runFirst) {
+        const prog = document.getElementById('lv-st-prog');
+        if (pr.fin) prog.innerHTML = `🏁 <b>Prova completa</b> · ${cfg.count} estações · ${stKm(stTotal(arr))} km<div style="margin-top:4px">${stDots(cfg.count, cfg.count)}</div>`;
+        else if (arr.length >= cfg.count) prog.innerHTML = `Todas as corridas registradas.<br><b>Falta concluir o exercício da estação ${cfg.count}.</b><div style="margin-top:4px">${stDots(pr.done, cfg.count)}</div>`;
+        else prog.innerHTML = `Registrar a <b>corrida ${arr.length + 1} de ${cfg.count}</b>${arr.length ? ` <span style="color:var(--muted)">(a estação ${arr.length} fica completa agora)</span>` : ''}<div style="margin-top:4px">${stDots(pr.done, cfg.count)}</div>`;
+      }
+    } catch (e) { console.error(e); }
+  };
+})();
+async function lancarStationFinish() {
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === LV_ST_REG); if (!reg) return;
+  await loadStationLog();
+  const sfx = lancarStravaSfx(), pr = stPairFor(reg), at = new Date().toISOString();
+  STATION_DONE[reg.id + sfx] = at; if (pr) STATION_DONE[pr.other + sfx] = at;
+  if (!(await setSetting('station_done', STATION_DONE))) return;
+  lancarStationClose(); lancarRenderList();
+  toast('🏁 Prova completa — última estação concluída');
+}
+
+// ── Opções do evento (modo dupla, corrida no início) + gerenciador de duplas + imagem de resultados ──
+async function evOptSet(key, sub, val) {
+  EVENT_INFO = null; const info = await getEventInfo();
+  const k = key === 'pairs' ? (info.is_dual ? 'pairs_' + sub : 'pairs') : key;
+  info[k] = !!val;
+  if (!(await setSetting('event_info', info))) return;
+  EVENT_INFO = info;
+  await renderEventOptions(true);
+  try { await renderEventPublicView(); } catch (e) {}
+  toast('✅ Salvo');
+}
+async function renderEventOptions(force) {
+  const box = document.getElementById('ev-options-box'); if (!box) return;
+  if (!force && box.innerHTML && box.contains(document.activeElement)) return;
+  const info = EVENT_INFO || await getEventInfo();
+  if (!info || !info.id) { box.style.display = 'none'; return; }
+  await loadPairs(info); if (!eventRegLoaded) await loadEventRegistrations();
+  const subs = info.is_dual ? ['1', '2'] : ['0'];
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  const sel = 'width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:16px';
+  const chk = 'display:flex;gap:10px;align-items:center;padding:8px 0;font-size:14px';
+  let h = '';
+  subs.forEach(sub => {
+    const name = info.is_dual ? (sub === '1' ? n1 : n2) : (info.name || 'Evento'), other = sub === '1' ? n2 : n1;
+    const on = pairsOn(info, sub);
+    let html = `<div class="reg-sub-card" style="margin-bottom:14px"><div class="reg-sub-name">⚙️ ${tvEsc(name)}</div>
+      <label style="${chk}"><input type="checkbox" ${on ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('pairs','${sub}',this.checked)"> 👥 Prova em dupla</label>`;
+    if (on) {
+      const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && (!info.is_dual || evRegInSub(r, name, other)));
+      const list = pairList(info, sub), used = new Set(); list.forEach(p => { used.add(p.a); used.add(p.b); });
+      const free = regs.filter(r => !used.has(r.id)).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
+      const nm = id => { const r = EVENT_REGISTRATIONS.find(x => x.id === id); return r ? `${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}` : '(removido)'; };
+      const opts = free.map(r => `<option value="${r.id}">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</option>`).join('');
+      html += `<div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin:10px 0 6px">DUPLAS (${list.length}) · ${free.length} sem dupla</div>`;
+      html += list.map((p, i) => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <div style="word-break:break-word">${nm(p.a)} <b>/</b> ${nm(p.b)}</div>
+        <div style="display:flex;gap:8px;margin-top:6px"><select style="${sel};flex:1;min-width:0;padding:8px" onchange="pairCat('${sub}',${i},this.value)">
+          ${['A DEFINIR', 'VERDE', 'AMARELO', 'LARANJA'].map(c => `<option ${p.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+          <button class="btn-sm-danger" style="flex:0 0 auto;width:auto;padding:8px 12px" onclick="pairDel('${sub}',${i})">🗑️</button></div></div>`).join('') || '<div style="font-size:12px;color:var(--muted)">Nenhuma dupla formada ainda.</div>';
+      html += `<div style="margin-top:12px"><div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">FORMAR DUPLA</div>
+        <select id="pa-a-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 1…</option>${opts}</select>
+        <select id="pa-b-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 2…</option>${opts}</select>
+        <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button></div>`;
+    }
+    html += `<button class="btn-sm" style="width:100%;margin-top:12px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
+    h += html;
+  });
+  if (stEnabled(info)) h += `<div class="reg-sub-card" style="margin-bottom:14px"><label style="${chk}"><input type="checkbox" ${info.stations_run_first ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_run_first',null,this.checked)"> 🏃 Corrida no início da estação</label>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: a estação só aparece como COMPLETA depois do exercício, isto é, quando a corrida seguinte é registrada. A última estação conclui quando a equipe toca em “Concluir última estação”.</div></div>`;
+  box.style.display = ''; box.innerHTML = h;
+}
+async function pairAdd(sub) {
+  const info = EVENT_INFO || await getEventInfo();
+  const a = parseInt(document.getElementById('pa-a-' + sub).value, 10), b = parseInt(document.getElementById('pa-b-' + sub).value, 10);
+  if (!a || !b) return toast('⚠️ Escolha os dois inscritos');
+  if (a === b) return toast('⚠️ Escolha duas pessoas diferentes');
+  await loadPairs(info);
+  const k = pairsKey(info, sub); PAIRS[k] = PAIRS[k] || [];
+  if (PAIRS[k].some(p => [a, b].includes(p.a) || [a, b].includes(p.b))) return toast('⚠️ Alguém já está em outra dupla');
+  PAIRS[k].push({ a, b, cat: 'A DEFINIR' });
+  if (await savePairs()) toast('👥 Dupla formada');
+  renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+async function pairDel(sub, i) {
+  const info = EVENT_INFO || await getEventInfo(); await loadPairs(info);
+  const k = pairsKey(info, sub), p = (PAIRS[k] || [])[i]; if (!p) return;
+  if (!confirm('Desfazer esta dupla? As duas pessoas continuam inscritas.')) return;
+  PAIRS[k].splice(i, 1); await savePairs(); renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+async function pairCat(sub, i, v) {
+  const info = EVENT_INFO || await getEventInfo(); await loadPairs(info);
+  const p = (PAIRS[pairsKey(info, sub)] || [])[i]; if (!p) return;
+  p.cat = v; await savePairs(); try { renderEventPublicView(); } catch (e) {}
+}
+// Lista pública (fonte pequena) na tela de inscrição
+async function renderPairsPublic() {
+  const box = document.getElementById('pairs-public'); if (!box) return;
+  const info = EVENT_INFO || await getEventInfo();
+  const subs = (info && info.id) ? (info.is_dual ? ['1', '2'] : ['0']).filter(s => pairsOn(info, s)) : [];
+  if (!subs.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  await loadPairs(info); if (!eventRegLoaded) await loadEventRegistrations();
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  let h = '';
+  subs.forEach(sub => {
+    const list = pairList(info, sub).map(p => {
+      const a = EVENT_REGISTRATIONS.find(r => r.id === p.a), b = EVENT_REGISTRATIONS.find(r => r.id === p.b); if (!a || !b) return '';
+      const lv = r => levelColor(r.fitness_level).name.toUpperCase();
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:.5px">NÍVEL: ${lv(a)} / ${lv(b)} · DUPLA: ${tvEsc(p.cat || 'A DEFINIR')}</div></div>`;
+    }).filter(Boolean);
+    if (!list.length) return;
+    h += (info.is_dual ? `<div style="font-size:10px;letter-spacing:1px;color:var(--accent);margin:8px 0 2px">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('');
+  });
+  if (!h) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  box.innerHTML = `<div style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--s1)"><div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">👥 DUPLAS CONFIRMADAS</div>${h}</div>`;
+}
+(function () { const _v = renderEventPublicView; renderEventPublicView = async function () { const r = await _v.apply(this, arguments); try { await renderPairsPublic(); } catch (e) { console.error(e); } return r; }; })();
+
+// ── Imagem de resultados (modelo formal: fundo claro, faixa azul-marinho, fonte com serifa) ──
+function riSeconds(v, type) {
+  v = String(v || '').trim(); if (!v || /time\s*cap/i.test(v)) return Infinity;
+  if (type === 'rounds') { const n = parseFloat(v.replace(',', '.')); return isNaN(n) ? Infinity : -n; }
+  const p = v.split(':').map(Number); if (p.some(isNaN)) return Infinity;
+  return p.reduce((t, x) => t * 60 + x, 0);
+}
+async function riOpen(sub) {
+  const info = EVENT_INFO || await getEventInfo();
+  const dual = !!info.is_dual, sfx = dual ? '_' + sub : '', type = dual ? info['result_type_' + sub] : info.result_type;
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+  const name = dual ? (sub === '1' ? n1 : n2) : (info.name || 'Evento'), other = sub === '1' ? n2 : n1;
+  const meta = dual ? (info['meta_' + sub] || '') : (info.meta || '');
+  if (!type) return toast('⚠️ Este evento está sem tipo de resultado');
+  toast('⏳ Gerando imagem…');
+  if (!eventRegLoaded) await loadEventRegistrations();
+  await loadPairs(info);
+  const descs = await getSetting('level_descriptions', {});
+  let regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r['result_value' + sfx]);
+  if (dual) regs = regs.filter(r => evRegInSub(r, name, other));
+  if (!regs.length) return toast('⚠️ Ainda não há resultados lançados neste evento');
+  const pOn = pairsOn(info, sub), used = new Set(), items = [];
+  const lvOrder = ['Iniciante', 'Intermediário', 'Avançado'];
+  regs.forEach(r => {
+    if (used.has(r.id)) return;
+    const p = pOn ? pairOf(info, sub, r.id) : null;
+    if (p) {
+      used.add(p.a); used.add(p.b);
+      const a = EVENT_REGISTRATIONS.find(x => x.id === p.a), b = EVENT_REGISTRATIONS.find(x => x.id === p.b);
+      items.push({ label: [a, b].filter(Boolean).map(x => x.name).join('  /  '), value: r['result_value' + sfx], group: (p.cat && p.cat !== 'A DEFINIR') ? 'Dupla ' + p.cat.charAt(0) + p.cat.slice(1).toLowerCase() : 'Classificação geral', ord: 10 });
+    } else {
+      used.add(r.id); const lv = r.fitness_level || 'Iniciante';
+      items.push({ label: r.name, value: r['result_value' + sfx], group: descs[lv] || 'Grupo ' + levelColor(lv).name, ord: lvOrder.indexOf(lv) });
+    }
+  });
+  const gm = {};
+  items.forEach(it => { (gm[it.group] = gm[it.group] || { title: it.group, ord: it.ord, rows: [] }).rows.push(it); });
+  const groups = Object.values(gm).sort((a, b) => (a.ord - b.ord) || a.title.localeCompare(b.title, 'pt-BR'));
+  groups.forEach(g => { g.rows.sort((a, b) => riSeconds(a.value, type) - riSeconds(b.value, type) || a.label.localeCompare(b.label, 'pt-BR')); });
+  const blob = await riDraw({ title: name, meta, type, groups, tag: pOn ? 'RESULTADO OFICIAL · DUPLAS' : 'RESULTADO OFICIAL' });
+  riShow(blob, name);
+}
+async function riDraw(d) {
+  try { await Promise.all([document.fonts.load('700 60px "Playfair Display"'), document.fonts.load('600 30px "Playfair Display"'), document.fonts.load('600 30px Outfit'), document.fonts.load('700 30px Outfit')]); } catch (e) {}
+  const W = 1080, PX = 80, RH = 66, GH = 118, HEAD = 470, FOOT = 170;
+  const rowsN = d.groups.reduce((n, g) => n + g.rows.length, 0), H = HEAD + d.groups.length * GH + rowsN * RH + FOOT;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const NAVY = '#0c1424', GOLD = '#b8923a', INK = '#1a2233', MUTE = '#7a7f8c';
+  const spaced = (t, cx, y, sp, align) => { const w = [...t].reduce((s, ch) => s + x.measureText(ch).width + sp, -sp); let px = align === 'left' ? cx : cx - w / 2; x.textAlign = 'left'; [...t].forEach(ch => { x.fillText(ch, px, y); px += x.measureText(ch).width + sp; }); };
+  x.fillStyle = '#fbf9f4'; x.fillRect(0, 0, W, H);
+  x.fillStyle = NAVY; x.fillRect(0, 0, W, 330);
+  x.fillStyle = GOLD; x.fillRect(0, 330, W, 8);
+  x.fillStyle = GOLD; x.font = '600 26px Outfit,Arial,sans-serif'; spaced('CANTIL FITNESS', W / 2, 92, 10);
+  x.fillStyle = '#ffffff'; let fs = 74, t = d.title; do { x.font = `700 ${fs}px "Playfair Display",Georgia,serif`; fs -= 2; } while (x.measureText(t).width > W - 2 * PX && fs > 36);
+  if (x.measureText(t).width > W - 2 * PX) { while (t.length > 1 && x.measureText(t + '…').width > W - 2 * PX) t = t.slice(0, -1); t += '…'; }
+  x.textAlign = 'center'; x.fillText(t, W / 2, 205);
+  if (d.meta) { x.fillStyle = '#b8c0d0'; x.font = '400 28px Outfit,Arial,sans-serif'; let m = d.meta; while (m.length > 1 && x.measureText(m).width > W - 2 * PX) m = m.slice(0, -1); x.textAlign = 'center'; x.fillText(m, W / 2, 268); }
+  x.fillStyle = '#8a6d1f'; x.font = '700 24px Outfit,Arial,sans-serif'; spaced(d.tag, W / 2, 418, 8);
+  x.fillStyle = GOLD; x.fillRect(PX, 405, 120, 2); x.fillRect(W - PX - 120, 405, 120, 2);
+  let y = HEAD;
+  const medal = ['#b8923a', '#9aa1ad', '#a8703c'];
+  d.groups.forEach(g => {
+    x.fillStyle = NAVY; x.font = '600 42px "Playfair Display",Georgia,serif'; x.textAlign = 'left'; x.fillText(g.title, PX, y);
+    x.fillStyle = MUTE; x.font = '700 18px Outfit,Arial,sans-serif'; spaced('CLASSIFICAÇÃO', PX, y + 44, 4, 'left');
+    const hl = d.type === 'tempo' ? 'TEMPO' : 'RESULTADO'; const hw = [...hl].reduce((s, ch) => s + x.measureText(ch).width + 4, -4); spaced(hl, W - PX - hw, y + 44, 4, 'left');
+    x.fillStyle = GOLD; x.fillRect(PX, y + 58, W - 2 * PX, 2);
+    y += GH - 24; let rank = 0;
+    g.rows.forEach((r, i) => {
+      const ok = riSeconds(r.value, d.type) !== Infinity; if (ok) rank++;
+      if (i % 2 === 0) { x.fillStyle = '#f2eee3'; x.fillRect(PX - 16, y - 40, W - 2 * PX + 32, RH - 6); }
+      const cy = y - 12;
+      if (ok && rank <= 3) { x.fillStyle = medal[rank - 1]; x.beginPath(); x.arc(PX + 22, cy, 24, 0, 7); x.fill(); x.fillStyle = '#fff'; x.font = '700 28px "Playfair Display",Georgia,serif'; x.textAlign = 'center'; x.fillText(String(rank), PX + 22, cy + 10); }
+      else { x.fillStyle = INK; x.font = '600 28px "Playfair Display",Georgia,serif'; x.textAlign = 'center'; x.fillText(ok ? String(rank) : '—', PX + 22, cy + 10); }
+      const vtxt = String(r.value), cap = /time\s*cap/i.test(vtxt);
+      x.font = '700 32px Outfit,Arial,sans-serif'; const vw = x.measureText(vtxt).width;
+      x.textAlign = 'right'; x.fillStyle = cap ? '#9a3b3b' : NAVY; x.fillText(vtxt, W - PX, cy + 11);
+      x.font = '600 30px Outfit,Arial,sans-serif'; let nm = r.label; const mw = W - 2 * PX - 70 - vw - 24;
+      while (nm.length > 1 && x.measureText(nm).width > mw) nm = nm.slice(0, -1); if (nm !== r.label) nm += '…';
+      x.textAlign = 'left'; x.fillStyle = INK; x.fillText(nm, PX + 66, cy + 11);
+      y += RH;
+    });
+    y += 24 + 24;
+  });
+  x.fillStyle = GOLD; x.fillRect(PX, H - 120, W - 2 * PX, 2);
+  x.fillStyle = MUTE; x.font = '600 22px Outfit,Arial,sans-serif'; spaced('CANTIL FITNESS  ·  1% TODO DIA', W / 2, H - 70, 6);
+  return new Promise(r => c.toBlob(r, 'image/png'));
+}
+function riShow(blob, name) {
+  const url = URL.createObjectURL(blob), file = 'resultados-' + String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+  let ov = document.getElementById('ri-ov'); if (ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'ri-ov';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);overflow:auto;padding:16px;box-sizing:border-box';
+  ov.innerHTML = `<div style="max-width:560px;margin:0 auto"><img src="${url}" alt="Resultados" style="width:100%;border-radius:10px;display:block">
+    <div style="display:flex;gap:8px;margin:12px 0 30px">
+      <a class="btn btn-blue" style="flex:1;margin:0;text-align:center;text-decoration:none" href="${url}" download="${file}">⬇️ Baixar</a>
+      <button class="btn btn-gold" style="flex:1;margin:0" id="ri-share">📤 Compartilhar</button>
+      <button class="btn-sm" style="flex:0 0 auto;padding:0 16px" onclick="document.getElementById('ri-ov').remove()">✕</button></div></div>`;
+  document.body.appendChild(ov);
+  document.getElementById('ri-share').onclick = async () => {
+    try { const f = new File([blob], file, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: name }); else toast('Use “Baixar” e compartilhe a imagem'); } catch (e) {}
+  };
+}
+
 let REG_SUB_FILTER = 'all';
 function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
 
@@ -5457,6 +5771,8 @@ async function promoteRemainingToSingle(info, o, cleared, clearedIds) {
     newInfo.active = g('active') !== false;
     newInfo.points = g('points') || 0; newInfo.max = g('max') || 0; newInfo.time_cap_seconds = g('time_cap_seconds') || 0;
     newInfo.badge_id = g('badge_id') || '';
+    newInfo.pairs = !!info['pairs_' + o]; delete newInfo.pairs_1; delete newInfo.pairs_2;
+    try { const pv = await getSetting('pairs:' + info.id, {}); const np = {}; if (pv && pv[o]) np['0'] = pv[o]; await setSetting('pairs:' + info.id, np); } catch (e) { console.error(e); }
     newInfo.is_dual = false; newInfo.sub1_name = ''; newInfo.sub2_name = '';
     newInfo.allow_visitor = true; newInfo.custom_question_enabled = false; newInfo.custom_question_label = '';
     ['meta', 'desc', 'points', 'result_type', 'max', 'active', 'time_cap_seconds', 'badge_id'].forEach(k => { delete newInfo[k + '_1']; delete newInfo[k + '_2']; });
@@ -5474,6 +5790,7 @@ function renderRegistrationsList() {
   const info = EVENT_INFO || defaultEventInfo();
   const allRegs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
   renderRegSubTools(info, allRegs);
+  try { renderEventOptions(false); } catch (e) { console.error(e); }
   let regs = allRegs;
   if (info.is_dual && REG_SUB_FILTER !== 'all') {
     const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
@@ -7513,6 +7830,7 @@ async function lancarLoad() {
   const info = await getEventInfo();
   LANCAR_SIG = lancarSig(info);
   try { renderLiveControls(info); } catch (e) { console.error(e); }
+  try { await loadPairs(info); } catch (e) { console.error(e); }
   await loadEventRegistrations();
   try { await ensureBibs(info); } catch (e) { console.error(e); }
   await loadResultNotes();
@@ -7583,6 +7901,7 @@ function lancarRenderList() {
     const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
     regs = regs.filter(r => key === '2' ? evRegInSub(r, n2, n1) : evRegInSub(r, n1, n2));
   }
+  regs = lvPairVirtual(info, key, regs);
   const q = ((document.getElementById('lv-search') || {}).value || '').trim().toLowerCase();
   const match = r => {
     if (!q) return true;
@@ -7622,8 +7941,8 @@ function lancarSnack(html) {
 }
 
 // FINALIZAR: o tempo é o relógio do evento no instante do toque
-async function lancarFinish(regId) {
-  const tap = Date.now();
+async function lancarFinish(regId, tapArg) {
+  const tap = tapArg || Date.now();
   const info = EVENT_INFO; if (!info || !info.live_sub) return;
   const key = info.live_sub;
   if (lancarType(info) !== 'tempo') return toast('Este evento é lançado manualmente. Use “Mais opções”.');
@@ -7809,9 +8128,21 @@ async function lancarStravaRemove() {
 // ══════════════════════════════════════════════
 // Fica em app_settings ('station_log'): { "<id da inscrição + sufixo>": [ {n, link, km, at}, ... ] } — não precisa criar coluna no banco.
 let STATION_LOG = {}, LV_ST_REG = null;
+let STATION_DONE = {};
 async function loadStationLog() {
   const v = await getSetting('station_log', {});
   STATION_LOG = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  const d = await getSetting('station_done', {});
+  STATION_DONE = (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
+  try { if (EVENT_INFO && EVENT_INFO.id) await loadPairs(EVENT_INFO); } catch (e) {}
+}
+// Progresso de uma pessoa. Modo "corrida no início": a estação N só conta como COMPLETA depois do exercício,
+// ou seja, quando a corrida N+1 é registrada (a última, quando a equipe toca em "Concluir última estação").
+function stProg(info, key, arr, cfg) {
+  const n = (arr || []).length;
+  if (!(info && info.stations_run_first)) return { n, done: n, fin: n >= cfg.count, wait: false };
+  const fin = n >= cfg.count && !!STATION_DONE[key];
+  return { n, done: fin ? cfg.count : Math.max(0, n - 1), fin, wait: !fin && n > 0 };
 }
 const ST_LEVELS = [['Iniciante', 'I'], ['Intermediário', 'M'], ['Avançado', 'A']];
 // Estação = km + exercício funcional. Cada nível (cor) tem seu nº de estações, km e exercício.
@@ -7833,15 +8164,19 @@ function stLinkId(l) {
   return m ? 'act:' + m[1] : l.replace(/[?#].*$/, '').replace(/\/+$/, '');
 }
 function stRowSummary(r, sfx) {
-  const cfg = stCfgReg(EVENT_INFO, r), arr = STATION_LOG[r.id + (sfx || '')] || [], n = arr.length;
+  const info = EVENT_INFO, cfg = stCfgReg(info, r), key = r.id + (sfx || ''), arr = STATION_LOG[key] || [];
   if (!cfg.count) return '';
-  if (!n) return `<div class="lv-sv" style="color:var(--muted)">📍 Estação 0/${cfg.count} · aguardando</div>`;
-  return `<div class="lv-sv">📍 Estação ${n}/${cfg.count} · ${stKm(stTotal(arr))} km${n >= cfg.count ? ' · 🏁 COMPLETO' : ''}</div>`;
+  if (!arr.length) return `<div class="lv-sv" style="color:var(--muted)">📍 Estação 0/${cfg.count} · aguardando</div>`;
+  const pr = stProg(info, key, arr, cfg), km = stKm(stTotal(arr.slice(0, pr.done)));
+  const wait = pr.wait ? `${pr.done ? ' · ' : ''}⏳ exercício ${pr.n} em andamento` : '';
+  return `<div class="lv-sv">📍 Estação ${pr.done}/${cfg.count}${pr.done ? ' · ' + km + ' km' : ''}${pr.fin ? ' · 🏁 COMPLETO' : ''}${wait}</div>`;
 }
 function stRowBtn(r, sfx) {
-  const cfg = stCfgReg(EVENT_INFO, r), n = (STATION_LOG[r.id + (sfx || '')] || []).length;
+  const info = EVENT_INFO, cfg = stCfgReg(info, r), key = r.id + (sfx || ''), arr = STATION_LOG[key] || [], n = arr.length;
   if (!cfg.count) return '';
-  return `<button class="lv-sv-btn ${n ? 'has' : ''}" onclick="lancarStationOpen(${r.id})">📍 ${n >= cfg.count ? 'Ver estações' : 'Validar Strava'}</button>`;
+  const pr = stProg(info, key, arr, cfg);
+  const label = n >= cfg.count ? (info && info.stations_run_first && !pr.fin ? '🏁 Concluir última estação' : 'Ver estações') : (stPairFor(r) ? '📷 Foto da dupla' : 'Validar Strava');
+  return `<button class="lv-sv-btn ${n ? 'has' : ''}" onclick="lancarStationOpen(${r.id})">📍 ${label}</button>`;
 }
 let LV_ST_IMG = null, LV_ST_VER = null;   // foto (miniatura) e dados verificados pelo Strava da validação em andamento
 function lancarStationOpen(regId) {
@@ -7943,6 +8278,8 @@ async function lancarStationAdd() {
   const cfg = stCfgReg(info, reg); if (!cfg.count) return toast('⚠️ Este nível não tem estações configuradas');
   const link = stLinkFrom(document.getElementById('lv-st-link').value);
   if (link && !lvSvOk(link)) return toast('⚠️ Esse não parece um link do Strava');
+  const _pair = stPairFor(reg);
+  if (_pair && !LV_ST_IMG) return toast('⚠️ Tire a foto da dupla para avançar');
   if (!link && !LV_ST_IMG) return toast('⚠️ Tire a foto do Strava (ou use o link em Mais opções)');
   if (link) await lancarStationLookup(true);                       // tenta verificar antes de validar
   const ver = (LV_ST_VER && LV_ST_VER.link === link) ? LV_ST_VER : null;
@@ -7970,6 +8307,10 @@ async function lancarStationAdd() {
     if (ver) { entry.v = 1; if (ver.time) entry.t = ver.time; }
     if (LV_ST_IMG) entry.img = 1;
     arr.push(entry); STATION_LOG[key] = arr;
+    if (_pair) {                                                       // o parceiro avança junto (a foto fica guardada uma vez só)
+      const key2 = _pair.other + lancarStravaSfx(), arr2 = STATION_LOG[key2] || [];
+      if (arr2.length < cfg.count) { arr2.push({ n: arr2.length + 1, link: '', km, at: entry.at, img: 1, ref: reg.id }); STATION_LOG[key2] = arr2; }
+    }
     if (!(await setSetting('station_log', STATION_LOG))) return;
     const tot = stTotal(arr), done = n >= cfg.count;
     lancarStationClose(); lancarRenderList();
@@ -8011,16 +8352,26 @@ function stationRows(info) {
   if (!info || !info.id || !stEnabled(info)) return null;
   const sfxs = info.is_dual ? ['_1', '_2'] : [''], rows = [];
   EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => sfxs.forEach(sfx => {
-    const arr = STATION_LOG[r.id + sfx], cfg = stCfgReg(info, r); if (arr && arr.length && cfg.count) rows.push({ r, sfx, arr, cfg, n: arr.length, tot: stTotal(arr) });
+    const arr = STATION_LOG[r.id + sfx], cfg = stCfgReg(info, r); if (!(arr && arr.length && cfg.count)) return;
+    const sub = info.is_dual ? sfx.replace('_', '') : '0';
+    let rr = r;
+    if (pairsOn(info, sub === '0' ? '1' : sub)) {                      // dupla: uma linha só, com os dois nomes
+      const p = pairOf(info, sub === '0' ? '1' : sub, r.id);
+      if (p) { if (p.b === r.id) return; const b = EVENT_REGISTRATIONS.find(x => x.id === p.b); if (b) rr = { ...r, name: pairFirst(r) + ' / ' + pairFirst(b) }; }
+    }
+    const pr = stProg(info, r.id + sfx, arr, cfg);
+    rows.push({ r: rr, sfx, arr, cfg, n: pr.done, runs: arr.length, fin: pr.fin, wait: pr.wait, tot: stTotal(arr.slice(0, pr.done)) });
   }));
-  rows.sort((a, b) => (b.n - a.n) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
+  rows.sort((a, b) => (b.n - a.n) || (b.runs - a.runs) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
   return { rows };
 }
 function stRowText(x, _unused, info) {
   const cfg = x.cfg;
   const sub = info.is_dual && x.sfx ? ' · ' + (x.sfx === '_2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
-  const done = x.n >= cfg.count;
-  return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${x.n} estações` : `📍 Estação ${x.n}/${cfg.count} · ${stKm(+x.arr[x.n - 1].km)} km COMPLETO${x.arr[x.n - 1].v ? ' ✔' : ''}` };
+  const done = x.fin !== undefined ? x.fin : x.n >= cfg.count;
+  const wait = x.wait ? `${x.n ? ' · ' : ''}⏳ exercício ${x.n + 1} em andamento` : '';
+  const last = x.n > 0 ? x.arr[x.n - 1] : null;
+  return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${cfg.count} estações` : (x.n > 0 ? `📍 Estação ${x.n}/${cfg.count} · ${stKm(+last.km)} km COMPLETO${last.v ? ' ✔' : ''}${wait}` : `📍 Estação 0/${cfg.count}${wait}`) };
 }
 function tvStationsPanel(info) {
   const d = stationRows(info); if (!d || !d.rows.length) return '';
