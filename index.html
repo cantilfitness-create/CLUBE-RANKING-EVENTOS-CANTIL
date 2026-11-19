@@ -692,6 +692,28 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
 .reg-sub-actions { display:flex; gap:8px; flex-wrap:wrap; }
 .reg-sub-actions .btn { flex:1 1 140px; margin:0; }
 .reg-sub-actions .btn-sm-danger { flex:1 1 140px; padding:12px; }
+.reg-sub-actions[style*="column"] > * { flex:0 0 auto !important; }
+.evp-sum { list-style:none; cursor:pointer; padding:13px 14px; border:1px solid var(--border); border-radius:12px; background:var(--s2); font-weight:700; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.evp-sum::-webkit-details-marker { display:none; }
+.evp-sum::after { content:'▾'; color:var(--accent); font-size:16px; transition:transform .2s; }
+details[open] > .evp-sum::after { transform:rotate(180deg); }
+
+/* ── Controle ao vivo compacto (aba recolhível) ── */
+details.live-ctl { padding:0; margin-bottom:14px; overflow:hidden; }
+.live-sum { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:11px 14px; }
+.live-sum::-webkit-details-marker { display:none; }
+.live-sum::after { content:'▾'; color:var(--accent); font-size:16px; flex:0 0 auto; transition:transform .2s; }
+details[open] > .live-sum::after { transform:rotate(180deg); }
+.live-sum-t { font-weight:800; font-size:13px; letter-spacing:.5px; flex:1; }
+.live-mini { display:flex; align-items:center; gap:8px; }
+.live-mini-clock { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; font-variant-numeric:tabular-nums; }
+details.live-ctl > #live-ctl-rows, details.live-ctl > .live-hint { margin-left:12px; margin-right:12px; }
+details.live-ctl > .live-hint { margin-bottom:12px; margin-top:8px; font-size:11px; }
+details.live-ctl .live-row { padding:9px 10px; margin-top:6px; }
+details.live-ctl .live-row:first-child { margin-top:0; }
+details.live-ctl .live-clock { font-size:32px; margin:4px 0 0; letter-spacing:2px; }
+details.live-ctl .live-btn { min-width:90px; padding:9px 8px; font-size:13px; border-radius:10px; }
+details.live-ctl .live-btns { margin-top:8px; gap:6px; }
 </style>
 </head>
 <body>
@@ -777,11 +799,11 @@ input[type="tel"] { -webkit-appearance:none; appearance:none; letter-spacing:.5p
     </div>
     <div class="lv-sv-ov" id="lv-img-ov" onclick="this.classList.remove('open')"><img id="lv-img-view" alt="Foto do Strava" style="max-width:100%;max-height:88vh;border-radius:12px"></div>
     <div id="lancar-main" style="display:none">
-          <div class="live-ctl" id="live-ctl">
-            <div class="section-label">🔴 Controle ao vivo</div>
+          <details class="live-ctl" id="live-ctl">
+            <summary class="live-sum"><span class="live-sum-t">🔴 Controle ao vivo</span><span id="live-ctl-mini" class="live-mini"></span></summary>
             <div id="live-ctl-rows"></div>
             <div class="live-hint">Libere o evento que está acontecendo e toque em ▶ Começar: o cronômetro roda sozinho até você pausar ou encerrar, ou até estourar o Time Cap. A equipe só toca em “Finalizar” em cada participante e o tempo de prova sai na hora. Não precisa salvar o evento.</div>
-          </div>
+          </details>
       <div class="lv-bar">
         <button class="btn-sm" onclick="lancarLoad()">🔄 Atualizar lista</button>
         <button class="btn-sm" id="lancar-logout" onclick="lancarLogout()">🔓 Sair</button>
@@ -5272,7 +5294,7 @@ function ckClose() { CK_EDIT = null; const b = document.getElementById('ev-check
 // ══════════════════════════════════════════════
 // info.pairs (evento único) ou info.pairs_1 / info.pairs_2 (2 eventos) liga o modo dupla.
 // Duplas ficam em app_settings 'pairs:<evento>' = { "<prova>": [ { a:<id inscrição>, b:<id>, cat:'A DEFINIR' } ] }  ('0' = evento único)
-let PAIRS = {}, PAIRS_EV = null;
+let PAIRS = {}, PAIRS_EV = null, EVP_OPEN = {};
 async function loadPairs(info) {
   if (!info || !info.id) { PAIRS = {}; PAIRS_EV = null; return; }
   const v = await getSetting('pairs:' + info.id, {});
@@ -5289,19 +5311,29 @@ function stPairFor(r) {
   const p = pairOf(info, info.live_sub, r.id); return p ? { p, other: p.a === r.id ? p.b : p.a } : null;
 }
 // na tela da equipe a dupla vira UMA linha (nomes dos dois + nº das duas pulseiras)
+const bibPad3 = n => String(n).padStart(3, '0');
+// A dupla vira UMA linha. A pessoa "principal" é quem foi buscada pelo número (ex: 015); a dupla aparece junto, pequena.
 function lvPairVirtual(info, key, regs) {
   if (!pairsOn(info, key)) return regs;
   const sub = info.is_dual ? key : '0', out = [];
+  const q = ((document.getElementById('lv-search') || {}).value || '').trim();
+  const qn = /^\d+$/.test(q) ? parseInt(q, 10) : null, seen = new Set();
   regs.forEach(r => {
+    if (seen.has(r.id)) return;
     const p = pairOf(info, key, r.id);
-    if (!p) { out.push(r); return; }
-    if (p.a === r.id) {
-      const b = regs.find(x => x.id === p.b);
-      const nb = x => bibOf(x, sub) != null ? ' ' + bibPad(bibOf(x, sub)) : '';
-      out.push(b ? { ...r, name: `${pairFirst(r)}${nb(r)} / ${pairFirst(b)}${nb(b)}` } : r);
-    } else if (!regs.some(x => x.id === p.a)) out.push(r);
+    const o = p ? regs.find(x => x.id === (p.a === r.id ? p.b : p.a)) : null;
+    if (!p || !o) { out.push(r); return; }
+    seen.add(r.id); seen.add(o.id);
+    const main = (qn !== null && bibOf(o, sub) === qn && bibOf(r, sub) !== qn) ? o : r, other = main === r ? o : r;
+    out.push({ ...main, _pair: { other } });
   });
   return out;
+}
+function lvNameHtml(r, sub) {
+  const e = levelColor(r.fitness_level).emoji;
+  if (!r._pair) return `${e} ${tvEsc(r.name)}`;
+  const o = r._pair.other, nb = x => bibOf(x, sub) != null ? bibPad3(bibOf(x, sub)) : '—';
+  return `<span style="font-size:13px;line-height:1.4;display:block"><b>${e} ${tvEsc(r.name.toUpperCase())}</b> <span style="color:var(--muted)">${nb(r)}</span><br><span style="color:var(--muted)">👥 ${tvEsc(o.name.toUpperCase())} ${nb(o)}</span></span>`;
 }
 // ações da equipe em uma dupla valem para os dois
 (function () {
@@ -5352,7 +5384,7 @@ function lvPairVirtual(info, key, regs) {
       if (pr2) {
         const b = EVENT_REGISTRATIONS.find(x => x.id === pr2.other);
         document.getElementById('lv-st-who').textContent = `👥 ${pairFirst(reg)} / ${pairFirst(b)}`;
-        document.getElementById('lv-st-photo-label').textContent = '📷 Foto da dupla (obrigatória para avançar)';
+        document.getElementById('lv-st-photo-label').textContent = '📷 Foto da tela do Strava (obrigatória para avançar)';
       } else document.getElementById('lv-st-photo-label').textContent = '📷 Foto do Strava (comprovante)';
       const finBtn = document.getElementById('lv-st-fin'), runFirst = !!(info && info.stations_run_first);
       finBtn.style.display = (runFirst && arr.length >= cfg.count && !pr.fin) ? '' : 'none';
@@ -5408,7 +5440,7 @@ async function renderEventOptions(force) {
       const free = regs.filter(r => !used.has(r.id)).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
       const nm = id => { const r = EVENT_REGISTRATIONS.find(x => x.id === id); return r ? `${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}` : '(removido)'; };
       const opts = free.map(r => `<option value="${r.id}">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</option>`).join('');
-      html += `<div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin:10px 0 6px">DUPLAS (${list.length}) · ${free.length} sem dupla</div>`;
+      html += `<details ${EVP_OPEN[sub] ? 'open' : ''} ontoggle="EVP_OPEN['${sub}']=this.open" style="margin:8px 0 4px"><summary class="evp-sum"><span>👥 Duplas (${list.length}) · ${free.length} sem dupla</span></summary><div style="padding-top:6px">`;
       html += list.map((p, i) => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
         <div style="word-break:break-word">${nm(p.a)} <b>/</b> ${nm(p.b)}</div>
         <div style="display:flex;gap:8px;margin-top:6px"><select style="${sel};flex:1;min-width:0;padding:8px" onchange="pairCat('${sub}',${i},this.value)">
@@ -5417,7 +5449,7 @@ async function renderEventOptions(force) {
       html += `<div style="margin-top:12px"><div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">FORMAR DUPLA</div>
         <select id="pa-a-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 1…</option>${opts}</select>
         <select id="pa-b-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 2…</option>${opts}</select>
-        <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button></div>`;
+        <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button></div></div></details>`;
     }
     html += `<button class="btn-sm" style="width:100%;margin-top:12px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
     h += html;
@@ -7619,7 +7651,7 @@ function liveName(info, key) {
 function renderLiveControls(info) {
   const box = document.getElementById('live-ctl-rows'); if (!box) return;
   info = info || EVENT_INFO || defaultEventInfo();
-  if (!info.id) { box.innerHTML = '<div class="live-hint">Salve o evento primeiro para poder liberar.</div>'; return; }
+  if (!info.id) { box.innerHTML = '<div class="live-hint">Salve o evento primeiro para poder liberar.</div>'; const m0 = document.getElementById('live-ctl-mini'); if (m0) m0.innerHTML = ''; return; }
   const now = Date.now();
   box.innerHTML = clkKeys(info).map(k => {
     const v = clkView(info, k, now);
@@ -7640,6 +7672,14 @@ function renderLiveControls(info) {
       <div class="live-btns">${btns}</div>
     </div>`;
   }).join('');
+  try {
+    const mini = document.getElementById('live-ctl-mini');
+    if (mini) {
+      const ks = clkKeys(info), k = (info.live_sub && ks.includes(info.live_sub)) ? info.live_sub : ks[0], v = clkView(info, k, now);
+      const up = v.timeUp && v.state === 'running', st = up ? 'timeup' : v.state;
+      mini.innerHTML = `<span class="live-chip live-${st}">${up ? '⏰ TIME CAP' : CLK_LABEL[v.state]}</span><span class="live-mini-clock" data-clk="${k}">${clkFmt(v.ms)}</span>`;
+    }
+  } catch (e) {}
 }
 
 async function clkAction(key, action) {
@@ -7733,6 +7773,7 @@ function clkTickAll() {
     const sub = document.querySelector(`#live-ctl-rows [data-clk-sub="${k}"]`);
     if (sub && v.cap) sub.textContent = 'TIME CAP ' + clkFmt(v.cap) + ' · restam ' + clkFmt(v.remainingMs);
   });
+  document.querySelectorAll('.live-mini-clock').forEach(el => { el.textContent = clkFmt(clkView(info, el.dataset.clk, now).ms); });
   try { lancarApplyClock(); } catch (e) {}
 }
 setInterval(clkTickAll, 1000);
@@ -7906,6 +7947,7 @@ function lancarRenderList() {
   const match = r => {
     if (!q) return true;
     if (/^\d+$/.test(q) && bibOf(r, sub) != null && bibOf(r, sub) === parseInt(q, 10)) return true;
+    if (r._pair && r._pair.other.name.toLowerCase().includes(q)) return true;
     return r.name.toLowerCase().includes(q);
   };
   const lvRank = { 'Avançado': 0, 'Iniciante': 1, 'Intermediário': 2 };
@@ -7922,14 +7964,14 @@ function lancarRenderList() {
   const done = all.filter(r => r[field]).sort(byBib);
   const v = clkView(info, key, Date.now());
   const capUp = v.timeUp;
-  const bibCell = r => `<div class="lv-bib"><span style="display:block;font-size:15px;line-height:1.1;margin-bottom:2px">${levelColor(bibLvl(r)).emoji}</span>${bibOf(r, sub) != null ? bibPad(bibOf(r, sub)) : '—'}</div>`;
-  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-act"><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div></div>`;
-  const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
+  const bibCell = r => `<div class="lv-bib"><span style="display:block;font-size:15px;line-height:1.1;margin-bottom:2px">${levelColor(bibLvl(r)).emoji}</span>${bibOf(r, sub) != null ? bibPad3(bibOf(r, sub)) : '—'}</div>`;
+  const rowP = r => `<div class="lv-row">${bibCell(r)}<div class="lv-who"><div class="lv-name">${lvNameHtml(r, sub)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-act"><button class="lv-fin ${capUp ? 'cap' : ''}" onclick="lancarFinish(${r.id})">${capUp ? '🚫 TIME CAP' : '⏱ Finalizar'}</button><button class="lv-abs" onclick="lancarSetAttendance(${r.id}, false)">🚫 Ausente</button></div></div>`;
+  const rowD = r => `<div class="lv-row done">${bibCell(r)}<div class="lv-who"><div class="lv-name">${lvNameHtml(r, sub)}</div>${lancarStravaSummary(r, sfx)}${lancarStravaBtn(r, sfx)}</div><div class="lv-val">${tvEsc(r[field])}</div><button class="lv-undo-btn" title="Desfazer" onclick="lancarClearResult(${r.id}, true)">↩</button></div>`;
   box.innerHTML =
     `<div class="lv-count">Faltam finalizar: ${pending.length}</div>` +
     (pending.length ? pending.map(rowP).join('') : '<div class="lv-hint" style="padding:10px 0">Ninguém pendente 🎉</div>') +
     (done.length ? `<div class="lv-count" style="margin-top:14px">✅ Finalizados: ${done.length}</div>` + done.map(rowD).join('') : '') +
-    (absent.length ? `<div class="lv-count" style="margin-top:14px">🚫 Ausentes: ${absent.length}</div>` + absent.map(r => `<div class="lv-row absent">${bibCell(r)}<div class="lv-who"><div class="lv-name">${tvEsc(r.name)}</div></div><button class="lv-undo-btn" onclick="lancarSetAttendance(${r.id}, null)">↩ Voltar</button></div>`).join('') : '');
+    (absent.length ? `<div class="lv-count" style="margin-top:14px">🚫 Ausentes: ${absent.length}</div>` + absent.map(r => `<div class="lv-row absent">${bibCell(r)}<div class="lv-who"><div class="lv-name">${lvNameHtml(r, sub)}</div></div><button class="lv-undo-btn" onclick="lancarSetAttendance(${r.id}, null)">↩ Voltar</button></div>`).join('') : '');
   const capBtn = document.getElementById('lv-capall');
   if (capBtn) capBtn.style.display = (capUp && pending.length && lancarType(info) === 'tempo') ? '' : 'none';
 }
@@ -8175,7 +8217,7 @@ function stRowBtn(r, sfx) {
   const info = EVENT_INFO, cfg = stCfgReg(info, r), key = r.id + (sfx || ''), arr = STATION_LOG[key] || [], n = arr.length;
   if (!cfg.count) return '';
   const pr = stProg(info, key, arr, cfg);
-  const label = n >= cfg.count ? (info && info.stations_run_first && !pr.fin ? '🏁 Concluir última estação' : 'Ver estações') : (stPairFor(r) ? '📷 Foto da dupla' : 'Validar Strava');
+  const label = n >= cfg.count ? (info && info.stations_run_first && !pr.fin ? '🏁 Concluir última estação' : 'Ver estações') : (stPairFor(r) ? '📷 Foto da tela do Strava' : 'Validar Strava');
   return `<button class="lv-sv-btn ${n ? 'has' : ''}" onclick="lancarStationOpen(${r.id})">📍 ${label}</button>`;
 }
 let LV_ST_IMG = null, LV_ST_VER = null;   // foto (miniatura) e dados verificados pelo Strava da validação em andamento
@@ -8279,7 +8321,7 @@ async function lancarStationAdd() {
   const link = stLinkFrom(document.getElementById('lv-st-link').value);
   if (link && !lvSvOk(link)) return toast('⚠️ Esse não parece um link do Strava');
   const _pair = stPairFor(reg);
-  if (_pair && !LV_ST_IMG) return toast('⚠️ Tire a foto da dupla para avançar');
+  if (_pair && !LV_ST_IMG) return toast('⚠️ Tire a foto da tela do Strava para avançar');
   if (!link && !LV_ST_IMG) return toast('⚠️ Tire a foto do Strava (ou use o link em Mais opções)');
   if (link) await lancarStationLookup(true);                       // tenta verificar antes de validar
   const ver = (LV_ST_VER && LV_ST_VER.link === link) ? LV_ST_VER : null;
