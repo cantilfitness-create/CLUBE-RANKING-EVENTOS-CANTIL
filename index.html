@@ -631,7 +631,9 @@ textarea { resize:vertical;min-height:72px; }
 .pts-neg { background:rgba(255,95,109,.12);color:var(--red); }
 .toast { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);background:var(--s1);border:2px solid var(--green);color:var(--text);padding:20px 28px;border-radius:18px;font-size:15px;font-weight:700;z-index:9999;opacity:0;transition:all .25s;max-width:88vw;text-align:center;line-height:1.5;pointer-events:none;box-shadow:0 12px 40px rgba(0,0,0,0.5);}
 .toast.show { opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all; }
-.toast-close { position:absolute;top:6px;right:10px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px; }
+.toast-close { position:absolute;top:6px;right:6px;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:var(--text);font-size:24px;line-height:1;cursor:pointer;padding:0; }
+.toast { padding-top:44px !important; cursor:pointer; }
+.lv-snack button.snack-x { flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:24px;line-height:1;cursor:pointer;margin-left:6px;padding:0; }
 
 .registration-confirm-overlay {
   position:fixed;inset:0;z-index:10000;
@@ -840,22 +842,28 @@ details.live-ctl .live-row-head .live-chip { display:none; }
               <label class="btn btn-blue" style="flex:1;text-align:center;cursor:pointer;margin:0;padding:12px 8px">🖼 Da galeria<input type="file" id="lv-st-file2" accept="image/*" style="display:none" onchange="lancarStationPhoto(event)"></label>
             </div>
             <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><img id="lv-st-thumb" alt="" style="display:none;height:64px;border-radius:8px;border:1px solid var(--border)"><span id="lv-st-imgnote" style="font-size:11px;color:var(--muted)">Vira uma miniatura bem leve. O print que o participante enviou pelo WhatsApp também serve (galeria).</span></div></div>
+          <button class="btn btn-gold" style="width:100%;margin-top:4px" onclick="lancarStationAdd()">✅ Validar estação</button>
+        </div>
+        <button class="btn btn-gold" id="lv-st-fin" style="display:none;width:100%;margin-top:8px" onclick="lancarStationFinish()">🏁 Concluir última estação</button>
+        <details id="lv-st-cfg" style="margin:12px 0 0;border:1px solid var(--border);border-radius:12px;background:var(--s2)">
+          <summary style="padding:12px 14px;cursor:pointer;font-weight:700;font-size:13px;color:var(--muted)">⚙️ Configurações e edições desta estação</summary>
+          <div style="padding:0 14px 14px">
+            <div id="lv-st-addcfg">
           <div class="field-group"><label class="field-label" id="lv-st-kmlabel">Km da estação</label>
             <input type="text" id="lv-st-km" inputmode="decimal" placeholder="ex: 1"></div>
-          <details id="lv-st-more" style="margin:0 0 12px;border:1px solid var(--border);border-radius:12px;background:var(--s2)">
-            <summary style="padding:10px 12px;cursor:pointer;font-weight:700;font-size:13px;color:var(--muted)">⚙️ Mais opções: link do Strava</summary>
-            <div style="padding:0 12px 12px">
+              <div id="lv-st-more" style="margin:0 0 12px">
+                <div style="padding:0 12px 12px">
               <label class="field-label">Link do Strava que o participante enviou</label>
               <div style="display:flex;gap:8px"><input type="text" id="lv-st-link" inputmode="url" placeholder="https://www.strava.com/activities/..." autocapitalize="off" autocorrect="off" autocomplete="off" oninput="lancarStationLinkChanged()"><button class="mt-tiny" style="flex:0 0 auto" onclick="lancarStationPaste()">📋 Colar</button></div>
               <div id="lv-st-status" style="font-size:13px;margin-top:8px;line-height:1.4"></div>
             </div>
-          </details>
-          <button class="btn btn-gold" style="width:100%" onclick="lancarStationAdd()">✅ Validar estação</button>
-        </div>
-        <div id="lv-st-hist" style="margin-top:10px"></div>
-        <button class="btn btn-gold" id="lv-st-fin" style="display:none;width:100%;margin-top:8px" onclick="lancarStationFinish()">🏁 Concluir última estação</button>
-        <button class="btn-sm-danger" id="lv-st-undo" style="display:none;width:100%;padding:10px;margin-top:8px" onclick="lancarStationUndo()">↩ Desfazer última estação</button>
-        <button class="btn-sm-danger" style="width:100%;padding:10px;margin-top:8px" onclick="lancarStationClose()">Fechar</button>
+              </div>
+            </div>
+            <div id="lv-st-hist"></div>
+            <button class="btn-sm-danger" id="lv-st-undo" style="display:none;width:100%;padding:12px;margin-top:10px" onclick="lancarStationUndo()">↩ Desfazer última estação</button>
+          </div>
+        </details>
+        <button class="btn" style="width:100%;padding:16px;margin-top:12px;font-size:16px;font-weight:800;background:rgba(255,92,92,.14);color:var(--red);border:1px solid rgba(255,92,92,.5)" onclick="lancarStationClose()">✕ Fechar</button>
       </div>
     </div>
     <div class="lv-sv-ov" id="lv-img-ov" onclick="this.classList.remove('open')"><img id="lv-img-view" alt="Foto do Strava" style="max-width:100%;max-height:88vh;border-radius:12px"></div>
@@ -5487,6 +5495,8 @@ function lvNameHtml(r, sub) {
         document.getElementById('lv-st-who').textContent = `👥 ${pairFirst(reg)} / ${pairFirst(b)}`;
         document.getElementById('lv-st-photo-label').textContent = '📷 Foto da tela do Strava (obrigatória para avançar)';
       } else document.getElementById('lv-st-photo-label').textContent = '📷 Foto do Strava (comprovante)';
+      const addEl = document.getElementById('lv-st-add'), cfgEl = document.getElementById('lv-st-addcfg');
+      if (addEl && cfgEl) cfgEl.style.display = addEl.style.display;
       const finBtn = document.getElementById('lv-st-fin'), runFirst = !!(info && info.stations_run_first);
       finBtn.style.display = (runFirst && arr.length >= cfg.count && !pr.fin) ? '' : 'none';
       if (runFirst) {
@@ -7440,7 +7450,8 @@ async function resetPts() {
 let toastT;
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.innerHTML = `<button class="toast-close" onclick="closeToast()">✕</button>${msg}`;
+  el.innerHTML = `<button class="toast-close" onclick="event.stopPropagation();closeToast()">✕</button>${msg}`;
+  el.onclick = closeToast;                                          // tocar em qualquer parte do aviso também fecha
   el.classList.add('show');
   clearTimeout(toastT);
   toastT=setTimeout(()=>el.classList.remove('show'), 10000);
@@ -8177,7 +8188,7 @@ function lancarRenderList() {
 
 function lancarSnack(html) {
   const el = document.getElementById('lv-snack'); if (!el) return;
-  el.innerHTML = html; el.style.display = '';
+  el.innerHTML = html + '<button class="snack-x" onclick="event.stopPropagation();document.getElementById(\'lv-snack\').style.display=\'none\'">✕</button>'; el.style.display = '';
   clearTimeout(LANCAR_SNACK_T); LANCAR_SNACK_T = setTimeout(() => { el.style.display = 'none'; }, 12000);
 }
 
