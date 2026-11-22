@@ -739,6 +739,42 @@ details.live-ctl .live-btns { margin-top:8px; gap:6px; }
 .tv-row .st-bar-track { height:1.4vh; }
 .tv-final { font-family:'Bebas Neue',sans-serif; font-size:.62em; color:var(--text); letter-spacing:.04em; text-align:right; margin-top:.2vh; }
 .tv-row.p1 .tv-final { color:var(--gold); }
+
+/* ── Controle ao vivo: sem etiqueta repetida dentro da aba aberta ── */
+details.live-ctl .live-row-head .live-chip { display:none; }
+
+/* ── Modo TV para CELULAR (?tv=resultados&celular=1): mesmo visual da TV, com rolagem e tamanhos de celular ── */
+#tv-results-view.tv-phone { overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+.tv-phone .tv-fs { display:none; }
+.tv-phone .tv-head { padding:22px 14px 6px; }
+.tv-phone .tv-eyebrow { font-size:12px; letter-spacing:.45em; }
+.tv-phone .tv-title { font-size:clamp(34px,11vw,56px); }
+.tv-phone .tv-cap { font-size:15px; margin-top:4px; }
+.tv-phone .tv-body { flex:0 0 auto; padding:8px 12px 56px; gap:18px; }
+.tv-phone .tv-panel { min-height:auto; }
+.tv-phone .tv-panel-title { font-size:26px; padding-bottom:6px; margin-bottom:10px; border-bottom-width:3px; }
+.tv-phone .tv-groups { gap:12px; }
+.tv-phone .tv-group { border-radius:14px; overflow:visible; }
+.tv-phone .tv-group-title { font-size:24px; padding:10px 14px; border-radius:14px 14px 0 0; }
+.tv-phone .tv-scroll { overflow:visible; }
+.tv-phone .tv-row { gap:10px; padding:10px 14px; }
+.tv-phone .tv-pos { flex:0 0 30px; font-size:22px; }
+.tv-phone .tv-name { font-size:18px; }
+.tv-phone .tv-note { font-size:12.5px; margin-top:3px; }
+.tv-phone .tv-val { font-size:28px; }
+.tv-phone .tv-val.cap { font-size:18px; }
+.tv-phone .tv-final { margin-top:2px; }
+.tv-phone .tv-row .st-bar { margin-top:5px; }
+.tv-phone .tv-row .st-bar-track { height:9px; }
+.tv-phone .tv-empty { font-size:30px; }
+.tv-phone .tv-live { position:fixed; left:12px; bottom:8px; font-size:11px; background:rgba(0,0,0,.6); padding:3px 9px; border-radius:99px; gap:6px; }
+@media (orientation:portrait) { .tv-phone .tv-body, .tv-phone .tv-groups { grid-template-columns:minmax(0,1fr) !important; } }
+@media (orientation:landscape) {
+  .tv-phone .tv-head { padding:10px 14px 2px; } .tv-phone .tv-title { font-size:38px; }
+  .tv-phone .tv-body { gap:16px; padding:6px 14px 40px; }
+  .tv-phone .tv-panel-title { font-size:22px; } .tv-phone .tv-group-title { font-size:20px; padding:8px 12px; }
+  .tv-phone .tv-name { font-size:16px; } .tv-phone .tv-val { font-size:24px; } .tv-phone .tv-note { font-size:11.5px; }
+}
 </style>
 </head>
 <body>
@@ -1794,6 +1830,12 @@ details.live-ctl .live-btns { margin-top:8px; gap:6px; }
             <div style="display:flex;gap:8px">
               <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvLink()">📋 Copiar link</button>
               <button class="btn-sm" style="flex:1;padding:10px" onclick="openTvLink()">📺 Abrir</button>
+            </div>
+            <label class="field-label" style="margin-top:14px">📱 Link para celular (igual à TV, adaptado ao celular)</label>
+            <input type="text" id="tv-phone-link-input" readonly onclick="this.select()" style="margin-bottom:8px;font-size:12px">
+            <div style="display:flex;gap:8px">
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="copyTvPhoneLink()">📋 Copiar link</button>
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="window.open(tvPhoneLinkUrl(),'_blank')">📱 Abrir</button>
             </div>
             <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.4">A senha da equipe (a mesma da Meta) é definida na aba <b>Config</b>. A TV atualiza sozinha a cada 15 s, em ordem alfabética e sem medalhas. Para classificar por tempo (com medalhas), acrescente <b>&amp;ordem=tempo</b> no fim do link.</div>
           </div>
@@ -7466,6 +7508,12 @@ function copyTvLink() {
   else { const el = document.getElementById('tv-link-input'); el.select(); document.execCommand('copy'); toast('📋 Link da TV copiado!'); }
 }
 function openTvLink() { window.open(tvLinkUrl(), '_blank'); }
+function tvPhoneLinkUrl() { return location.href.split('#')[0].split('?')[0] + '?tv=resultados&celular=1'; }
+function copyTvPhoneLink() {
+  const url = tvPhoneLinkUrl();
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(() => toast('📋 Link do celular copiado!'), () => toast(url));
+  else { const el = document.getElementById('tv-phone-link-input'); el.select(); document.execCommand('copy'); toast('📋 Link do celular copiado!'); }
+}
 
 // ── Modo TV ──
 let TV_SIG = '', TV_BYNAME = false;
@@ -7588,6 +7636,7 @@ function tvAutoScroll() {
 async function startTvResults(params) {
   TV_BYNAME = params.get('ordem') !== 'tempo';      // padrão: ordem alfabética, sem medalhas
   document.getElementById('tv-results-view').classList.add('on');
+  if (params.get('celular') !== null) document.getElementById('tv-results-view').classList.add('tv-phone');
   try { if (navigator.wakeLock) { const wl = () => navigator.wakeLock.request('screen').catch(() => {}); wl(); document.addEventListener('visibilitychange', () => { if (!document.hidden) wl(); }); } } catch (e) {}
   await tvRefresh();
   setInterval(tvRefresh, 15000);
@@ -7978,6 +8027,7 @@ function fillTeamLinks() {
   set('cfg-link-launch', appBaseUrl() + '?lancar=resultados');
   set('ev-launch-link', appBaseUrl() + '?lancar=resultados');
   set('tv-link-input', appBaseUrl() + '?tv=resultados');
+  set('tv-phone-link-input', appBaseUrl() + '?tv=resultados&celular=1');
 }
 fillTeamLinks();
 
