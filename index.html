@@ -714,6 +714,20 @@ details.live-ctl .live-row:first-child { margin-top:0; }
 details.live-ctl .live-clock { font-size:32px; margin:4px 0 0; letter-spacing:2px; }
 details.live-ctl .live-btn { min-width:90px; padding:9px 8px; font-size:13px; border-radius:10px; }
 details.live-ctl .live-btns { margin-top:8px; gap:6px; }
+
+/* ── Quadro de resultados: posição, medalhas, resumo ── */
+.res-summary { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+.res-summary span { font-size:12px; padding:6px 11px; border-radius:99px; border:1px solid var(--border); background:var(--s2); color:var(--muted); }
+.res-summary b { color:var(--text); }
+.res-count { font-family:'Outfit',sans-serif; font-size:11px; font-weight:800; padding:2px 8px; border-radius:99px; background:var(--s2); border:1px solid var(--border); color:var(--muted); margin-left:auto; }
+.results-item-name { display:flex; align-items:center; gap:10px; min-width:0; }
+.res-rank { flex:0 0 34px; text-align:center; font-size:22px; line-height:1; }
+.res-pos { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; color:var(--muted); }
+.res-who { display:flex; flex-direction:column; min-width:0; overflow-wrap:anywhere; }
+.res-amp { color:var(--muted); font-weight:400; }
+.results-item.res-first { background:linear-gradient(90deg, rgba(255,208,96,.14), transparent); border-radius:10px; }
+.results-item-value { font-variant-numeric:tabular-nums; font-weight:800; white-space:nowrap; }
+.results-item-value.res-cap { color:var(--red); }
 </style>
 </head>
 <body>
@@ -3803,43 +3817,76 @@ async function renderResultsBoard(info) {
       : '';
   }
 
-  const html = renderResultsGroupsHtml(regs, info.result_type, groupDescs);
+  try { await loadPairs(info); } catch (e) {}
+  const html = renderResultsGroupsHtml(regs, info.result_type, groupDescs, undefined, resPairOpts(info, '1'));
   document.getElementById('results-groups').innerHTML = html;
   board.style.display = html ? '' : 'none';
   setEventDetailsCollapsed(!!html);
 }
 
-// Gera o HTML dos grupos (Verde/Amarelo/Laranja) para uma lista de inscrições e um tipo de resultado
-function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField) {
+// Gera o HTML dos grupos (Verde/Amarelo/Laranja) para uma lista de inscrições e um tipo de resultado.
+// Ordena por desempenho (não por nome), mostra medalhas, posição, ícones e, em prova de dupla, a dupla numa linha só.
+function resPairOpts(info, sub) { return pairsOn(info, sub) ? { pairs: pairList(info, sub) } : null; }
+function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField, opts) {
   resultField = resultField || 'result_value';
-  const groupsOrder = [
-    { key:'Iniciante', emoji:'🟢', name:'Verde' },
-    { key:'Intermediário', emoji:'🟡', name:'Amarelo' },
-    { key:'Avançado', emoji:'🟠', name:'Laranja' }
+  const sfx = resultField.replace('result_value', '');
+  const LV = [
+    { key: 'Iniciante', emoji: '🟢', name: 'Verde', cat: 'VERDE' },
+    { key: 'Intermediário', emoji: '🟡', name: 'Amarelo', cat: 'AMARELO' },
+    { key: 'Avançado', emoji: '🟠', name: 'Laranja', cat: 'LARANJA' }
   ];
-  const colLabel = resultType === 'tempo' ? 'TEMPO DE PROVA' : 'RESULTADO';
-  let html = '';
-  groupsOrder.forEach(g => {
-    const items = regs.filter(r => (r.fitness_level||'Iniciante') === g.key)
-                       .slice().sort((a,b)=>a.name.localeCompare(b.name));
-    if (!items.length) return;
-    const desc = groupDescs[g.key];
-    // Se o admin escreveu uma descrição pra essa categoria (ex: "2K"), ela vira
-    // o título principal do grupo — assim o resultado mostra a mesma categoria
-    // que a pessoa escolheu ao se inscrever, não o nome fixo Verde/Amarelo/Laranja
-    const titleText = desc ? desc : `Grupo ${g.name}`;
-    html += `
-      <div class="results-group">
-        <div class="results-group-title">${g.emoji} ${titleText}</div>
-        <div class="results-list">
-          <div class="results-header-row"><span>PARTICIPANTES</span><span>${colLabel}</span></div>
-          ${items.map(r => `
-            <div class="results-item">
-              <span class="results-item-name">${r.name}${getResultNote(r, resultField.replace('result_value','')) ? `<span class="results-item-note">${tvEsc(getResultNote(r, resultField.replace('result_value','')))}</span>` : ''}</span>
-              <span class="results-item-value">${r[resultField]}</span>
-            </div>`).join('')}
-        </div>
-      </div>`;
+  const isTime = resultType === 'tempo';
+  const byId = {}; (EVENT_REGISTRATIONS || []).forEach(r => { byId[r.id] = r; }); regs.forEach(r => { byId[r.id] = r; });
+  const noteOf = r => { const n = getResultNote(r, sfx); return n ? tvEsc(n) : ''; };
+  // 1) monta as linhas (pessoa ou dupla)
+  const used = new Set(), items = [];
+  regs.forEach(r => {
+    if (used.has(r.id)) return;
+    const p = opts && opts.pairs ? opts.pairs.find(x => x.a === r.id || x.b === r.id) : null;
+    if (p) {
+      used.add(p.a); used.add(p.b);
+      const a = byId[p.a], b = byId[p.b], c = LV.find(l => l.cat === p.cat);
+      items.push({ names: [a, b].filter(Boolean).map(x => x.name), value: r[resultField], note: noteOf(r), pair: true, gk: c ? c.key : 'duplas', lv: c || null });
+    } else {
+      used.add(r.id);
+      const c = LV.find(l => l.key === (r.fitness_level || 'Iniciante')) || LV[0];
+      items.push({ names: [r.name], value: r[resultField], note: noteOf(r), pair: false, gk: 'ind:' + c.key, lv: c });
+    }
+  });
+  const secs = it => riSeconds(it.value, resultType);
+  // 2) agrupa
+  const groups = {};
+  items.forEach(it => { (groups[it.gk] = groups[it.gk] || { gk: it.gk, lv: it.lv, items: [], pair: it.pair }).items.push(it); });
+  const order = k => { const i = LV.findIndex(l => k === l.key || k === 'ind:' + l.key); return k === 'duplas' ? 9 : (i < 0 ? 8 : i) + (String(k).startsWith('ind:') ? 0 : 0.5); };
+  const list = Object.values(groups).sort((x, y) => order(x.gk) - order(y.gk));
+  const finishers = items.filter(it => secs(it) !== Infinity).length;
+  const best = items.map(it => ({ it, s: secs(it) })).filter(x => x.s !== Infinity).sort((x, y) => x.s - y.s)[0];
+  let html = `<div class="res-summary"><span>✅ <b>${items.length}</b> ${items.length && items.every(i => i.pair) ? 'duplas' : 'finalizaram'}</span>${best && isTime ? `<span>⚡ melhor tempo <b>${tvEsc(best.it.value)}</b></span>` : ''}${items.some(i => /time\s*cap/i.test(i.value)) ? `<span>⏰ ${items.filter(i => /time\s*cap/i.test(i.value)).length} no time cap</span>` : ''}</div>`;
+  list.forEach(g => {
+    g.items.sort((x, y) => secs(x) - secs(y) || x.names[0].localeCompare(y.names[0], 'pt-BR'));
+    const desc = g.lv ? groupDescs[g.lv.key] : '';
+    const base = g.lv ? (desc ? desc : `Grupo ${g.lv.name}`) : 'categoria a definir';
+    const title = (g.pair ? 'Duplas · ' : '') + base;
+    const emoji = g.lv ? g.lv.emoji : '👥';
+    const gBest = g.items.find(it => secs(it) !== Infinity);
+    let rank = 0, prev = null;
+    html += `<div class="results-group">
+      <div class="results-group-title">${emoji} ${tvEsc(title)}<span class="res-count">${g.items.length}</span></div>
+      <div class="results-list">
+        <div class="results-header-row"><span>${g.pair ? '👥 DUPLA' : '👤 PARTICIPANTE'}</span><span>${isTime ? '⏱ TEMPO' : '🏆 RESULTADO'}</span></div>
+        ${g.items.map((it, idx) => {
+          const sc = secs(it), ok = sc !== Infinity, cap = /time\s*cap/i.test(it.value);
+          if (ok) { if (prev === null || sc !== prev) rank = idx + 1; prev = sc; }
+          const medal = ok ? (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '') : '';
+          const badge = ok ? (medal || `<span class="res-pos">${rank}º</span>`) : '<span class="res-pos">—</span>';
+          const nm = it.names.map(n => tvEsc(n)).join('<span class="res-amp"> &amp; </span>');
+          return `<div class="results-item ${rank === 1 && ok ? 'res-first' : ''}">
+            <span class="results-item-name"><span class="res-rank">${badge}</span><span class="res-who"><span>${it.pair ? '👥 ' : ''}${nm}</span>${it.note ? `<span class="results-item-note">${it.note}</span>` : ''}</span></span>
+            <span class="results-item-value ${cap ? 'res-cap' : ''}">${cap ? '⏰ ' : (isTime ? '' : '')}${tvEsc(it.value)}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
   });
   return html;
 }
@@ -3863,17 +3910,18 @@ async function renderDualResultsBoard(info) {
   const titleEl = document.getElementById('results-title');
   if (titleEl) titleEl.innerHTML = '';
 
+  try { await loadPairs(info); } catch (e) {}
   let html = '';
 
   if (regs1.length) {
     const cap1 = formatTimeCap(info.time_cap_seconds_1);
     html += `<div class="results-subevent-header">🥇 ${info.sub1_name || 'Evento 1'}${cap1 ? ` <span style="color:var(--red);font-weight:800">— TIME CAP: ${cap1}</span>` : ''}</div>`;
-    html += renderResultsGroupsHtml(regs1, info.result_type_1, groupDescs, 'result_value_1');
+    html += renderResultsGroupsHtml(regs1, info.result_type_1, groupDescs, 'result_value_1', resPairOpts(info, '1'));
   }
   if (regs2.length) {
     const cap2 = formatTimeCap(info.time_cap_seconds_2);
     html += `<div class="results-subevent-header">🥈 ${info.sub2_name || 'Evento 2'}${cap2 ? ` <span style="color:var(--red);font-weight:800">— TIME CAP: ${cap2}</span>` : ''}</div>`;
-    html += renderResultsGroupsHtml(regs2, info.result_type_2, groupDescs, 'result_value_2');
+    html += renderResultsGroupsHtml(regs2, info.result_type_2, groupDescs, 'result_value_2', resPairOpts(info, '2'));
   }
 
   document.getElementById('results-groups').innerHTML = html;
@@ -4629,7 +4677,7 @@ async function updateEventConfig() {
     stBy[k] = { count, km: parseFloat(String(document.getElementById('ev-cfg-st-km-' + x).value).replace(',', '.')) || 1, ex: document.getElementById('ev-cfg-st-ex-' + x).value.trim() };
   });
   newInfo.stations_by_level = stBy; newInfo.stations_count = 0; newInfo.stations_km = 0;
-  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first', 'bibs_global'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
+  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first', 'stations_last_run_only', 'bibs_global'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -5455,8 +5503,13 @@ async function renderEventOptions(force) {
     html += `<button class="btn-sm" style="width:100%;margin-top:8px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
     h += html;
   });
-  if (stEnabled(info)) h += `<div class="reg-sub-card" style="margin-bottom:14px"><label style="${chk}"><input type="checkbox" ${info.stations_run_first ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_run_first',null,this.checked)"> 🏃 Corrida no início da estação</label>
-    <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: a estação só aparece como COMPLETA depois do exercício, isto é, quando a corrida seguinte é registrada. A última estação conclui quando a equipe toca em “Concluir última estação”.</div></div>`;
+  if (stEnabled(info)) {
+    h += `<div class="reg-sub-card" style="margin-bottom:14px"><label style="${chk}"><input type="checkbox" ${info.stations_run_first ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_run_first',null,this.checked)"> 🏃 Corrida no início da estação</label>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: a estação só aparece como COMPLETA depois do exercício, isto é, quando a corrida seguinte é registrada.</div>`;
+    if (info.stations_run_first) h += `<label style="${chk};margin-top:6px"><input type="checkbox" ${info.stations_last_run_only !== false ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_last_run_only',null,this.checked)"> 🏁 Última estação é só a corrida</label>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: ao registrar a foto do Strava da última corrida, a prova já fica COMPLETA — é só tocar em Finalizar. Desligado: depois da última foto a equipe toca em “Concluir última estação” (quando há exercício no final).</div>`;
+    h += `</div>`;
+  }
   box.style.display = ''; box.innerHTML = h;
 }
 async function pairAdd(sub) {
@@ -8219,7 +8272,8 @@ async function loadStationLog() {
 function stProg(info, key, arr, cfg) {
   const n = (arr || []).length;
   if (!(info && info.stations_run_first)) return { n, done: n, fin: n >= cfg.count, wait: false };
-  const fin = n >= cfg.count && !!STATION_DONE[key];
+  const lastOnly = info.stations_last_run_only !== false;          // padrão: a última estação é só a corrida
+  const fin = n >= cfg.count && (lastOnly || !!STATION_DONE[key]);
   return { n, done: fin ? cfg.count : Math.max(0, n - 1), fin, wait: !fin && n > 0 };
 }
 const ST_LEVELS = [['Iniciante', 'I'], ['Intermediário', 'M'], ['Avançado', 'A']];
