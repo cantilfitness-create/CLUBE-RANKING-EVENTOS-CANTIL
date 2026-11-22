@@ -825,7 +825,7 @@ details.live-ctl .live-btns { margin-top:8px; gap:6px; }
     <div class="lv-sv-ov" id="lv-img-ov" onclick="this.classList.remove('open')"><img id="lv-img-view" alt="Foto do Strava" style="max-width:100%;max-height:88vh;border-radius:12px"></div>
     <div id="lancar-main" style="display:none">
           <details class="live-ctl" id="live-ctl">
-            <summary class="live-sum"><span class="live-sum-t">🔴 Controle ao vivo</span><span id="live-ctl-mini" class="live-mini"></span></summary>
+            <summary class="live-sum" onclick="liveCtlToggle(event)"><span class="live-sum-t">🔴 Controle ao vivo <span style="opacity:.7">🔒</span></span><span id="live-ctl-mini" class="live-mini"></span></summary>
             <div id="live-ctl-rows"></div>
             <div class="live-hint">Libere o evento que está acontecendo e toque em ▶ Começar: o cronômetro roda sozinho até você pausar ou encerrar, ou até estourar o Time Cap. A equipe só toca em “Finalizar” em cada participante e o tempo de prova sai na hora. Não precisa salvar o evento.</div>
           </details>
@@ -4688,7 +4688,7 @@ async function updateEventConfig() {
     stBy[k] = { count, km: parseFloat(String(document.getElementById('ev-cfg-st-km-' + x).value).replace(',', '.')) || 1, ex: document.getElementById('ev-cfg-st-ex-' + x).value.trim() };
   });
   newInfo.stations_by_level = stBy; newInfo.stations_count = 0; newInfo.stations_km = 0;
-  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first', 'stations_last_run_only', 'bibs_global'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
+  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first', 'stations_last_run_only', 'bibs_global', 'auto_finish'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -5464,6 +5464,15 @@ async function lancarStationFinish() {
   if (!(await setSetting('station_done', STATION_DONE))) return;
   lancarStationClose(); lancarRenderList();
   toast('🏁 Prova completa — última estação concluída');
+  await lancarAutoFinish(reg.id);
+}
+// Ao completar a última estação, finaliza sozinho: tempo = cronômetro (do Começar até este instante)
+async function lancarAutoFinish(regId) {
+  const info = EVENT_INFO; if (!info || !info.live_sub || info.auto_finish === false) return;
+  const reg = EVENT_REGISTRATIONS.find(r => r.id === regId); if (!reg) return;
+  if (reg['result_value' + (info.is_dual ? '_' + info.live_sub : '')]) return;     // já finalizado
+  if (lancarType(info) !== 'tempo') return;
+  await lancarFinish(regId);
 }
 
 // ── Opções do evento (modo dupla, corrida no início) + gerenciador de duplas + imagem de resultados ──
@@ -5519,7 +5528,8 @@ async function renderEventOptions(force) {
       <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: a estação só aparece como COMPLETA depois do exercício, isto é, quando a corrida seguinte é registrada.</div>`;
     if (info.stations_run_first) h += `<label style="${chk};margin-top:6px"><input type="checkbox" ${info.stations_last_run_only !== false ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_last_run_only',null,this.checked)"> 🏁 Última estação é só a corrida</label>
       <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: ao registrar a foto do Strava da última corrida, a prova já fica COMPLETA — é só tocar em Finalizar. Desligado: depois da última foto a equipe toca em “Concluir última estação” (quando há exercício no final).</div>`;
-    h += `</div>`;
+    h += `<label style="${chk};margin-top:6px"><input type="checkbox" ${info.auto_finish !== false ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('auto_finish',null,this.checked)"> ⏱ Finalizar sozinho na última estação</label>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5">Ligado: ao registrar a última estação, a prova é finalizada automaticamente com o tempo do cronômetro (do <b>Começar</b> até esse momento), e ficam salvos o horário de início e o de fim. Desligado: a equipe toca em Finalizar.</div></div>`;
   }
   box.style.display = ''; box.innerHTML = h;
 }
@@ -5705,6 +5715,41 @@ function riShow(blob, name) {
   };
 }
 
+// ── Controle ao vivo: a equipe só vê o tempo; abrir os botões (pausar/encerrar) exige a senha do admin ──
+let LIVE_ADMIN_UNTIL = 0;
+function liveAdminAsk() {
+  return new Promise(resolve => {
+    const old = document.getElementById('live-adm-ov'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.id = 'live-adm-ov';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
+    ov.innerHTML = `<div style="width:100%;max-width:360px;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:18px">
+      <div style="font-weight:800;font-size:16px;margin-bottom:4px">🔐 Senha do admin</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45">Só o admin pode liberar, começar, pausar ou encerrar a prova.</div>
+      <input id="live-adm-pw" type="password" autocomplete="off" placeholder="Senha" style="width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:16px">
+      <div id="live-adm-err" style="font-size:12px;color:var(--red);min-height:16px;margin-top:6px"></div>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn-sm" id="live-adm-no" style="flex:1;padding:12px">Cancelar</button><button class="btn btn-blue" id="live-adm-ok" style="flex:1;margin:0;width:auto">Entrar</button></div></div>`;
+    document.body.appendChild(ov);
+    const pw = document.getElementById('live-adm-pw'), err = document.getElementById('live-adm-err');
+    const done = ok => { ov.remove(); resolve(ok); };
+    const go = async () => {
+      let stored = 'admin123'; try { stored = await getSetting('admin_pass', 'admin123'); } catch (e) {}
+      if (pw.value === stored) { LIVE_ADMIN_UNTIL = Date.now() + 5 * 60 * 1000; done(true); }
+      else { err.textContent = 'Senha incorreta'; pw.value = ''; pw.focus(); }
+    };
+    document.getElementById('live-adm-ok').onclick = go;
+    document.getElementById('live-adm-no').onclick = () => done(false);
+    pw.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    setTimeout(() => pw.focus(), 80);
+  });
+}
+async function liveCtlToggle(ev) {
+  ev.preventDefault();
+  const d = document.getElementById('live-ctl');
+  if (d.open) { d.open = false; return; }
+  if (Date.now() >= LIVE_ADMIN_UNTIL && !(await liveAdminAsk())) return;
+  d.open = true;
+  setTimeout(() => { if (Date.now() >= LIVE_ADMIN_UNTIL) d.open = false; }, 5 * 60 * 1000 + 500);   // fecha sozinho depois de 5 min
+}
 let REG_SUB_FILTER = 'all';
 function setRegSubFilter(v) { REG_SUB_FILTER = v; renderRegistrationsList(); }
 
@@ -7780,6 +7825,10 @@ function renderLiveControls(info) {
 }
 
 async function clkAction(key, action) {
+  try {
+    const lv = document.getElementById('lancar-view');
+    if (lv && lv.classList.contains('on') && Date.now() >= LIVE_ADMIN_UNTIL && !(await liveAdminAsk())) return;
+  } catch (e) {}
   const tap = Date.now();                                  // o relógio parte do instante do toque
   EVENT_INFO = null;
   const info = await getEventInfo();
@@ -7808,20 +7857,20 @@ async function clkAction(key, action) {
     msg = '🔒 Bloqueado: a equipe não consegue lançar';
   } else if (action === 'start') {
     if (live !== key) return;
-    clk[key] = { state: 'running', startAt: tap, accMs: 0 };
+    clk[key] = { state: 'running', startAt: tap, accMs: 0, t0: tap };
     msg = '▶ Cronômetro rodando!';
   } else if (action === 'pause') {
     if (cur.state !== 'running') return;
-    clk[key] = { state: 'paused', startAt: 0, accMs: frozen(cur) };
+    clk[key] = { state: 'paused', startAt: 0, accMs: frozen(cur), t0: cur.t0 };
     msg = '⏸ Pausado';
   } else if (action === 'resume') {
     if (cur.state !== 'paused') return;
-    clk[key] = { state: 'running', startAt: tap, accMs: cur.accMs || 0 };
+    clk[key] = { state: 'running', startAt: tap, accMs: cur.accMs || 0, t0: cur.t0 };
     msg = '▶ Retomado';
   } else if (action === 'end') {
     if (cur.state !== 'running' && cur.state !== 'paused') return;
     if (!confirm('Encerrar o evento? A equipe não poderá mais finalizar participantes por este link.')) return;
-    clk[key] = { state: 'ended', startAt: 0, accMs: frozen(cur) };
+    clk[key] = { state: 'ended', startAt: 0, accMs: frozen(cur), t0: cur.t0 };
     msg = '⏹ Evento encerrado';
   } else return;
 
@@ -8101,6 +8150,13 @@ async function lancarFinish(regId, tapArg) {
     if (!ctx) return;
     lancarRenderList();
     if (ctx.conflict) return;
+    try {                                                              // início → fim ficam registrados junto do tempo
+      const e = clkEntry(info, key), t0 = e.t0 || (tap - v.ms), endT = v.timeUp && v.cap ? t0 + v.cap : tap;
+      const hh = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const nsfx = info.is_dual ? '_' + key : '', stamp = `🕗 ${hh(t0)} → 🏁 ${hh(endT)}`;
+      const prev = String(getResultNote(ctx.reg, nsfx) || '').trim();
+      if (!prev.includes('🕗')) await saveResultNote(regId, nsfx, prev ? prev + ' · ' + stamp : stamp);
+    } catch (e2) { console.error(e2); }
     lancarSnack(`<span>✅ <b>${tvEsc(ctx.reg.name)}</b> — ${tvEsc(value)}</span><button onclick="lancarClearResult(${regId})">↩ Desfazer</button>`);
     toast(`✅ ${ctx.reg.name}: ${value}`);
     if (!document.getElementById('result-select').value) populateResultSelect();
@@ -8458,12 +8514,13 @@ async function lancarStationAdd() {
       if (arr2.length < cfg.count) { arr2.push({ n: arr2.length + 1, link: '', km, at: entry.at, img: 1, ref: reg.id }); STATION_LOG[key2] = arr2; }
     }
     if (!(await setSetting('station_log', STATION_LOG))) return;
-    const tot = stTotal(arr), done = n >= cfg.count;
+    const tot = stTotal(arr), done = stProg(EVENT_INFO, key, arr, cfg).fin;
     lancarStationClose(); lancarRenderList();
     const msg = done ? `🏁 <b>${tvEsc(reg.name)}</b> — PROVA COMPLETA · ${n} estações · ${stKm(tot)} km`
                      : `${ver ? '✔' : '✅'} <b>${tvEsc(reg.name)}</b> — Estação ${n} · ${stKm(km)} km COMPLETO${ver ? ' (verificado)' : ''} · saldo ${stKm(tot)} km`;
     lancarSnack(`<span>${msg}</span><button onclick="lancarStationUndoFor(${reg.id})">↩ Desfazer</button>`);
     toast(msg.replace(/<[^>]+>/g, ''));
+    if (done) await lancarAutoFinish(reg.id);
   } finally { LANCAR_BUSY.delete('st' + reg.id); }
 }
 async function lancarStationUndoFor(regId) {
