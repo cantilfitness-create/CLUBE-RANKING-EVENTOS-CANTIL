@@ -4629,7 +4629,7 @@ async function updateEventConfig() {
     stBy[k] = { count, km: parseFloat(String(document.getElementById('ev-cfg-st-km-' + x).value).replace(',', '.')) || 1, ex: document.getElementById('ev-cfg-st-ex-' + x).value.trim() };
   });
   newInfo.stations_by_level = stBy; newInfo.stations_count = 0; newInfo.stations_km = 0;
-  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
+  ['pairs', 'pairs_1', 'pairs_2', 'stations_run_first', 'bibs_global'].forEach(k => { if (prevInfo[k] !== undefined) newInfo[k] = prevInfo[k]; });
   // A liberação do link da equipe sobrevive ao "Salvar Evento"; evento novo começa bloqueado
   EVENT_INFO = null; const freshInfo = await getEventInfo();            // pega o relógio mais recente
   const sameEv = id === freshInfo.id;
@@ -5451,7 +5451,8 @@ async function renderEventOptions(force) {
         <select id="pa-b-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 2…</option>${opts}</select>
         <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button></div></div></details>`;
     }
-    html += `<button class="btn-sm" style="width:100%;margin-top:12px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
+    if (on) html += `<button class="btn-sm" style="width:100%;margin-top:12px;padding:12px" onclick="renumberBibsByPair('${sub}')">🔢 Reordenar nº de inscrição por dupla</button>`;
+    html += `<button class="btn-sm" style="width:100%;margin-top:8px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
     h += html;
   });
   if (stEnabled(info)) h += `<div class="reg-sub-card" style="margin-bottom:14px"><label style="${chk}"><input type="checkbox" ${info.stations_run_first ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('stations_run_first',null,this.checked)"> 🏃 Corrida no início da estação</label>
@@ -5481,6 +5482,37 @@ async function pairCat(sub, i, v) {
   const p = (PAIRS[pairsKey(info, sub)] || [])[i]; if (!p) return;
   p.cat = v; await savePairs(); try { renderEventPublicView(); } catch (e) {}
 }
+// Reordena os números de inscrição/pulseira para a dupla ficar com números seguidos (01-02, 03-04…).
+// Ordem = ordem de inscrição (a data da inscrição NÃO muda). Vira uma sequência única, sem separar por cor.
+async function renumberBibsByPair(sub) {
+  const info = EVENT_INFO || await getEventInfo();
+  if (!info || !info.id) return toast('⚠️ Salve o evento primeiro');
+  if (!pairsOn(info, sub)) return toast('⚠️ Ligue “Prova em dupla” primeiro');
+  await loadPairs(info); if (!eventRegLoaded) await loadEventRegistrations();
+  const bs = info.is_dual ? sub : '0';
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && bibSubsFor(r, info).includes(bs));
+  if (!regs.length) return toast('⚠️ Ninguém inscrito neste evento');
+  if (!confirm('Reordenar os números por dupla?\n\nCada dupla fica com números seguidos (01 e 02, 03 e 04…), seguindo a ordem de inscrição. Quem não tem dupla segue a sequência normal.\n\nOs números atuais MUDAM — faça antes de entregar as pulseiras (ou reenvie os códigos). A data de inscrição não muda.')) return;
+  const when = r => new Date(r.created_at).getTime() || 0, byTime = (a, b) => (when(a) - when(b)) || (a.id - b.id);
+  const seen = new Set(), order = [];
+  regs.slice().sort(byTime).forEach(r => {
+    if (seen.has(r.id)) return; seen.add(r.id);
+    const p = pairOf(info, sub, r.id), o = p ? regs.find(x => x.id === (p.a === r.id ? p.b : p.a)) : null;
+    order.push(r);
+    if (o && !seen.has(o.id)) { seen.add(o.id); order.push(o); }
+  });
+  const now = new Date().toISOString();
+  const rows = order.map((r, i) => ({ key: `bib:${info.id}:${bs}:${r.id}`, value: String(i + 1), updated_at: now }));
+  const { error } = await sb.from('app_settings').upsert(rows, { onConflict: 'key' });
+  if (error) { console.error(error); return toast('⚠️ Erro ao renumerar'); }
+  info.bibs_global = true;
+  await setSetting('event_info', info); EVENT_INFO = info;
+  await loadBibs(info);
+  try { renderRegistrationsList(); } catch (e) {}
+  try { renderEventOptions(true); } catch (e) {}
+  toast(`🔢 ${rows.length} números reordenados por dupla`);
+}
+
 // Lista pública (fonte pequena) na tela de inscrição
 async function renderPairsPublic() {
   const box = document.getElementById('pairs-public'); if (!box) return;
@@ -7498,12 +7530,12 @@ async function ensureBibs(info) {
     .sort((a, b) => (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
   const maxBy = {}, regById = {};                                  // sequência separada por prova E por cor (nível)
   regs.forEach(r => { regById[r.id] = r; });
-  Object.keys(BIBS).forEach(k => { const pr = k.split(':'), rg = regById[pr[0]]; if (!rg) return; const g = pr[1] + '|' + bibLvl(rg); maxBy[g] = Math.max(maxBy[g] || 0, BIBS[k]); });
+  Object.keys(BIBS).forEach(k => { const pr = k.split(':'), rg = regById[pr[0]]; if (!rg) return; const g = pr[1] + '|' + (info.bibs_global ? '*' : bibLvl(rg)); maxBy[g] = Math.max(maxBy[g] || 0, BIBS[k]); });
   const rows = [], keys = [];
   regs.forEach(r => bibSubsFor(r, info).forEach(sub => {
     const k = r.id + ':' + sub;
     if (BIBS[k] == null) {
-      const g = sub + '|' + bibLvl(r), n = (maxBy[g] || 0) + 1; maxBy[g] = n; BIBS[k] = n; keys.push(k);
+      const g = sub + '|' + (info.bibs_global ? '*' : bibLvl(r)), n = (maxBy[g] || 0) + 1; maxBy[g] = n; BIBS[k] = n; keys.push(k);
       rows.push({ key: `bib:${info.id}:${sub}:${r.id}`, value: String(n), updated_at: new Date().toISOString() });
     }
   }));
@@ -7518,6 +7550,7 @@ async function renumberBibsByLevel() {
   await loadBibs(info);
   const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).slice()
     .sort((a, b) => (new Date(a.created_at) - new Date(b.created_at)) || (a.id - b.id));
+  if (info.bibs_global) { info.bibs_global = false; await setSetting('event_info', info); EVENT_INFO = info; }
   const rows = [], now = new Date().toISOString();
   const subs = info.is_dual ? ['1', '2'] : ['0'];
   subs.forEach(sub => {
@@ -7942,6 +7975,9 @@ function lancarRenderList() {
     const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
     regs = regs.filter(r => key === '2' ? evRegInSub(r, n2, n1) : evRegInSub(r, n1, n2));
   }
+  // cor com 0 estações não participa: some da lista e dos filtros
+  if (stEnabled(info)) regs = regs.filter(r => stCfgReg(info, r).count > 0);
+  if (LV_GROUP && stEnabled(info) && !(stCfg(info, LV_GROUP).count > 0)) LV_GROUP = '';
   regs = lvPairVirtual(info, key, regs);
   const q = ((document.getElementById('lv-search') || {}).value || '').trim().toLowerCase();
   const match = r => {
@@ -7956,7 +7992,7 @@ function lancarRenderList() {
   const gbox = document.getElementById('lv-groups');
   if (gbox) {
     const cnt = g => regs.filter(r => match(r) && !r[field] && r[attField] !== false && (!g || bibLvl(r) === g)).length;
-    gbox.innerHTML = LV_GROUPS.map(([g, label]) => '<button class="lv-gchip' + (LV_GROUP === g ? ' on' : '') + '" onclick="lancarSetGroup(\'' + g + '\')">' + label + '<br><span style="font-weight:600;font-size:12px;opacity:.85">faltam ' + cnt(g) + '</span></button>').join('');
+    gbox.innerHTML = LV_GROUPS.filter(([g]) => !g || !stEnabled(info) || stCfg(info, g).count > 0).map(([g, label]) => '<button class="lv-gchip' + (LV_GROUP === g ? ' on' : '') + '" onclick="lancarSetGroup(\'' + g + '\')">' + label + '<br><span style="font-weight:600;font-size:12px;opacity:.85">faltam ' + cnt(g) + '</span></button>').join('');
   }
   const all = regs.filter(match).filter(r => !LV_GROUP || bibLvl(r) === LV_GROUP);
   const pending = all.filter(r => !r[field] && r[attField] !== false).sort(byBib);
