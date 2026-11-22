@@ -728,6 +728,17 @@ details.live-ctl .live-btns { margin-top:8px; gap:6px; }
 .results-item.res-first { background:linear-gradient(90deg, rgba(255,208,96,.14), transparent); border-radius:10px; }
 .results-item-value { font-variant-numeric:tabular-nums; font-weight:800; white-space:nowrap; }
 .results-item-value.res-cap { color:var(--red); }
+
+/* ── Barra de progresso das estações ── */
+.st-bar { display:flex; align-items:center; gap:10px; width:100%; margin-top:6px; }
+.st-bar-track { flex:1; height:10px; border-radius:99px; background:rgba(255,255,255,.14); overflow:hidden; }
+.st-bar-fill { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg, var(--accent), #ffd060); transition:width .6s ease; }
+.st-bar-fill.full { background:linear-gradient(90deg, #2fd48a, #3ce89b); }
+.st-bar-pct { font-family:'Bebas Neue',sans-serif; font-size:1.25em; letter-spacing:1px; color:var(--text); min-width:2.6em; text-align:right; font-variant-numeric:tabular-nums; }
+.tv-row .st-bar { height:auto; }
+.tv-row .st-bar-track { height:1.4vh; }
+.tv-final { font-family:'Bebas Neue',sans-serif; font-size:.62em; color:var(--text); letter-spacing:.04em; text-align:right; margin-top:.2vh; }
+.tv-row.p1 .tv-final { color:var(--gold); }
 </style>
 </head>
 <body>
@@ -8289,7 +8300,10 @@ const stEnabled = info => ST_LEVELS.some(([k]) => stCfg(info, k).count > 0);
 const stLvl = r => levelColor((r && r.fitness_level) || 'Iniciante');
 const stTotal = arr => (arr || []).reduce((s, e) => s + (+e.km || 0), 0);
 const stKm = n => String(+(+n).toFixed(2)).replace('.', ',');
-const stDots = (n, N) => Array.from({ length: Math.min(N, 40) }, (_, i) => i < n ? '🟢' : '⚪').join('');
+const stDots = (n, N) => {                                          // barra de progresso em % (substitui as bolinhas)
+  const p = N ? Math.round(Math.min(n, N) / N * 100) : 0;
+  return `<span class="st-bar"><span class="st-bar-track"><span class="st-bar-fill${p >= 100 ? ' full' : ''}" style="width:${p}%"></span></span><span class="st-bar-pct">${p}%</span></span>`;
+};
 function stLinkId(l) {
   l = String(l || '').trim().toLowerCase();
   const m = /activities\/(\d+)/.exec(l);
@@ -8486,13 +8500,13 @@ function stationRows(info) {
   EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => sfxs.forEach(sfx => {
     const arr = STATION_LOG[r.id + sfx], cfg = stCfgReg(info, r); if (!(arr && arr.length && cfg.count)) return;
     const sub = info.is_dual ? sfx.replace('_', '') : '0';
-    let rr = r;
+    let rr = r, finalT = String(r['result_value' + sfx] || '');
     if (pairsOn(info, sub === '0' ? '1' : sub)) {                      // dupla: uma linha só, com os dois nomes
       const p = pairOf(info, sub === '0' ? '1' : sub, r.id);
-      if (p) { if (p.b === r.id) return; const b = EVENT_REGISTRATIONS.find(x => x.id === p.b); if (b) rr = { ...r, name: pairFirst(r) + ' / ' + pairFirst(b) }; }
+      if (p) { if (p.b === r.id) return; const b = EVENT_REGISTRATIONS.find(x => x.id === p.b); if (b) { rr = { ...r, name: pairFirst(r) + ' / ' + pairFirst(b) }; if (!finalT) finalT = String(b['result_value' + sfx] || ''); } }
     }
     const pr = stProg(info, r.id + sfx, arr, cfg);
-    rows.push({ r: rr, sfx, arr, cfg, n: pr.done, runs: arr.length, fin: pr.fin, wait: pr.wait, tot: stTotal(arr.slice(0, pr.done)) });
+    rows.push({ r: rr, sfx, arr, cfg, n: pr.done, runs: arr.length, fin: pr.fin, wait: pr.wait, final: finalT, tot: stTotal(arr.slice(0, pr.done)) });
   }));
   rows.sort((a, b) => (b.n - a.n) || (b.runs - a.runs) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
   return { rows };
@@ -8508,7 +8522,7 @@ function stRowText(x, _unused, info) {
 function tvStationsPanel(info) {
   const d = stationRows(info); if (!d || !d.rows.length) return '';
   const rows = d.rows.map(x => { const t = stRowText(x, null, info);
-    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, x.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km</div></div>`; }).join('');
+    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, x.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km${x.final ? `<div class="tv-final">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
   return `<div class="tv-panel"><div class="tv-panel-title">📍 Estações · ao vivo</div><div class="tv-groups" style="grid-template-columns:minmax(0,1fr)"><div class="tv-group"><div class="tv-scroll">${rows}</div></div></div></div>`;
 }
 async function renderStationsBoard(info) {
@@ -8521,7 +8535,7 @@ async function renderStationsBoard(info) {
     const d = stationRows(info);
     if (!d || !d.rows.length) { box.style.display = 'none'; return; }
     document.getElementById('stations-body').innerHTML = d.rows.map(x => { const t = stRowText(x, null, info);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, x.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent)">${stKm(x.tot)} km</div></div>`; }).join('');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, x.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);text-align:right">${stKm(x.tot)} km${x.final ? `<div style="font-size:20px;color:var(--text)">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
     box.style.display = '';
   } catch (e) { console.error('estações', e); }
 }
