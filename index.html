@@ -7863,10 +7863,10 @@ function renderLiveControls(info) {
     const btn = (act, label, cls) => `<button class="live-btn ${cls || ''}" onclick="clkAction('${k}','${act}')">${label}</button>`;
     let btns = '';
     if (v.state === 'idle') btns = btn('release', '🔓 Liberar', 'go');
-    else if (v.state === 'ready') btns = btn('start', '▶ Começar', 'go') + btn('block', '🔒 Bloquear');
+    else if (v.state === 'ready') btns = btn('start', '▶ Começar', 'go') + btn('block', '🔒 Bloquear') + `<button class="live-btn" onclick="liveResetRun('${k}')">🧹 Zerar prova</button>`;
     else if (v.state === 'running') btns = (up ? '' : btn('pause', '⏸ Pausar')) + btn('end', '⏹ Encerrar', 'stop');
     else if (v.state === 'paused') btns = btn('resume', '▶ Retomar', 'go') + btn('end', '⏹ Encerrar', 'stop');
-    else if (v.state === 'ended') btns = btn('release', '🔓 Liberar de novo (zera)') + btn('block', '🔒 Bloquear');
+    else if (v.state === 'ended') btns = btn('release', '🔓 Liberar de novo') + btn('block', '🔒 Bloquear') + `<button class="live-btn" onclick="liveResetRun('${k}')">🧹 Zerar prova</button>`;
     return `<div class="live-row" data-key="${k}">
       <div class="live-row-head"><div class="live-row-name">${tvEsc(liveName(info, k))}</div><span class="live-chip live-${st}">${chip}</span></div>
       <div class="live-clock" data-clk="${k}" data-up="${v.timeUp ? 1 : 0}">${clkFmt(v.ms)}</div>
@@ -7882,6 +7882,50 @@ function renderLiveControls(info) {
       mini.innerHTML = `<span class="live-chip live-${st}">${up ? '⏰ TIME CAP' : CLK_LABEL[v.state]}</span><span class="live-mini-clock" data-clk="${k}">${clkFmt(v.ms)}</span>`;
     }
   } catch (e) {}
+}
+
+// Zera os dados da prova (resultados/tempos, estações validadas com fotos, conclusão). Presença e inscrições ficam.
+async function liveClearRunData(info, key) {
+  const sfx = info.is_dual ? '_' + key : '';
+  if (!eventRegLoaded) await loadEventRegistrations();
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2', mine = key === '1' ? n1 : n2, other = key === '1' ? n2 : n1;
+  const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && (!info.is_dual || evRegInSub(r, mine, other)));
+  const ids = regs.map(r => r.id), idSet = new Set(ids.map(String));
+  if (ids.length) {
+    const { error } = await sb.from('event_registrations').update({ ['result_value' + sfx]: null }).in('id', ids);
+    if (error) { console.error(error); toast('⚠️ Erro ao zerar os resultados'); return false; }
+  }
+  try { await loadResultNotes(); let ch = false; ids.forEach(id => { if (RESULT_NOTES[id + sfx] !== undefined) { delete RESULT_NOTES[id + sfx]; ch = true; } }); if (ch) await setSetting('result_notes', RESULT_NOTES); } catch (e) { console.error(e); }
+  try { await loadResultStrava(); let ch = false; ids.forEach(id => { if (RESULT_STRAVA[id + sfx] !== undefined) { delete RESULT_STRAVA[id + sfx]; ch = true; } }); if (ch) await setSetting('result_strava', RESULT_STRAVA); } catch (e) { console.error(e); }
+  try {
+    await loadStationLog(); let ch = false;
+    ids.forEach(id => { const k = id + sfx; if (STATION_LOG[k]) { delete STATION_LOG[k]; ch = true; } if (STATION_DONE[k]) { delete STATION_DONE[k]; ch = true; } });
+    if (ch) { await setSetting('station_log', STATION_LOG); await setSetting('station_done', STATION_DONE); }
+    const { data } = await sb.from('app_settings').select('key').like('key', 'station_img_%').limit(5000);
+    const re = info.is_dual ? new RegExp('^station_img_(\\d+)_' + key + '_\\d+$') : /^station_img_(\d+)_\d+$/;
+    const keys = (data || []).map(x => x.key).filter(k => { const m = re.exec(k); return m && idSet.has(m[1]); });
+    for (let i = 0; i < keys.length; i += 50) await sb.from('app_settings').delete().in('key', keys.slice(i, i + 50));
+  } catch (e) { console.error(e); }
+  regs.forEach(r => { r['result_value' + sfx] = null; });
+  return true;
+}
+async function liveResetRun(key) {
+  try { const lv = document.getElementById('lancar-view'); if (lv && lv.classList.contains('on') && Date.now() >= LIVE_ADMIN_UNTIL && !(await liveAdminAsk())) return; } catch (e) {}
+  EVENT_INFO = null; const info = await getEventInfo();
+  if (!info.id) return toast('⚠️ Salve o evento antes');
+  if (!confirm(`Zerar a prova “${liveName(info, key).replace(/^\S+\s/, '')}”?\n\n• Apaga resultados e tempos\n• Apaga as estações validadas (e as fotos)\n• Volta o cronômetro para 00:00 (liberado)\n\nPresença e inscrições continuam.`)) return;
+  if (!(await liveClearRunData(info, key))) return;
+  const clk = { ...(info.clk || {}) }; clk[key] = { state: 'ready', startAt: 0, accMs: 0 };
+  const ni = { ...info, clk, live_sub: key };
+  if (!(await setSetting('event_info', ni))) return;
+  EVENT_INFO = ni;
+  eventRegLoaded = false; await loadEventRegistrations();
+  try { renderLiveControls(ni); } catch (e) {}
+  try { const lv = document.getElementById('lancar-view'); if (lv && lv.classList.contains('on')) await lancarLoad(); } catch (e) {}
+  try { renderRegistrationsList(); } catch (e) {}
+  try { renderResultsBoard(ni).catch(() => {}); } catch (e) {}
+  try { await renderEventPublicView(); } catch (e) {}
+  toast('🧹 Prova zerada — pronta para começar');
 }
 
 async function clkAction(key, action) {
@@ -7908,6 +7952,9 @@ async function clkAction(key, action) {
         if (!confirm(`“${liveName(info, other).replace(/^\S+\s/, '')}” está em andamento. Encerrar e liberar este?`)) return;
         clk[other] = { state: 'ended', startAt: 0, accMs: Math.min(clkRawMs(oe, tap), clkCapMs(info, other) > 0 ? clkCapMs(info, other) : Infinity) };
       } else delete clk[other];
+    }
+    if (cur.state === 'ended' && confirm('Liberar de novo zera o cronômetro.\n\nApagar também os resultados e as estações da prova anterior?\n\nOK = apagar tudo · Cancelar = manter os dados')) {
+      if (!(await liveClearRunData(info, key))) return;
     }
     live = key; clk[key] = { state: 'ready', startAt: 0, accMs: 0 };
     msg = '🟢 Liberado para a equipe. Toque em ▶ Começar na largada';
@@ -8215,8 +8262,8 @@ async function lancarFinish(regId, tapArg) {
       const e = clkEntry(info, key), t0 = e.t0 || (tap - v.ms), endT = v.timeUp && v.cap ? t0 + v.cap : tap;
       const hh = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const nsfx = info.is_dual ? '_' + key : '', stamp = `🕗 ${hh(t0)} → 🏁 ${hh(endT)}`;
-      const prev = String(getResultNote(ctx.reg, nsfx) || '').trim();
-      if (!prev.includes('🕗')) await saveResultNote(regId, nsfx, prev ? prev + ' · ' + stamp : stamp);
+      const prev = String(getResultNote(ctx.reg, nsfx) || '').replace(/\s*(?:·\s*)?🕗\s*[\d:]+\s*→\s*🏁\s*[\d:]+/g, '').replace(/^[\s·]+/, '').trim();
+      await saveResultNote(regId, nsfx, prev ? prev + ' · ' + stamp : stamp);
     } catch (e2) { console.error(e2); }
     lancarSnack(`<span>✅ <b>${tvEsc(ctx.reg.name)}</b> — ${tvEsc(value)}</span><button onclick="lancarClearResult(${regId})">↩ Desfazer</button>`);
     toast(`✅ ${ctx.reg.name}: ${value}`);
