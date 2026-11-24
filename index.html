@@ -9054,6 +9054,7 @@ function raceRender() {
     if (RACE.sig.tv !== h) { tv.innerHTML = h; RACE.sig.tv = h; }
   }
   raceTick();
+  try { chkCardApply(); } catch (e) {}
 }
 function raceTick() {
   const info = RACE.info; if (!info) return;
@@ -9075,15 +9076,28 @@ async function chkRenderCard(info) {
   if (!info || !info.id) { el.style.display = 'none'; return; }
   try {
     const cfg = await getSetting('checkin_cfg:' + info.id, null); RACE.cfg = cfg;
-    if (!chkActive(cfg)) { el.style.display = 'none'; return; }
+    if (!chkActive(cfg)) { el.dataset.ready = '0'; el.style.display = 'none'; return; }
     if (!RACE.img || RACE.img.id !== info.id) RACE.img = { id: info.id, v: String((await getSetting('checkin_img:' + info.id, '')) || '') };
     document.getElementById('chk-hero-title').textContent = cfg.title || 'Check-in no local';
     document.getElementById('chk-hero-text').textContent = cfg.text || 'Chegou ao local? Confirme sua presença com o GPS.';
     const box = document.getElementById('chk-hero-img'); const old = box.querySelector('img'); if (old) old.remove();
     document.getElementById('chk-hero-emoji').style.display = RACE.img.v ? 'none' : '';
     if (RACE.img.v) { const im = document.createElement('img'); im.alt = ''; im.src = RACE.img.v; box.insertBefore(im, box.firstChild); }
-    el.style.display = '';
+    el.dataset.ready = '1';
+    if (!RACE.info) RACE.info = info;
+    await chkLoadChecks(info);
+    chkCardApply();
   } catch (e) { console.error(e); }
+}
+// O card some: (a) para quem já fez check-in neste aparelho (mesmo reabrindo) e (b) quando todos os inscritos já fizeram check-in
+function chkCardApply() {
+  const el = document.getElementById('checkin-card'), info = RACE.info;
+  if (!el || !info || !info.id || el.dataset.ready !== '1') return;
+  const regs = chkRegs(info), all = regs.length > 0 && regs.every(r => RACE.checks[String(r.id)]);
+  let me = false; try { const id = localStorage.getItem('chk_me:' + info.id); me = !!(id && RACE.checks[id]); } catch (e) {}
+  const show = chkActive(RACE.cfg) && !all && !me;
+  if (!show && el.style.display !== 'none' && Date.now() < (RACE.hold || 0)) return;   // deixa ler a confirmação antes de sumir
+  el.style.display = show ? '' : 'none';
 }
 function chkSearch() {
   const info = RACE.info || EVENT_INFO; if (!info) return;
@@ -9142,7 +9156,8 @@ async function chkDo() {
   if (!r) return say('⚠️ Escolha o seu nome na lista');
   const par = chkPartnerOf(info, r);
   const parTxt = () => par ? (RACE.checks[String(par.id)] ? ` Sua dupla ${par.name} já está no local — dupla completa! 🎉` : ` Sua dupla ${par.name} ainda não fez check-in.`) : '';
-  if (RACE.checks[String(r.id)]) return say(`✅ ${r.name} já fez check-in às ${raceHM(RACE.checks[String(r.id)].t)}.` + parTxt(), 'var(--green)');
+  const remember = () => { try { localStorage.setItem('chk_me:' + info.id, String(r.id)); } catch (e) {} RACE.hold = Date.now() + 8000; setTimeout(chkCardApply, 8200); };
+  if (RACE.checks[String(r.id)]) { remember(); return say(`✅ ${r.name} já fez check-in às ${raceHM(RACE.checks[String(r.id)].t)}.` + parTxt(), 'var(--green)'); }
   if (!navigator.geolocation) return say('⚠️ Este aparelho não oferece localização');
   btn.disabled = true; say('📡 Buscando sua localização…', 'var(--muted)');
   let pos;
@@ -9153,7 +9168,7 @@ async function chkDo() {
   if (d > rad + Math.min(acc, 30)) { btn.disabled = false; return say(`📍 Você está a ${Math.round(d)} m do local (limite ${rad} m). Chegue mais perto e tente de novo`); }
   const row = { t: new Date().toISOString(), d: Math.round(d), n: r.name };
   if (!(await setSetting('chk:' + info.id + ':' + r.id, row))) { btn.disabled = false; return say('❌ Não foi possível registrar. Tente de novo'); }
-  RACE.checks[String(r.id)] = row; raceRender();
+  RACE.checks[String(r.id)] = row; remember(); raceRender();
   const att = await chkSetAttend(r, info, true);
   if (att.length) { row.att = att; await setSetting('chk:' + info.id + ':' + r.id, row); }
   btn.disabled = false;
