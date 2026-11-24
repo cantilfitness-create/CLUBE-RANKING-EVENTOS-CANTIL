@@ -5513,6 +5513,26 @@ const savePairs = () => setSetting('pairs:' + PAIRS_EV, PAIRS);
 const pairsOn = (info, sub) => !!(info && (info.is_dual ? info['pairs_' + sub] : info.pairs));
 const pairsKey = (info, sub) => info.is_dual ? String(sub) : '0';
 const pairList = (info, sub) => PAIRS[pairsKey(info, sub)] || [];
+// Individuais confirmados (sem dupla): PAIRS['solo<prova>'] = [id inscrição]. Encerrar pré-duplas: PAIRS.closed = true | false (vazio = automático)
+const soloList = (info, sub) => PAIRS['solo' + pairsKey(info, sub)] || [];
+function pairsAllSet(info) {
+  const subs = (info.is_dual ? ['1', '2'] : ['0']).filter(x => pairsOn(info, x)); if (!subs.length) return false;
+  const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2'; let any = false;
+  for (const sub of subs) {
+    const name = info.is_dual ? (sub === '1' ? n1 : n2) : (info.name || 'Evento'), other = sub === '1' ? n2 : n1;
+    const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && (!info.is_dual || evRegInSub(r, name, other)));
+    const used = new Set(); pairList(info, sub).forEach(q => { used.add(q.a); used.add(q.b); }); soloList(info, sub).forEach(id => used.add(id));
+    if (pairList(info, sub).length) any = true;
+    if (regs.some(r => !used.has(r.id))) return false;
+  }
+  return any;
+}
+function pairsClosed(info) {
+  if (!info || !info.id || PAIRS_EV !== info.id) return false;
+  if (PAIRS.closed === true) return true;
+  if (PAIRS.closed === false) return false;
+  return pairsAllSet(info);
+}
 const pairOf = (info, sub, id) => pairList(info, sub).find(p => p.a === id || p.b === id) || null;
 const pairFirst = r => String((r && r.name) || '').trim().split(/\s+/)[0].toUpperCase();
 function stPairFor(r) {
@@ -5648,7 +5668,7 @@ async function renderEventOptions(force) {
   const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
   const sel = 'width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s2);color:inherit;font-size:16px';
   const chk = 'display:flex;gap:10px;align-items:center;padding:8px 0;font-size:14px';
-  let h = '';
+  let h = '', closeShown = false;
   subs.forEach(sub => {
     const name = info.is_dual ? (sub === '1' ? n1 : n2) : (info.name || 'Evento'), other = sub === '1' ? n2 : n1;
     const on = pairsOn(info, sub);
@@ -5656,21 +5676,24 @@ async function renderEventOptions(force) {
       <label style="${chk}"><input type="checkbox" ${on ? 'checked' : ''} style="width:22px;height:22px;accent-color:#3ce89b" onchange="evOptSet('pairs','${sub}',this.checked)"> 👥 Prova em dupla</label>`;
     if (on) {
       const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && (!info.is_dual || evRegInSub(r, name, other)));
-      const list = pairList(info, sub), used = new Set(); list.forEach(p => { used.add(p.a); used.add(p.b); });
+      const list = pairList(info, sub), solos = soloList(info, sub), used = new Set(); list.forEach(p => { used.add(p.a); used.add(p.b); }); solos.forEach(id => used.add(id));
       const free = regs.filter(r => !used.has(r.id)).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
       const nm = id => { const r = EVENT_REGISTRATIONS.find(x => x.id === id); return r ? `${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}` : '(removido)'; };
       const opts = free.map(r => `<option value="${r.id}">${levelColor(r.fitness_level).emoji} ${tvEsc(r.name)}</option>`).join('');
-      html += `<details ${EVP_OPEN[sub] ? 'open' : ''} ontoggle="EVP_OPEN['${sub}']=this.open" style="margin:8px 0 4px"><summary class="evp-sum"><span>👥 Duplas (${list.length}) · ${free.length} sem dupla</span></summary><div style="padding-top:6px">`;
+      html += `<details ${EVP_OPEN[sub] ? 'open' : ''} ontoggle="EVP_OPEN['${sub}']=this.open" style="margin:8px 0 4px"><summary class="evp-sum"><span>👥 Duplas (${list.length}) · ${free.length} sem dupla${solos.length ? ' · ' + solos.length + ' individual' + (solos.length === 1 ? '' : 'is') : ''}</span></summary><div style="padding-top:6px">`;
       html += list.map((p, i) => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
         <div style="word-break:break-word">${nm(p.a)} <b>/</b> ${nm(p.b)}</div>
         <div style="display:flex;gap:8px;margin-top:6px"><select style="${sel};flex:1;min-width:0;padding:8px" onchange="pairCat('${sub}',${i},this.value)">
           ${['A DEFINIR', 'VERDE', 'AMARELO', 'LARANJA'].map(c => `<option ${p.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
           <button class="btn-sm-danger" style="flex:0 0 auto;width:auto;padding:8px 12px" onclick="pairDel('${sub}',${i})">🗑️</button></div></div>`).join('') || '<div style="font-size:12px;color:var(--muted)">Nenhuma dupla formada ainda.</div>';
-      html += `<div style="margin-top:12px"><div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">FORMAR DUPLA</div>
+      const soloHtml = solos.length ? `<div style="margin-top:12px"><div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">INDIVIDUAIS (${solos.length})</div>` + solos.map(id => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div>${nm(id)} <span style="color:var(--muted)">· sem dupla</span></div><div style="display:flex;gap:8px;margin-top:6px"><select id="sp-${sub}-${id}" style="${sel};flex:1;min-width:0;padding:8px"><option value="">Formar dupla com…</option>${opts}</select><button class="btn-sm" style="flex:0 0 auto;width:auto;padding:8px 12px" onclick="soloPair('${sub}',${id})">👥</button><button class="btn-sm-danger" style="flex:0 0 auto;width:auto;padding:8px 12px" onclick="soloDel('${sub}',${id})">🗑️</button></div></div>`).join('') + '</div>' : '';
+      html += soloHtml + `<div style="margin-top:12px"><div style="font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:6px">FORMAR DUPLA</div>
         <select id="pa-a-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 1…</option>${opts}</select>
         <select id="pa-b-${sub}" style="${sel};margin-bottom:8px"><option value="">Inscrito 2…</option>${opts}</select>
-        <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button></div></div></details>`;
+        <button class="btn btn-blue" style="width:100%;margin:0" onclick="pairAdd('${sub}')">👥 Formar dupla</button>
+        <button class="btn-sm" style="width:100%;margin:8px 0 0;padding:12px" onclick="pairSolo('${sub}')">👤 Confirmar só o Inscrito 1 (sem dupla)</button></div></div></details>`;
     }
+    if (on && !closeShown) { closeShown = true; html += pairsCloseHtml(info); }
     if (on) html += `<button class="btn-sm" style="width:100%;margin-top:12px;padding:12px" onclick="renumberBibsByPair('${sub}')">🔢 Reordenar nº de inscrição por dupla</button>`;
     html += `<button class="btn-sm" style="width:100%;margin-top:8px;padding:12px" onclick="riOpen('${sub}')">🖼️ Gerar imagem de resultados</button></div>`;
     h += html;
@@ -5694,6 +5717,49 @@ async function pairAdd(sub) {
   const k = pairsKey(info, sub); PAIRS[k] = PAIRS[k] || [];
   if (PAIRS[k].some(p => [a, b].includes(p.a) || [a, b].includes(p.b))) return toast('⚠️ Alguém já está em outra dupla');
   PAIRS[k].push({ a, b, cat: 'A DEFINIR' });
+  if (await savePairs()) toast('👥 Dupla formada');
+  renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+function pairsCloseHtml(info) {
+  const pc = pairsClosed(info);
+  return `<div style="margin-top:12px;padding:12px;border-radius:12px;border:1px solid ${pc ? 'rgba(61,232,154,.5)' : 'var(--border)'};background:var(--s2)"><div style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:8px">${pc
+    ? '🔒 Pré-duplas <b>encerradas</b>' + (PAIRS.closed === true ? '' : ' (automático: todos já estão em dupla ou individual)') + '. Na tela do evento aparece só o check-in por dupla/individual.'
+    : 'Pré-duplas <b>abertas</b>: a lista de pré-confirmadas aparece na tela do evento. Ela some sozinha quando todos estiverem em dupla ou individual.'}</div><button class="btn-sm" style="width:100%;padding:12px" onclick="pairsCloseToggle()">${pc ? '🔓 Reabrir pré-duplas' : '🔒 Encerrar pré-duplas'}</button></div>`;
+}
+async function pairsCloseToggle() {
+  const info = EVENT_INFO || await getEventInfo(); await loadPairs(info); if (!eventRegLoaded) await loadEventRegistrations();
+  if (!pairsClosed(info)) {
+    if (!confirm('Encerrar as pré-duplas?\n\nQuem ainda não tem dupla passa a ser individual. A lista de pré-confirmadas some e o check-in por dupla/individual vira a lista principal.')) return;
+    PAIRS.closed = true;
+  } else PAIRS.closed = false;
+  if (await savePairs()) toast(PAIRS.closed ? '🔒 Pré-duplas encerradas' : '🔓 Pré-duplas reabertas');
+  renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+async function pairSolo(sub) {
+  const info = EVENT_INFO || await getEventInfo();
+  const a = parseInt(document.getElementById('pa-a-' + sub).value, 10);
+  if (!a) return toast('⚠️ Escolha o Inscrito 1');
+  await loadPairs(info);
+  const k = pairsKey(info, sub), sk = 'solo' + k; PAIRS[sk] = PAIRS[sk] || [];
+  if ((PAIRS[k] || []).some(q => q.a === a || q.b === a) || PAIRS[sk].includes(a)) return toast('⚠️ Essa pessoa já está confirmada');
+  PAIRS[sk].push(a);
+  if (await savePairs()) toast('👤 Confirmado sem dupla');
+  renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+async function soloDel(sub, id) {
+  const info = EVENT_INFO || await getEventInfo(); await loadPairs(info);
+  if (!confirm('Tirar esta pessoa dos individuais? Ela volta para "sem dupla" e continua inscrita.')) return;
+  const sk = 'solo' + pairsKey(info, sub); PAIRS[sk] = (PAIRS[sk] || []).filter(x => x !== id);
+  await savePairs(); renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
+}
+async function soloPair(sub, id) {
+  const info = EVENT_INFO || await getEventInfo();
+  const b = parseInt(document.getElementById('sp-' + sub + '-' + id).value, 10);
+  if (!b) return toast('⚠️ Escolha com quem formar a dupla');
+  await loadPairs(info);
+  const k = pairsKey(info, sub), sk = 'solo' + k; PAIRS[k] = PAIRS[k] || [];
+  if (PAIRS[k].some(q => [id, b].includes(q.a) || [id, b].includes(q.b))) return toast('⚠️ Alguém já está em outra dupla');
+  PAIRS[k].push({ a: id, b, cat: 'A DEFINIR' }); PAIRS[sk] = (PAIRS[sk] || []).filter(x => x !== id && x !== b);
   if (await savePairs()) toast('👥 Dupla formada');
   renderEventOptions(true); try { renderEventPublicView(); } catch (e) {}
 }
@@ -5746,6 +5812,7 @@ async function renderPairsPublic() {
   const subs = (info && info.id) ? (info.is_dual ? ['1', '2'] : ['0']).filter(s => pairsOn(info, s)) : [];
   if (!subs.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
   await loadPairs(info); if (!eventRegLoaded) await loadEventRegistrations();
+  if (pairsClosed(info)) { box.style.display = 'none'; box.innerHTML = ''; return; }   // pré-duplas encerradas: o check-in vira a lista principal
   const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
   let h = '';
   subs.forEach(sub => {
@@ -5755,12 +5822,14 @@ async function renderPairsPublic() {
       return `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</div>
         <div style="font-size:10px;color:var(--muted);letter-spacing:.5px">NÍVEL: ${tvEsc(p.cat || 'A DEFINIR')}</div></div>`;
     }).filter(Boolean);
-    if (!list.length) return;
-    h += (info.is_dual ? `<div style="font-size:10px;letter-spacing:1px;color:var(--accent);margin:8px 0 2px">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('');
+    const solos = soloList(info, sub).map(id => EVENT_REGISTRATIONS.find(r => r.id === id)).filter(Boolean).map(a =>
+      `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))}</div><div style="font-size:10px;color:var(--muted);letter-spacing:.5px">INDIVIDUAL · SEM DUPLA</div></div>`);
+    if (!list.length && !solos.length) return;
+    h += (info.is_dual ? `<div style="font-size:10px;letter-spacing:1px;color:var(--accent);margin:8px 0 2px">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('') + solos.join('');
   });
   if (!h) { box.style.display = 'none'; return; }
   box.style.display = '';
-  box.innerHTML = `<div style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--s1)"><div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">👥 DUPLAS CONFIRMADAS</div>${h}</div>`;
+  box.innerHTML = `<div style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--s1)"><div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">👥 DUPLAS PRÉ-CONFIRMADAS</div>${h}</div>`;
 }
 (function () { const _v = renderEventPublicView; renderEventPublicView = async function () { const r = await _v.apply(this, arguments); try { await renderPairsPublic(); } catch (e) { console.error(e); } return r; }; })();
 
@@ -8975,9 +9044,13 @@ async function raceBoardRefresh(force) {
     const info = await getSetting('event_info', defaultEventInfo());
     RACE.info = info;
     await chkLoadChecks(info);
+    const adminOpen = !!(document.getElementById('modal-overlay') && document.getElementById('modal-overlay').classList.contains('open'));
+    if (!adminOpen) {
+      try { await loadPairs(info); const sg = JSON.stringify(PAIRS) + '|' + EVENT_REGISTRATIONS.length; if (RACE.pairSig !== sg) { RACE.pairSig = sg; renderPairsPublic(); } } catch (e) {}
+    }
     if (Date.now() - RACE.regAt > 30000 || !eventRegLoaded) {
       await loadEventRegistrations();
-      try { await loadPairs(info); } catch (e) {}
+      if (!adminOpen) { try { await loadPairs(info); } catch (e) {} }
       RACE.cfg = info.id ? await getSetting('checkin_cfg:' + info.id, null) : null;
       RACE.regAt = Date.now();
     }
@@ -9020,21 +9093,26 @@ function chkStats(info) {
     });
   });
   const present = regs.filter(r => RACE.checks[String(r.id)]);
-  return { regs, pairs, used, present, full: pairs.filter(p => p.full).length };
+  return { regs, pairs, used, present, full: pairs.filter(p => p.full).length, lone: regs.filter(r => !used.has(String(r.id))) };
 }
 function chkHasData(info) { return !!((RACE.cfg && RACE.cfg.lat != null) || Object.keys(RACE.checks).length); }
 function chkListHtml(info) {
   if (!chkHasData(info)) return '';
   const s = chkStats(info), byName = (x, y) => x.a.name.localeCompare(y.a.name);
+  const closed = pairsClosed(info);
+  if (RACE.lastClosed !== closed) { RACE.lastClosed = closed; RACE.chkOpen = undefined; }
+  // pré-duplas abertas: lista de check-in fica recolhida (a de pré-confirmadas é a principal). Encerradas: check-in aberto e em destaque
+  const isOpen = RACE.chkOpen === undefined ? !(s.pairs.length && !closed) : RACE.chkOpen;
   const head = `📍 Check-in no local · ${s.present.length} presente${s.present.length === 1 ? '' : 's'}` + (s.pairs.length ? ` · 👥 ${s.full}/${s.pairs.length} dupla${s.pairs.length === 1 ? '' : 's'} completa${s.full === 1 ? '' : 's'}` : '');
   const fullP = s.pairs.filter(p => p.full).sort(byName), partial = s.pairs.filter(p => !p.full).sort(byName);
   const mini = fullP.map(p => `<div class="chk-mini">✅ <b>${tvEsc(p.a.name)}</b> + <b>${tvEsc(p.b.name)}</b></div>`).join('');
   const part = partial.map(p => `<div class="chk-pair"><div class="chk-ph">👥 DUPLA${info.is_dual ? ' · ' + tvEsc(liveName(info, p.k).replace(/^\S+\s/, '')) : ''} · AGUARDANDO</div>${chkPerson(p.a)}${chkPerson(p.b)}</div>`).join('');
-  const solo = s.present.filter(r => !s.used.has(String(r.id))).sort((x, y) => x.name.localeCompare(y.name)).map(chkPerson).join('');
+  const showLone = (s.pairs.length && closed) ? s.lone : s.present.filter(r => !s.used.has(String(r.id)));
+  const solo = showLone.slice().sort((x, y) => x.name.localeCompare(y.name)).map(chkPerson).join('');
   const body = (mini ? `<div class="chk-sub">DUPLAS COMPLETAS · ${fullP.length}</div>${mini}` : '')
     + (part ? `<div class="chk-sub">DUPLAS A COMPLETAR</div>${part}` : '')
-    + (solo ? `<div class="chk-sub">PRESENTES</div>${solo}` : '');
-  return `<details class="chk-box" ${RACE.chkOpen !== false ? 'open' : ''} ontoggle="RACE.chkOpen=this.open"><summary>${head}</summary>${body || '<div style="font-size:12px;color:var(--muted);margin-top:8px">Ninguém fez check-in ainda.</div>'}</details>`;
+    + (solo ? `<div class="chk-sub">${(s.pairs.length && closed) ? 'INDIVIDUAIS' : 'PRESENTES'}</div>${solo}` : '');
+  return `<details class="chk-box" ${isOpen ? 'open' : ''} ontoggle="RACE.chkOpen=this.open"><summary>${head}</summary>${body || '<div style="font-size:12px;color:var(--muted);margin-top:8px">Ninguém fez check-in ainda.</div>'}</details>`;
 }
 
 function raceRender() {
