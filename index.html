@@ -777,6 +777,45 @@ details.live-ctl .live-row-head .live-chip { display:none; }
   .tv-phone .tv-panel-title { font-size:22px; } .tv-phone .tv-group-title { font-size:20px; padding:8px 12px; }
   .tv-phone .tv-name { font-size:16px; } .tv-phone .tv-val { font-size:24px; } .tv-phone .tv-note { font-size:11.5px; }
 }
+/* ── Cronômetro ao vivo + check-in no local (quadro de resultados) ── */
+#race-board{margin:0 0 14px}
+.race-clk{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin-bottom:10px;text-align:center}
+.race-nm{font-weight:800;font-size:13px;margin-bottom:4px}
+.race-chip{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.8px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--muted)}
+.rc-running .race-chip{background:var(--green);color:#000;border-color:var(--green)}
+.rc-ready .race-chip{color:var(--green);border-color:rgba(61,232,154,.5)}
+.rc-paused .race-chip{color:var(--gold);border-color:rgba(255,208,96,.5)}
+.rc-ended .race-chip,.rc-timeup .race-chip{background:var(--red);color:#fff;border-color:var(--red)}
+.race-time{font-family:'Bebas Neue',sans-serif;font-size:54px;line-height:1;letter-spacing:3px;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.rc-paused .race-time{color:var(--gold)}
+.race-when{font-size:10.5px;color:var(--muted);line-height:1.4}
+.chk-box{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:10px 12px;margin-bottom:10px}
+.chk-box>summary{cursor:pointer;font-weight:800;font-size:13px;list-style:none}
+.chk-box>summary::-webkit-details-marker{display:none}
+.chk-pair{border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:8px}
+.chk-pair.full{border-color:var(--green);background:rgba(61,232,154,.10)}
+.chk-ph{font-size:10.5px;font-weight:800;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.chk-pair.full .chk-ph{color:var(--green)}
+.chk-p{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:9px;margin-top:4px;border:1px solid transparent;font-size:13px}
+.chk-p.on{background:rgba(61,232,154,.14);border-color:rgba(61,232,154,.5);color:var(--green)}
+.chk-n{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.chk-n small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.chk-p.on .chk-n small{color:inherit;opacity:.8}
+.chk-t{font-size:11px;font-weight:700;white-space:nowrap}
+.chk-t.off{color:var(--muted);font-weight:400}
+.chk-sub{font-size:11px;font-weight:800;letter-spacing:.6px;color:var(--muted);margin:10px 0 0}
+.chk-me-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:4px}
+.chk-opt{display:block;width:100%;text-align:left;margin-top:6px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.chk-opt.sel{border-color:var(--green);background:rgba(61,232,154,.14);color:var(--green)}
+.chk-opt small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+#chk-msg{font-size:13px;font-weight:700;margin-top:10px;line-height:1.45}
+#tv-race{display:flex;justify-content:center;align-items:center;gap:2vw;flex-wrap:wrap;margin-top:.6vh}
+#tv-race .race-clk{background:none;border:none;padding:0;margin:0;display:flex;align-items:center;justify-content:center;gap:1.2vw;flex-wrap:wrap}
+#tv-race .race-time{font-size:9vh;margin:0}
+#tv-race .race-chip{font-size:1.9vh}
+#tv-race .race-when{font-size:1.6vh}
+#tv-race .race-nm{font-size:2.2vh;margin:0}
+#tv-race .race-sum{font-size:2.2vh;font-weight:800;color:var(--green)}
 </style>
 </head>
 <body>
@@ -789,6 +828,7 @@ details.live-ctl .live-row-head .live-chip { display:none; }
     <div class="tv-eyebrow">🏁 Resultados</div>
     <div class="tv-title" id="tv-title">Carregando...</div>
     <div id="tv-cap-wrap"></div>
+    <div id="tv-race"></div>
   </div>
   <div class="tv-body" id="tv-body"></div>
   <div class="tv-live"><span class="live-dot"></span> ao vivo · atualiza sozinho</div>
@@ -1037,6 +1077,7 @@ details.live-ctl .live-row-head .live-chip { display:none; }
 
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
+  <div id="race-board" style="display:none"></div>
   <div id="pairs-public" style="display:none"></div>
   <div class="results-board" id="stations-board" style="display:none"><div class="section-label">📍 Estações · ao vivo</div><div id="stations-body"></div></div>
   <div class="results-board" id="results-board" style="display:none">
@@ -1066,6 +1107,15 @@ details.live-ctl .live-row-head .live-chip { display:none; }
       <a id="whatsapp-btn" href="#" target="_blank" class="whatsapp-event-btn" style="display:none">
         <span style="font-size:18px">💬</span> Dúvidas? Fale no WhatsApp
       </a>
+    </div>
+
+    <div class="chk-box" id="checkin-card" style="display:none;margin-top:16px">
+      <div class="chk-me-title">📍 CHECK-IN NO LOCAL</div>
+      <div class="field-hint" style="margin-bottom:10px;line-height:1.45">Chegou? Digite seu telefone (ou seu nome), escolha-se na lista e confirme. Precisa estar no local do evento, com o GPS ligado.</div>
+      <input type="text" id="chk-q" placeholder="Seu telefone com DDD ou seu nome" oninput="chkSearch()" autocomplete="off">
+      <div id="chk-matches"></div>
+      <button class="btn btn-gold" id="chk-btn" onclick="chkDo()" style="display:none;margin-top:10px">📍 Fazer check-in</button>
+      <div id="chk-msg"></div>
     </div>
 
     <div id="event-form-wrap">
@@ -1825,6 +1875,22 @@ details.live-ctl .live-row-head .live-chip { display:none; }
           </div>
           <button class="btn btn-blue" onclick="updateEventRules()" style="margin-bottom:20px">💾 Salvar Regras</button>
           <hr class="divider">
+          <div class="section-label">📍 Check-in dos atletas (GPS)</div>
+          <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px">
+            <div style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px">Quando as inscrições estiverem encerradas, aparece o botão de check-in na tela de inscrição. O atleta só consegue confirmar se estiver dentro do raio do local. Os presentes aparecem no link de resultados (dupla fica verde quando os dois chegam).</div>
+            <div style="display:flex;gap:8px"><input type="text" id="chk-cfg-lat" inputmode="decimal" placeholder="Latitude"><input type="text" id="chk-cfg-lng" inputmode="decimal" placeholder="Longitude"></div>
+            <input type="text" id="chk-cfg-r" inputmode="numeric" placeholder="Raio em metros (ex: 150)" style="margin-top:8px">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkCfgHere()">📍 Usar minha localização</button>
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkCfgSave()">💾 Salvar</button>
+            </div>
+            <div class="section-label" style="margin-top:16px">✅ Presentes (<span id="chk-adm-n">0</span>)</div>
+            <div id="chk-adm-list" style="max-height:300px;overflow:auto"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkAdminRender(true)">🔄 Atualizar</button>
+              <button class="btn-sm-danger" style="flex:1;padding:10px" onclick="chkClearAll()">🧹 Limpar check-ins</button>
+            </div>
+          </div>
           <div class="section-label">🔗 Links do evento</div>
           <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px">
             <label class="field-label">✏️ Lançar resultados (equipe, pede a senha da equipe)</label>
@@ -4229,6 +4295,7 @@ async function renderEventPublicView() {
     formWrap.style.display = '';
     if (jumpBtn) jumpBtn.style.display = 'block';
   }
+  try { chkRenderCard(info, !!(isClosed || isFull)); raceBoardRefresh(true); } catch (e) { console.error(e); }
 
   // Controla se o botão "Visitante" fica disponível — só quando o admin liberou
   // essa opção especificamente pra este evento (padrão: liberado, se não configurado)
@@ -7589,6 +7656,7 @@ async function tvRefresh() {
     await loadEventRegistrations();
     await loadResultNotes();
     await loadStationLog();
+    try { raceBoardRefresh(true); } catch (e) {}
     const descs = await getSetting('level_descriptions', {});
     const all = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
     const panels = [];
@@ -8828,6 +8896,266 @@ setInterval(async () => {
   await loadMembers();
   renderRanking();
 }, 15000);
+
+// ══════════════════════════════════════════════
+//  TEMPO DE PROVA AO VIVO + CHECK-IN NO LOCAL (GPS) — aparece no link de resultados
+// ══════════════════════════════════════════════
+// Check-in: uma linha por atleta em app_settings  'chk:<evento>:<inscrição>' = { t, d, n }
+// Local/raio:  app_settings 'checkin_cfg:<evento>' = { lat, lng, r }
+// Troque para false se quiser mostrar o telefone completo no quadro público.
+const CHK_MASK_PHONE = true;
+let RACE = { info: null, cfg: null, checks: {}, regAt: 0, busy: false, pick: null, chkOpen: true, sig: {} };
+
+function raceActive() {
+  const tv = document.getElementById('tv-results-view'), v = document.getElementById('view-evento');
+  return !!((tv && tv.classList.contains('on')) || (v && v.classList.contains('active')));
+}
+function raceWhen(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return d.toLocaleDateString('pt-BR') + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+const raceHM = iso => { try { return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+function chkPhoneFmt(p) {
+  const d = String(p || '').replace(/\D/g, '');
+  if (d.length < 10) return '';
+  const dd = d.slice(0, 2), last = d.slice(-4);
+  if (CHK_MASK_PHONE) return `(${dd}) ${d[2]}${'*'.repeat(d.length - 7)}-${last}`;
+  return `(${dd}) ${d.slice(2, d.length - 4)}-${last}`;
+}
+const chkRegs = info => EVENT_REGISTRATIONS.filter(r => r.event_id === info.id);
+
+async function chkLoadChecks(info) {
+  const m = {};
+  if (info && info.id) {
+    const { data } = await sb.from('app_settings').select('key,value').like('key', 'chk:' + info.id + ':%').limit(3000);
+    (data || []).forEach(x => { const id = String(x.key).split(':').pop(); try { m[id] = JSON.parse(x.value); } catch (e) {} });
+  }
+  RACE.checks = m;
+}
+
+async function raceBoardRefresh(force) {
+  if (RACE.busy) return;
+  if (!force && !raceActive()) return;
+  RACE.busy = true;
+  try {
+    const info = await getSetting('event_info', defaultEventInfo());
+    RACE.info = info;
+    await chkLoadChecks(info);
+    if (Date.now() - RACE.regAt > 30000 || !eventRegLoaded) {
+      await loadEventRegistrations();
+      try { await loadPairs(info); } catch (e) {}
+      RACE.cfg = info.id ? await getSetting('checkin_cfg:' + info.id, null) : null;
+      RACE.regAt = Date.now();
+    }
+    raceRender();
+  } catch (e) { console.error('race', e); }
+  finally { RACE.busy = false; }
+}
+
+function raceClockHtml(info) {
+  const now = Date.now(), out = [];
+  clkKeys(info).forEach(k => {
+    const e = clkEntry(info, k); if (e.state === 'idle') return;
+    const v = clkView(info, k, now), up = v.timeUp && v.state === 'running', st = up ? 'timeup' : v.state;
+    const lab = up ? '⏰ TIME CAP' : ({ ready: '🟢 AGUARDANDO LARGADA', running: '▶ EM ANDAMENTO', paused: '⏸ PAUSADO', ended: '⏹ ENCERRADO' })[v.state];
+    const started = v.state !== 'ready', when = raceWhen(e.t0 || (e.state === 'running' ? e.startAt : 0));
+    out.push(`<div class="race-clk rc-${st}">
+      ${info.is_dual ? `<div class="race-nm">${tvEsc(liveName(info, k))}</div>` : ''}
+      <div class="race-chip">${lab}</div>
+      ${started ? `<div class="race-time" data-race-clk="${k}" data-up="${v.timeUp ? 1 : 0}">${clkFmt(v.ms)}</div>` : ''}
+      ${started && when ? `<div class="race-when">Largada: ${when}</div>` : ''}
+      ${started && v.cap ? `<div class="race-when">Time cap ${clkFmt(v.cap)}</div>` : ''}
+    </div>`);
+  });
+  return out.join('');
+}
+
+function chkPerson(r) {
+  const c = RACE.checks[String(r.id)], ph = chkPhoneFmt(r.phone);
+  return `<div class="chk-p ${c ? 'on' : ''}"><span>${c ? '✅' : '⚪'}</span><span class="chk-n">${tvEsc(r.name)}${ph ? `<small>${ph}</small>` : ''}</span>${c ? `<span class="chk-t">${raceHM(c.t)}</span>` : '<span class="chk-t off">não chegou</span>'}</div>`;
+}
+function chkStats(info) {
+  const regs = chkRegs(info), byId = {}; regs.forEach(r => { byId[String(r.id)] = r; });
+  const pairs = [], used = new Set();
+  clkKeys(info).forEach(k => {
+    if (!pairsOn(info, k)) return;
+    pairList(info, k).forEach(p => {
+      const a = byId[String(p.a)], b = byId[String(p.b)]; if (!a || !b) return;
+      used.add(String(a.id)); used.add(String(b.id));
+      pairs.push({ k, a, b, full: !!(RACE.checks[String(a.id)] && RACE.checks[String(b.id)]) });
+    });
+  });
+  const present = regs.filter(r => RACE.checks[String(r.id)]);
+  return { regs, pairs, used, present, full: pairs.filter(p => p.full).length };
+}
+function chkHasData(info) { return !!((RACE.cfg && RACE.cfg.lat != null) || Object.keys(RACE.checks).length); }
+function chkListHtml(info) {
+  if (!chkHasData(info)) return '';
+  const s = chkStats(info);
+  const head = `📍 Check-in no local · ${s.present.length} presente${s.present.length === 1 ? '' : 's'}` + (s.pairs.length ? ` · 👥 ${s.full}/${s.pairs.length} dupla${s.pairs.length === 1 ? '' : 's'} completa${s.full === 1 ? '' : 's'}` : '');
+  const pairs = s.pairs.slice().sort((x, y) => (y.full - x.full) || x.a.name.localeCompare(y.a.name)).map(p =>
+    `<div class="chk-pair ${p.full ? 'full' : ''}"><div class="chk-ph">👥 DUPLA${info.is_dual ? ' · ' + tvEsc(liveName(info, p.k).replace(/^\S+\s/, '')) : ''} · ${p.full ? '✅ NO LOCAL' : 'AGUARDANDO'}</div>${chkPerson(p.a)}${chkPerson(p.b)}</div>`).join('');
+  const solo = s.present.filter(r => !s.used.has(String(r.id))).sort((x, y) => x.name.localeCompare(y.name)).map(chkPerson).join('');
+  const body = pairs + (solo ? (pairs ? '<div class="chk-sub">PRESENTES</div>' : '') + solo : '');
+  return `<details class="chk-box" ${RACE.chkOpen !== false ? 'open' : ''} ontoggle="RACE.chkOpen=this.open"><summary>${head}</summary>${body || '<div style="font-size:12px;color:var(--muted);margin-top:8px">Ninguém fez check-in ainda.</div>'}</details>`;
+}
+
+function raceRender() {
+  const info = RACE.info; if (!info) return;
+  const clk = raceClockHtml(info), chk = chkListHtml(info);
+  const box = document.getElementById('race-board');
+  if (box) {
+    const h = clk + chk;
+    if (RACE.sig.pub !== h) { box.innerHTML = h; RACE.sig.pub = h; }
+    box.style.display = h ? '' : 'none';
+  }
+  const tv = document.getElementById('tv-race');
+  if (tv) {
+    let sum = '';
+    if (chkHasData(info)) { const s = chkStats(info); sum = `<div class="race-sum">📍 ${s.present.length} presente${s.present.length === 1 ? '' : 's'}${s.pairs.length ? ` · 👥 ${s.full}/${s.pairs.length} duplas completas` : ''}</div>`; }
+    const h = clk + sum;
+    if (RACE.sig.tv !== h) { tv.innerHTML = h; RACE.sig.tv = h; }
+  }
+  raceTick();
+}
+function raceTick() {
+  const info = RACE.info; if (!info) return;
+  const now = Date.now(); let redo = false;
+  document.querySelectorAll('[data-race-clk]').forEach(el => {
+    const v = clkView(info, el.dataset.raceClk, now);
+    el.textContent = clkFmt(v.ms);
+    if (el.dataset.up !== (v.timeUp ? '1' : '0')) redo = true;      // estourou o time cap: atualiza a etiqueta
+  });
+  if (redo) { RACE.sig = {}; raceRender(); }
+}
+setInterval(raceTick, 1000);
+setInterval(() => { if (!document.hidden) raceBoardRefresh(); }, 6000);
+
+// ── Check-in do atleta (tela de inscrição, quando as inscrições encerram) ──
+function chkRenderCard(info, closed) {
+  const el = document.getElementById('checkin-card'); if (!el) return;
+  if (!info || !info.id || !closed) { el.style.display = 'none'; return; }
+  getSetting('checkin_cfg:' + info.id, null).then(cfg => {
+    RACE.cfg = cfg;
+    el.style.display = (cfg && cfg.lat != null) ? '' : 'none';
+  }).catch(() => {});
+}
+function chkSearch() {
+  const info = RACE.info || EVENT_INFO; if (!info) return;
+  const q = (document.getElementById('chk-q').value || '').trim(), digits = q.replace(/\D/g, '');
+  const box = document.getElementById('chk-matches'), btn = document.getElementById('chk-btn');
+  RACE.pick = null; btn.style.display = 'none'; document.getElementById('chk-msg').textContent = '';
+  let list = [];
+  if (digits.length >= 8) list = chkRegs(info).filter(r => { const p = String(r.phone || '').replace(/\D/g, ''); return p && (p.endsWith(digits) || digits.endsWith(p)); });
+  else if (q.length >= 3) { const n = listaNorm(q); list = chkRegs(info).filter(r => listaNorm(r.name).includes(n)); }
+  list = list.slice(0, 6);
+  box.innerHTML = list.map(r => `<button type="button" class="chk-opt" data-id="${r.id}" onclick="chkPick('${r.id}')">${tvEsc(r.name)}${chkPhoneFmt(r.phone) ? `<small>${chkPhoneFmt(r.phone)}</small>` : ''}</button>`).join('')
+    || ((digits.length >= 8 || q.length >= 3) ? '<div style="font-size:12px;color:var(--muted);margin-top:8px">Não encontrei inscrição com esse dado.</div>' : '');
+  if (list.length === 1) chkPick(String(list[0].id));
+}
+function chkPick(id) {
+  RACE.pick = String(id);
+  document.querySelectorAll('#chk-matches .chk-opt').forEach(b => b.classList.toggle('sel', b.dataset.id === RACE.pick));
+  document.getElementById('chk-btn').style.display = '';
+}
+function chkPartnerOf(info, r) {
+  for (const k of clkKeys(info)) {
+    if (!pairsOn(info, k)) continue;
+    const p = pairOf(info, k, r.id); if (!p) continue;
+    const oid = p.a === r.id ? p.b : p.a, o = chkRegs(info).find(x => x.id === oid);
+    if (o) return o;
+  }
+  return null;
+}
+async function chkDo() {
+  const msg = document.getElementById('chk-msg'), btn = document.getElementById('chk-btn');
+  const say = (t, c) => { msg.textContent = t; msg.style.color = c || 'var(--red)'; };
+  await raceBoardRefresh(true);
+  const info = RACE.info, cfg = RACE.cfg;
+  if (!info || !cfg || cfg.lat == null) return say('⚠️ O check-in ainda não foi configurado pela organização');
+  const r = chkRegs(info).find(x => String(x.id) === RACE.pick);
+  if (!r) return say('⚠️ Escolha o seu nome na lista');
+  const par = chkPartnerOf(info, r);
+  const parTxt = () => par ? (RACE.checks[String(par.id)] ? ` Sua dupla ${par.name} já está no local — dupla completa! 🎉` : ` Sua dupla ${par.name} ainda não fez check-in.`) : '';
+  if (RACE.checks[String(r.id)]) return say(`✅ ${r.name} já fez check-in às ${raceHM(RACE.checks[String(r.id)].t)}.` + parTxt(), 'var(--green)');
+  if (!navigator.geolocation) return say('⚠️ Este aparelho não oferece localização');
+  btn.disabled = true; say('📡 Buscando sua localização…', 'var(--muted)');
+  let pos;
+  try { pos = await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 })); }
+  catch (e) { btn.disabled = false; return say(e && e.code === 1 ? '⚠️ Permita a localização no navegador e tente de novo' : '⚠️ Não consegui pegar o GPS. Vá para céu aberto e tente de novo'); }
+  const d = mtHav(pos.coords.latitude, pos.coords.longitude, cfg.lat, cfg.lng), acc = pos.coords.accuracy || 0, rad = cfg.r || 150;
+  if (acc > Math.max(80, rad * 1.5)) { btn.disabled = false; return say(`⚠️ GPS impreciso (±${Math.round(acc)} m). Tente de novo em céu aberto`); }
+  if (d > rad + Math.min(acc, 30)) { btn.disabled = false; return say(`📍 Você está a ${Math.round(d)} m do local (limite ${rad} m). Chegue mais perto e tente de novo`); }
+  const row = { t: new Date().toISOString(), d: Math.round(d), n: r.name };
+  const ok = await setSetting('chk:' + info.id + ':' + r.id, row);
+  btn.disabled = false;
+  if (!ok) return say('❌ Não foi possível registrar. Tente de novo');
+  RACE.checks[String(r.id)] = row; raceRender();
+  say(`✅ Check-in feito, ${String(r.name).split(/\s+/)[0]}!` + parTxt(), 'var(--green)');
+  if (navigator.vibrate) navigator.vibrate(120);
+}
+
+// ── Admin: local, raio e lista de presentes ──
+function chkCfgHere() {
+  if (!navigator.geolocation) return toast('⚠️ Este aparelho não oferece localização');
+  toast('📡 Buscando localização…');
+  navigator.geolocation.getCurrentPosition(p => {
+    document.getElementById('chk-cfg-lat').value = p.coords.latitude.toFixed(6);
+    document.getElementById('chk-cfg-lng').value = p.coords.longitude.toFixed(6);
+    toast(`📍 Ponto definido (precisão ±${Math.round(p.coords.accuracy)} m). Toque em Salvar.`);
+  }, () => toast('⚠️ Permita a localização no navegador'), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+async function chkCfgSave() {
+  const info = await getEventInfo(); if (!info.id) return toast('⚠️ Salve o evento antes');
+  const num = id => parseFloat(String(document.getElementById(id).value).replace(',', '.'));
+  const lat = num('chk-cfg-lat'), lng = num('chk-cfg-lng'), r = Math.round(num('chk-cfg-r'));
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return toast('⚠️ Informe latitude e longitude (ou use “Usar minha localização”)');
+  if (!(r >= 20)) return toast('⚠️ Raio mínimo: 20 metros');
+  if (!(await setSetting('checkin_cfg:' + info.id, { lat, lng, r }))) return;
+  RACE.cfg = { lat, lng, r }; toast('✅ Check-in configurado'); try { renderEventPublicView(); } catch (e) {}
+}
+async function chkAdminRender(loadFields) {
+  const list = document.getElementById('chk-adm-list'); if (!list) return;
+  try {
+    const info = await getEventInfo(); if (!info.id) { list.innerHTML = '<div class="live-hint">Salve o evento primeiro.</div>'; return; }
+    if (!eventRegLoaded) await loadEventRegistrations();
+    await chkLoadChecks(info);
+    const cfg = await getSetting('checkin_cfg:' + info.id, null); RACE.cfg = cfg;
+    if (cfg && (loadFields !== false)) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
+      set('chk-cfg-lat', cfg.lat); set('chk-cfg-lng', cfg.lng); set('chk-cfg-r', cfg.r);
+    }
+    const regs = chkRegs(info).slice().sort((a, b) => a.name.localeCompare(b.name));
+    document.getElementById('chk-adm-n').textContent = regs.filter(r => RACE.checks[String(r.id)]).length + ' de ' + regs.length;
+    list.innerHTML = regs.map(r => {
+      const c = RACE.checks[String(r.id)];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${c ? '✅' : '⚪'}</span><span style="flex:1;min-width:0;overflow-wrap:anywhere"><b>${tvEsc(r.name)}</b>${c ? `<br><small style="color:var(--muted)">${raceHM(c.t)}${c.manual ? ' · manual' : ' · a ' + c.d + ' m'}</small>` : ''}</span><button class="btn-sm" style="padding:6px 10px" onclick="chkAdminToggle('${r.id}')">${c ? 'Remover' : 'Marcar'}</button></div>`;
+    }).join('') || '<div class="live-hint">Ninguém inscrito.</div>';
+  } catch (e) { console.error(e); }
+}
+async function chkAdminToggle(id) {
+  const info = await getEventInfo(), key = 'chk:' + info.id + ':' + id;
+  if (RACE.checks[String(id)]) {
+    const { error } = await sb.from('app_settings').delete().eq('key', key);
+    if (error) { console.error(error); return toast('⚠️ Erro ao remover'); }
+  } else {
+    const r = EVENT_REGISTRATIONS.find(x => String(x.id) === String(id));
+    if (!(await setSetting(key, { t: new Date().toISOString(), d: 0, n: r ? r.name : '', manual: true }))) return;
+  }
+  await chkAdminRender(false);
+}
+async function chkClearAll() {
+  const info = await getEventInfo(); if (!info.id) return;
+  if (!confirm('Apagar TODOS os check-ins deste evento?')) return;
+  const { error } = await sb.from('app_settings').delete().like('key', 'chk:' + info.id + ':%');
+  if (error) { console.error(error); return toast('⚠️ Erro ao limpar'); }
+  RACE.checks = {}; toast('🧹 Check-ins apagados'); chkAdminRender(false);
+}
+(function () {
+  const orig = admTab;
+  admTab = async function (name) { const r = await orig.apply(this, arguments); if (name === 'evento') chkAdminRender(); return r; };
+})();
 </script>
 <!-- EDITAR INSCRIÇÃO -->
 <div class="modal-overlay" id="edit-reg-overlay" onclick="if(event.target===this)closeEditRegistration()">
