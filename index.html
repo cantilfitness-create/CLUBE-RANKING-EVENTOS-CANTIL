@@ -816,6 +816,28 @@ details.live-ctl .live-row-head .live-chip { display:none; }
 #tv-race .race-when{font-size:1.6vh}
 #tv-race .race-nm{font-size:2.2vh;margin:0}
 #tv-race .race-sum{font-size:2.2vh;font-weight:800;color:var(--green)}
+
+/* check-in: card moderno + listas compactas */
+.chk-hero{position:relative;overflow:hidden;border-radius:22px;margin:0 0 14px;border:1px solid rgba(61,232,154,.35);background:linear-gradient(160deg,rgba(61,232,154,.14),rgba(26,58,143,.28) 55%,var(--s1));box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.chk-hero-img{position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#1a3a8f,#0d2f5c 60%,#1f8f63);display:flex;align-items:center;justify-content:center}
+.chk-hero-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.chk-hero-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(10,10,10,.92))}
+.chk-hero-emoji{font-size:64px;position:relative;z-index:1}
+.chk-live{position:absolute;top:12px;left:12px;z-index:2;display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:1px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:5px 10px;border-radius:20px;color:var(--green)}
+.chk-live i{width:8px;height:8px;border-radius:50%;background:var(--green);animation:chkpulse 1.4s infinite}
+@keyframes chkpulse{0%{box-shadow:0 0 0 0 rgba(61,232,154,.7)}100%{box-shadow:0 0 0 10px rgba(61,232,154,0)}}
+.chk-hero-body{padding:0 18px 18px;margin-top:-34px;position:relative;z-index:2}
+.chk-hero-title{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;letter-spacing:1px}
+.chk-hero-text{font-size:13.5px;color:#d0d0d0;line-height:1.5;margin:6px 0 14px;white-space:pre-line}
+.chk-box{padding:8px 10px}
+.chk-box>summary{font-size:12px}
+.chk-pair{padding:5px 8px;margin-top:6px}
+.chk-ph{font-size:9.5px;margin-bottom:2px}
+.chk-p{padding:2px 6px;margin-top:3px;font-size:12px;gap:6px}
+.chk-n small{font-size:10px}
+.chk-t{font-size:10px}
+.chk-sub{font-size:10px;margin-top:8px}
+.chk-mini{font-size:10.5px;line-height:1.35;padding:3px 8px;margin-top:3px;border-radius:8px;border:1px solid rgba(61,232,154,.45);background:rgba(61,232,154,.10);color:var(--green);overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1077,6 +1099,17 @@ details.live-ctl .live-row-head .live-chip { display:none; }
 
 <!-- VIEW: EVENTO -->
 <div class="view-section" id="view-evento">
+  <div class="chk-hero" id="checkin-card" style="display:none">
+    <div class="chk-hero-img" id="chk-hero-img"><span class="chk-live"><i></i>CHECK-IN ABERTO</span><span class="chk-hero-emoji" id="chk-hero-emoji">📍</span></div>
+    <div class="chk-hero-body">
+      <div class="chk-hero-title" id="chk-hero-title">Check-in no local</div>
+      <div class="chk-hero-text" id="chk-hero-text"></div>
+      <input type="text" id="chk-q" placeholder="Seu telefone com DDD ou seu nome" oninput="chkSearch()" autocomplete="off">
+      <div id="chk-matches"></div>
+      <button class="btn btn-gold" id="chk-btn" onclick="chkDo()" style="display:none;margin-top:10px">📍 Fazer check-in</button>
+      <div id="chk-msg"></div>
+    </div>
+  </div>
   <div id="race-board" style="display:none"></div>
   <div id="pairs-public" style="display:none"></div>
   <div class="results-board" id="stations-board" style="display:none"><div class="section-label">📍 Estações · ao vivo</div><div id="stations-body"></div></div>
@@ -1107,15 +1140,6 @@ details.live-ctl .live-row-head .live-chip { display:none; }
       <a id="whatsapp-btn" href="#" target="_blank" class="whatsapp-event-btn" style="display:none">
         <span style="font-size:18px">💬</span> Dúvidas? Fale no WhatsApp
       </a>
-    </div>
-
-    <div class="chk-box" id="checkin-card" style="display:none;margin-top:16px">
-      <div class="chk-me-title">📍 CHECK-IN NO LOCAL</div>
-      <div class="field-hint" style="margin-bottom:10px;line-height:1.45">Chegou? Digite seu telefone (ou seu nome), escolha-se na lista e confirme. Precisa estar no local do evento, com o GPS ligado.</div>
-      <input type="text" id="chk-q" placeholder="Seu telefone com DDD ou seu nome" oninput="chkSearch()" autocomplete="off">
-      <div id="chk-matches"></div>
-      <button class="btn btn-gold" id="chk-btn" onclick="chkDo()" style="display:none;margin-top:10px">📍 Fazer check-in</button>
-      <div id="chk-msg"></div>
     </div>
 
     <div id="event-form-wrap">
@@ -1877,18 +1901,27 @@ details.live-ctl .live-row-head .live-chip { display:none; }
           <hr class="divider">
           <div class="section-label">📍 Check-in dos atletas (GPS)</div>
           <div class="field-group" style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px">
-            <div style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:10px">Quando as inscrições estiverem encerradas, aparece o botão de check-in na tela de inscrição. O atleta só consegue confirmar se estiver dentro do raio do local. Os presentes aparecem no link de resultados (dupla fica verde quando os dois chegam).</div>
+            <button class="live-btn" id="chk-on-btn" onclick="chkToggleOn()" style="width:100%;margin-bottom:6px">Check-in desativado</button>
+            <div style="font-size:11.5px;color:var(--muted);line-height:1.45;margin-bottom:12px">Ativo = o card de check-in aparece no <b>topo</b> da tela do evento. O atleta só confirma dentro do raio do local; quem faz check-in recebe presença automática.</div>
+            <label class="field-label">Título da mensagem</label>
+            <input type="text" id="chk-cfg-title" placeholder="Ex: Chegou? Faça seu check-in!" maxlength="60">
+            <label class="field-label" style="margin-top:10px">Texto</label>
+            <textarea id="chk-cfg-text" rows="3" maxlength="400" placeholder="Ex: Confirme sua presença para liberar sua largada. Ative o GPS e fique perto da arena." style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical"></textarea>
+            <label class="field-label" style="margin-top:10px">Imagem</label>
+            <input type="file" id="chk-cfg-img" accept="image/*" onchange="chkImgPick(event)" style="width:100%;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text)">
+            <div id="chk-img-prev" style="margin-top:8px"></div>
+            <label class="field-label" style="margin-top:12px">Local e raio</label>
             <div style="display:flex;gap:8px"><input type="text" id="chk-cfg-lat" inputmode="decimal" placeholder="Latitude"><input type="text" id="chk-cfg-lng" inputmode="decimal" placeholder="Longitude"></div>
             <input type="text" id="chk-cfg-r" inputmode="numeric" placeholder="Raio em metros (ex: 150)" style="margin-top:8px">
             <div style="display:flex;gap:8px;margin-top:8px">
               <button class="btn-sm" style="flex:1;padding:10px" onclick="chkCfgHere()">📍 Usar minha localização</button>
-              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkCfgSave()">💾 Salvar</button>
+              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkCfgSave()">💾 Salvar tudo</button>
             </div>
             <div class="section-label" style="margin-top:16px">✅ Presentes (<span id="chk-adm-n">0</span>)</div>
-            <div id="chk-adm-list" style="max-height:300px;overflow:auto"></div>
+            <div id="chk-adm-list" style="max-height:230px;overflow:auto"></div>
             <div style="display:flex;gap:8px;margin-top:8px">
-              <button class="btn-sm" style="flex:1;padding:10px" onclick="chkAdminRender(true)">🔄 Atualizar</button>
-              <button class="btn-sm-danger" style="flex:1;padding:10px" onclick="chkClearAll()">🧹 Limpar check-ins</button>
+              <button class="btn-sm" style="flex:1;padding:8px" onclick="chkAdminRender(false)">🔄 Atualizar</button>
+              <button class="btn-sm-danger" style="flex:1;padding:8px" onclick="chkClearAll()">🧹 Limpar check-ins</button>
             </div>
           </div>
           <div class="section-label">🔗 Links do evento</div>
@@ -4295,7 +4328,7 @@ async function renderEventPublicView() {
     formWrap.style.display = '';
     if (jumpBtn) jumpBtn.style.display = 'block';
   }
-  try { chkRenderCard(info, !!(isClosed || isFull)); raceBoardRefresh(true); } catch (e) { console.error(e); }
+  try { chkRenderCard(info); raceBoardRefresh(true); } catch (e) { console.error(e); }
 
   // Controla se o botão "Visitante" fica disponível — só quando o admin liberou
   // essa opção especificamente pra este evento (padrão: liberado, se não configurado)
@@ -8929,7 +8962,7 @@ async function chkLoadChecks(info) {
   const m = {};
   if (info && info.id) {
     const { data } = await sb.from('app_settings').select('key,value').like('key', 'chk:' + info.id + ':%').limit(3000);
-    (data || []).forEach(x => { const id = String(x.key).split(':').pop(); try { m[id] = JSON.parse(x.value); } catch (e) {} });
+    (data || []).forEach(x => { const id = String(x.key).split(':').pop(); try { const v = JSON.parse(x.value); if (v && !v.off) m[id] = v; } catch (e) {} });
   }
   RACE.checks = m;
 }
@@ -8992,12 +9025,15 @@ function chkStats(info) {
 function chkHasData(info) { return !!((RACE.cfg && RACE.cfg.lat != null) || Object.keys(RACE.checks).length); }
 function chkListHtml(info) {
   if (!chkHasData(info)) return '';
-  const s = chkStats(info);
+  const s = chkStats(info), byName = (x, y) => x.a.name.localeCompare(y.a.name);
   const head = `📍 Check-in no local · ${s.present.length} presente${s.present.length === 1 ? '' : 's'}` + (s.pairs.length ? ` · 👥 ${s.full}/${s.pairs.length} dupla${s.pairs.length === 1 ? '' : 's'} completa${s.full === 1 ? '' : 's'}` : '');
-  const pairs = s.pairs.slice().sort((x, y) => (y.full - x.full) || x.a.name.localeCompare(y.a.name)).map(p =>
-    `<div class="chk-pair ${p.full ? 'full' : ''}"><div class="chk-ph">👥 DUPLA${info.is_dual ? ' · ' + tvEsc(liveName(info, p.k).replace(/^\S+\s/, '')) : ''} · ${p.full ? '✅ NO LOCAL' : 'AGUARDANDO'}</div>${chkPerson(p.a)}${chkPerson(p.b)}</div>`).join('');
+  const fullP = s.pairs.filter(p => p.full).sort(byName), partial = s.pairs.filter(p => !p.full).sort(byName);
+  const mini = fullP.map(p => `<div class="chk-mini">✅ <b>${tvEsc(p.a.name)}</b> + <b>${tvEsc(p.b.name)}</b></div>`).join('');
+  const part = partial.map(p => `<div class="chk-pair"><div class="chk-ph">👥 DUPLA${info.is_dual ? ' · ' + tvEsc(liveName(info, p.k).replace(/^\S+\s/, '')) : ''} · AGUARDANDO</div>${chkPerson(p.a)}${chkPerson(p.b)}</div>`).join('');
   const solo = s.present.filter(r => !s.used.has(String(r.id))).sort((x, y) => x.name.localeCompare(y.name)).map(chkPerson).join('');
-  const body = pairs + (solo ? (pairs ? '<div class="chk-sub">PRESENTES</div>' : '') + solo : '');
+  const body = (mini ? `<div class="chk-sub">DUPLAS COMPLETAS · ${fullP.length}</div>${mini}` : '')
+    + (part ? `<div class="chk-sub">DUPLAS A COMPLETAR</div>${part}` : '')
+    + (solo ? `<div class="chk-sub">PRESENTES</div>${solo}` : '');
   return `<details class="chk-box" ${RACE.chkOpen !== false ? 'open' : ''} ontoggle="RACE.chkOpen=this.open"><summary>${head}</summary>${body || '<div style="font-size:12px;color:var(--muted);margin-top:8px">Ninguém fez check-in ainda.</div>'}</details>`;
 }
 
@@ -9032,14 +9068,22 @@ function raceTick() {
 setInterval(raceTick, 1000);
 setInterval(() => { if (!document.hidden) raceBoardRefresh(); }, 6000);
 
-// ── Check-in do atleta (tela de inscrição, quando as inscrições encerram) ──
-function chkRenderCard(info, closed) {
+// ── Check-in do atleta (card no TOPO da tela do evento, quando ativo) ──
+const chkActive = cfg => !!(cfg && cfg.lat != null && cfg.on !== false);
+async function chkRenderCard(info) {
   const el = document.getElementById('checkin-card'); if (!el) return;
-  if (!info || !info.id || !closed) { el.style.display = 'none'; return; }
-  getSetting('checkin_cfg:' + info.id, null).then(cfg => {
-    RACE.cfg = cfg;
-    el.style.display = (cfg && cfg.lat != null) ? '' : 'none';
-  }).catch(() => {});
+  if (!info || !info.id) { el.style.display = 'none'; return; }
+  try {
+    const cfg = await getSetting('checkin_cfg:' + info.id, null); RACE.cfg = cfg;
+    if (!chkActive(cfg)) { el.style.display = 'none'; return; }
+    if (!RACE.img || RACE.img.id !== info.id) RACE.img = { id: info.id, v: String((await getSetting('checkin_img:' + info.id, '')) || '') };
+    document.getElementById('chk-hero-title').textContent = cfg.title || 'Check-in no local';
+    document.getElementById('chk-hero-text').textContent = cfg.text || 'Chegou ao local? Confirme sua presença com o GPS.';
+    const box = document.getElementById('chk-hero-img'); const old = box.querySelector('img'); if (old) old.remove();
+    document.getElementById('chk-hero-emoji').style.display = RACE.img.v ? 'none' : '';
+    if (RACE.img.v) { const im = document.createElement('img'); im.alt = ''; im.src = RACE.img.v; box.insertBefore(im, box.firstChild); }
+    el.style.display = '';
+  } catch (e) { console.error(e); }
 }
 function chkSearch() {
   const info = RACE.info || EVENT_INFO; if (!info) return;
@@ -9068,12 +9112,32 @@ function chkPartnerOf(info, r) {
   }
   return null;
 }
+// Presença automática: marca como presente nas provas em que a pessoa está inscrita (mesmo fluxo do botão de presença: pontos, emblema, faltante)
+async function chkSetAttend(r, info, on, onlySubs) {
+  const subs = [];
+  if (info.is_dual) {
+    const n1 = info.sub1_name || 'Evento 1', n2 = info.sub2_name || 'Evento 2';
+    if (evRegInSub(r, n1, n2)) subs.push('1');
+    if (evRegInSub(r, n2, n1)) subs.push('2');
+  } else subs.push('');
+  const done = [], cur = () => EVENT_REGISTRATIONS.find(x => x.id === r.id) || r;
+  if (!EVENT_INFO) EVENT_INFO = info;
+  for (const s of subs) {
+    if (onlySubs && !onlySubs.includes(s)) continue;
+    const f = 'attended' + (s ? '_' + s : '');
+    try {
+      if (on && cur()[f] !== true) { await toggleAttendance(r.id, true, s || undefined); if (cur()[f] === true) done.push(s); }
+      else if (!on && cur()[f] === true) { await toggleAttendance(r.id, null, s || undefined); done.push(s); }
+    } catch (e) { console.error('presença automática', e); }
+  }
+  return done;
+}
 async function chkDo() {
   const msg = document.getElementById('chk-msg'), btn = document.getElementById('chk-btn');
   const say = (t, c) => { msg.textContent = t; msg.style.color = c || 'var(--red)'; };
   await raceBoardRefresh(true);
   const info = RACE.info, cfg = RACE.cfg;
-  if (!info || !cfg || cfg.lat == null) return say('⚠️ O check-in ainda não foi configurado pela organização');
+  if (!info || !chkActive(cfg)) return say('⚠️ O check-in não está ativo no momento');
   const r = chkRegs(info).find(x => String(x.id) === RACE.pick);
   if (!r) return say('⚠️ Escolha o seu nome na lista');
   const par = chkPartnerOf(info, r);
@@ -9088,15 +9152,16 @@ async function chkDo() {
   if (acc > Math.max(80, rad * 1.5)) { btn.disabled = false; return say(`⚠️ GPS impreciso (±${Math.round(acc)} m). Tente de novo em céu aberto`); }
   if (d > rad + Math.min(acc, 30)) { btn.disabled = false; return say(`📍 Você está a ${Math.round(d)} m do local (limite ${rad} m). Chegue mais perto e tente de novo`); }
   const row = { t: new Date().toISOString(), d: Math.round(d), n: r.name };
-  const ok = await setSetting('chk:' + info.id + ':' + r.id, row);
-  btn.disabled = false;
-  if (!ok) return say('❌ Não foi possível registrar. Tente de novo');
+  if (!(await setSetting('chk:' + info.id + ':' + r.id, row))) { btn.disabled = false; return say('❌ Não foi possível registrar. Tente de novo'); }
   RACE.checks[String(r.id)] = row; raceRender();
-  say(`✅ Check-in feito, ${String(r.name).split(/\s+/)[0]}!` + parTxt(), 'var(--green)');
+  const att = await chkSetAttend(r, info, true);
+  if (att.length) { row.att = att; await setSetting('chk:' + info.id + ':' + r.id, row); }
+  btn.disabled = false;
+  say(`✅ Check-in feito, ${String(r.name).split(/\s+/)[0]}! Presença confirmada.` + parTxt(), 'var(--green)');
   if (navigator.vibrate) navigator.vibrate(120);
 }
 
-// ── Admin: local, raio e lista de presentes ──
+// ── Admin: ativar, mensagem, local e lista de presentes ──
 function chkCfgHere() {
   if (!navigator.geolocation) return toast('⚠️ Este aparelho não oferece localização');
   toast('📡 Buscando localização…');
@@ -9106,14 +9171,58 @@ function chkCfgHere() {
     toast(`📍 Ponto definido (precisão ±${Math.round(p.coords.accuracy)} m). Toque em Salvar.`);
   }, () => toast('⚠️ Permita a localização no navegador'), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 }
-async function chkCfgSave() {
+function chkImgPrev() {
+  const box = document.getElementById('chk-img-prev'); if (!box) return;
+  const v = RACE.imgDraft !== undefined ? RACE.imgDraft : ((RACE.img && RACE.img.v) || '');
+  box.innerHTML = v ? `<img src="${v}" style="width:100%;border-radius:12px;border:1px solid var(--border);display:block"><button class="btn-sm-danger" style="width:100%;padding:8px;margin-top:6px" onclick="chkImgClear()">✕ Remover imagem</button>` : '';
+}
+function chkImgClear() { RACE.imgDraft = ''; document.getElementById('chk-cfg-img').value = ''; chkImgPrev(); }
+function chkImgPick(ev) {
+  const f = ev.target.files && ev.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const sc = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      RACE.imgDraft = c.toDataURL('image/jpeg', 0.78); chkImgPrev();
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+}
+function chkOnBtn() {
+  const b = document.getElementById('chk-on-btn'); if (!b) return;
+  const on = chkActive(RACE.cfg);
+  b.textContent = on ? '🟢 Check-in ATIVO (toque para desativar)' : '⚪ Check-in desativado (toque para ativar)';
+  b.className = 'live-btn' + (on ? ' go' : '');
+}
+async function chkCfgSave(onlyToggle) {
   const info = await getEventInfo(); if (!info.id) return toast('⚠️ Salve o evento antes');
   const num = id => parseFloat(String(document.getElementById(id).value).replace(',', '.'));
-  const lat = num('chk-cfg-lat'), lng = num('chk-cfg-lng'), r = Math.round(num('chk-cfg-r'));
+  const cur = RACE.cfg || {};
+  let lat = num('chk-cfg-lat'), lng = num('chk-cfg-lng'), r = Math.round(num('chk-cfg-r'));
+  if (onlyToggle === true) { lat = cur.lat; lng = cur.lng; r = cur.r; }
   if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return toast('⚠️ Informe latitude e longitude (ou use “Usar minha localização”)');
   if (!(r >= 20)) return toast('⚠️ Raio mínimo: 20 metros');
-  if (!(await setSetting('checkin_cfg:' + info.id, { lat, lng, r }))) return;
-  RACE.cfg = { lat, lng, r }; toast('✅ Check-in configurado'); try { renderEventPublicView(); } catch (e) {}
+  const cfg = { ...cur, lat, lng, r };
+  if (onlyToggle !== true) { cfg.title = document.getElementById('chk-cfg-title').value.trim(); cfg.text = document.getElementById('chk-cfg-text').value.trim(); }
+  if (cfg.on === undefined && cur.lat == null) cfg.on = false;   // configuração nova começa desativada
+  if (!(await setSetting('checkin_cfg:' + info.id, cfg))) return;
+  RACE.cfg = cfg;
+  if (onlyToggle !== true && RACE.imgDraft !== undefined) {
+    if (await setSetting('checkin_img:' + info.id, RACE.imgDraft)) { RACE.img = { id: info.id, v: RACE.imgDraft }; RACE.imgDraft = undefined; }
+  }
+  chkOnBtn(); toast('✅ Check-in salvo'); try { renderEventPublicView(); } catch (e) {}
+}
+async function chkToggleOn() {
+  const info = await getEventInfo(); if (!info.id) return toast('⚠️ Salve o evento antes');
+  const cur = await getSetting('checkin_cfg:' + info.id, null);
+  if (!cur || cur.lat == null) return toast('⚠️ Defina o local e o raio e toque em “Salvar tudo” primeiro');
+  RACE.cfg = { ...cur, on: !chkActive(cur) };
+  if (!(await setSetting('checkin_cfg:' + info.id, RACE.cfg))) return;
+  chkOnBtn(); toast(RACE.cfg.on ? '🟢 Check-in ativo: card no topo da tela do evento' : '⚪ Check-in desativado'); try { renderEventPublicView(); } catch (e) {}
 }
 async function chkAdminRender(loadFields) {
   const list = document.getElementById('chk-adm-list'); if (!list) return;
@@ -9122,34 +9231,48 @@ async function chkAdminRender(loadFields) {
     if (!eventRegLoaded) await loadEventRegistrations();
     await chkLoadChecks(info);
     const cfg = await getSetting('checkin_cfg:' + info.id, null); RACE.cfg = cfg;
-    if (cfg && (loadFields !== false)) {
-      const set = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
-      set('chk-cfg-lat', cfg.lat); set('chk-cfg-lng', cfg.lng); set('chk-cfg-r', cfg.r);
+    if (!RACE.img || RACE.img.id !== info.id) RACE.img = { id: info.id, v: String((await getSetting('checkin_img:' + info.id, '')) || '') };
+    if (loadFields !== false) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v == null ? '' : v; };
+      if (cfg) { set('chk-cfg-lat', cfg.lat); set('chk-cfg-lng', cfg.lng); set('chk-cfg-r', cfg.r); set('chk-cfg-title', cfg.title); set('chk-cfg-text', cfg.text); }
+      RACE.imgDraft = undefined; chkImgPrev();
     }
+    chkOnBtn();
     const regs = chkRegs(info).slice().sort((a, b) => a.name.localeCompare(b.name));
     document.getElementById('chk-adm-n').textContent = regs.filter(r => RACE.checks[String(r.id)]).length + ' de ' + regs.length;
     list.innerHTML = regs.map(r => {
       const c = RACE.checks[String(r.id)];
-      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${c ? '✅' : '⚪'}</span><span style="flex:1;min-width:0;overflow-wrap:anywhere"><b>${tvEsc(r.name)}</b>${c ? `<br><small style="color:var(--muted)">${raceHM(c.t)}${c.manual ? ' · manual' : ' · a ' + c.d + ' m'}</small>` : ''}</span><button class="btn-sm" style="padding:6px 10px" onclick="chkAdminToggle('${r.id}')">${c ? 'Remover' : 'Marcar'}</button></div>`;
+      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border);font-size:11.5px;line-height:1.25"><span>${c ? '✅' : '⚪'}</span><span style="flex:1;min-width:0;overflow-wrap:anywhere"><b>${tvEsc(r.name)}</b>${c ? ` <span style="color:var(--muted);font-size:10px">${raceHM(c.t)}${c.manual ? ' · manual' : ' · ' + c.d + ' m'}</span>` : ''}</span><button class="btn-sm" style="padding:3px 8px;font-size:11px" onclick="chkAdminToggle('${r.id}')">${c ? 'Remover' : 'Marcar'}</button></div>`;
     }).join('') || '<div class="live-hint">Ninguém inscrito.</div>';
   } catch (e) { console.error(e); }
 }
 async function chkAdminToggle(id) {
-  const info = await getEventInfo(), key = 'chk:' + info.id + ':' + id;
-  if (RACE.checks[String(id)]) {
-    const { error } = await sb.from('app_settings').delete().eq('key', key);
-    if (error) { console.error(error); return toast('⚠️ Erro ao remover'); }
+  const info = await getEventInfo(), key = 'chk:' + info.id + ':' + id, r = EVENT_REGISTRATIONS.find(x => String(x.id) === String(id));
+  const cur = RACE.checks[String(id)];
+  if (cur) {
+    // "apaga" gravando uma marca de remoção (o banco pode não permitir DELETE em app_settings)
+    if (!(await setSetting(key, { off: true, t: new Date().toISOString() }))) return;
+    if (r && cur.att && cur.att.length) await chkSetAttend(r, info, false, cur.att);
+    delete RACE.checks[String(id)];
   } else {
-    const r = EVENT_REGISTRATIONS.find(x => String(x.id) === String(id));
-    if (!(await setSetting(key, { t: new Date().toISOString(), d: 0, n: r ? r.name : '', manual: true }))) return;
+    const row = { t: new Date().toISOString(), d: 0, n: r ? r.name : '', manual: true };
+    if (!(await setSetting(key, row))) return;
+    if (r) { const att = await chkSetAttend(r, info, true); if (att.length) { row.att = att; await setSetting(key, row); } }
+    RACE.checks[String(id)] = row;
   }
   await chkAdminRender(false);
 }
 async function chkClearAll() {
   const info = await getEventInfo(); if (!info.id) return;
-  if (!confirm('Apagar TODOS os check-ins deste evento?')) return;
-  const { error } = await sb.from('app_settings').delete().like('key', 'chk:' + info.id + ':%');
-  if (error) { console.error(error); return toast('⚠️ Erro ao limpar'); }
+  const ids = Object.keys(RACE.checks);
+  if (!ids.length) return toast('ℹ️ Não há check-ins');
+  if (!confirm('Apagar TODOS os check-ins deste evento?\n\nA presença que foi marcada automaticamente por eles também será desfeita.')) return;
+  toast('🧹 Limpando…');
+  for (const id of ids) {
+    const cur = RACE.checks[id], r = EVENT_REGISTRATIONS.find(x => String(x.id) === String(id));
+    await setSetting('chk:' + info.id + ':' + id, { off: true, t: new Date().toISOString() });
+    if (r && cur.att && cur.att.length) await chkSetAttend(r, info, false, cur.att);
+  }
   RACE.checks = {}; toast('🧹 Check-ins apagados'); chkAdminRender(false);
 }
 (function () {
