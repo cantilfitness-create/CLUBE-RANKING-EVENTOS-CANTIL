@@ -838,6 +838,15 @@ details.live-ctl .live-row-head .live-chip { display:none; }
 .chk-t{font-size:10px}
 .chk-sub{font-size:10px;margin-top:8px}
 .chk-mini{font-size:10.5px;line-height:1.35;padding:3px 8px;margin-top:3px;border-radius:8px;border:1px solid rgba(61,232,154,.45);background:rgba(61,232,154,.10);color:var(--green);overflow-wrap:anywhere}
+
+/* pré-duplas: lista bem pequena em 3 colunas */
+.pp-box{margin:0 0 10px;padding:7px 9px;border:1px solid var(--border);border-radius:12px;background:var(--s1)}
+.pp-t{font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px;font-weight:700}
+.pp-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px 8px}
+.pp-i{min-width:0;line-height:1.15;padding:2px 0}
+.pp-i b{display:block;font-size:9.5px;font-weight:800;letter-spacing:.2px;overflow-wrap:anywhere}
+.pp-i small{display:block;font-size:7.5px;color:var(--muted);letter-spacing:.4px}
+.pp-sub{grid-column:1/-1;font-size:8.5px;letter-spacing:1px;color:var(--accent);margin:4px 0 0}
 </style>
 </head>
 <body>
@@ -5819,17 +5828,25 @@ async function renderPairsPublic() {
     const list = pairList(info, sub).map(p => {
       const a = EVENT_REGISTRATIONS.find(r => r.id === p.a), b = EVENT_REGISTRATIONS.find(r => r.id === p.b); if (!a || !b) return '';
       const lv = r => levelColor(r.fitness_level).name.toUpperCase();
-      return `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</div>
-        <div style="font-size:10px;color:var(--muted);letter-spacing:.5px">NÍVEL: ${tvEsc(p.cat || 'A DEFINIR')}</div></div>`;
+      return `<div class="pp-i"><b>${tvEsc(pairFirst(a))} / ${tvEsc(pairFirst(b))}</b><small>${tvEsc(p.cat || 'A DEFINIR')}</small></div>`;
     }).filter(Boolean);
     const solos = soloList(info, sub).map(id => EVENT_REGISTRATIONS.find(r => r.id === id)).filter(Boolean).map(a =>
-      `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-weight:800;font-size:12px;letter-spacing:.5px">${tvEsc(pairFirst(a))}</div><div style="font-size:10px;color:var(--muted);letter-spacing:.5px">INDIVIDUAL · SEM DUPLA</div></div>`);
+      `<div class="pp-i"><b>${tvEsc(pairFirst(a))}</b><small>INDIVIDUAL</small></div>`);
     if (!list.length && !solos.length) return;
-    h += (info.is_dual ? `<div style="font-size:10px;letter-spacing:1px;color:var(--accent);margin:8px 0 2px">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('') + solos.join('');
+    h += (info.is_dual ? `<div class="pp-sub">${tvEsc((sub === '1' ? n1 : n2).toUpperCase())}</div>` : '') + list.join('') + solos.join('');
   });
   if (!h) { box.style.display = 'none'; return; }
   box.style.display = '';
-  box.innerHTML = `<div style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--s1)"><div style="font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">👥 DUPLAS PRÉ-CONFIRMADAS</div>${h}</div>`;
+  box.innerHTML = `<div class="pp-box"><div class="pp-t">👥 DUPLAS PRÉ-CONFIRMADAS</div><div class="pp-g">${h}</div></div>`;
+  // inscrições abertas: lista pequena no topo (não atrapalha ler o evento e se inscrever). Inscrições encerradas: desce para o fim da tela
+  try {
+    const view = document.getElementById('view-evento'), fw = document.getElementById('event-form-wrap');
+    const regClosed = !!(fw && fw.style.display === 'none');
+    if (view) {
+      if (regClosed) { if (view.lastElementChild !== box) view.appendChild(box); }
+      else { const ref = document.getElementById('stations-board'); if (ref && box.nextElementSibling !== ref) view.insertBefore(box, ref); }
+    }
+  } catch (e) {}
 }
 (function () { const _v = renderEventPublicView; renderEventPublicView = async function () { const r = await _v.apply(this, arguments); try { await renderPairsPublic(); } catch (e) { console.error(e); } return r; }; })();
 
