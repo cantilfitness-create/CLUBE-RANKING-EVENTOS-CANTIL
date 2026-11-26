@@ -6761,7 +6761,33 @@ async function printEventReport(subKey) {
   if (hasCustomQ) cols.push({ h: info.custom_question_label, f: r => esc(r.custom_answer || '—') });
 
   const headerCols = cols.map(c => `<th>${esc(c.h)}</th>`).join('');
-  const rows = regs.map((r, i) => `<tr>${cols.map(c => `<td>${c.f(r, i)}</td>`).join('')}</tr>`).join('');
+  // três ordens: A–Z, por nº de inscrição (pulseira) e por duplas
+  const trOf = (r, i) => `<tr>${cols.map(c => `<td>${c.f(r, i)}</td>`).join('')}</tr>`;
+  const bnum = r => { const raw = bibOf(r, bibSub), b = Number(raw); return raw != null && isFinite(b) ? b : Infinity; };
+  const byNum = (a, b) => (bnum(a) - bnum(b)) || (a.id - b.id);
+  const rowsAZ = regs.map((r, i) => trOf(r, i)).join('');
+  const rowsNum = regs.slice().sort(byNum).map((r, i) => trOf(r, i)).join('');
+  let rowsDup = '';
+  try {
+    await loadPairs(info);
+    if (pairsOn(info, bibSub)) {
+      const byId = {}; regs.forEach(r => { byId[r.id] = r; });
+      const used = new Set(), span = cols.length; let n = 0, k = 0;
+      const prs = pairList(info, bibSub).map(p => ({ p, m: [byId[p.a], byId[p.b]].filter(Boolean).sort(byNum) })).filter(x => x.m.length);
+      prs.sort((x, y) => byNum(x.m[0], y.m[0]));
+      prs.forEach(x => {
+        k++; x.m.forEach(r => used.add(r.id));
+        const cat = x.p.cat && x.p.cat !== 'A DEFINIR' ? ' · ' + esc(x.p.cat) : '';
+        rowsDup += `<tr class="grp"><td colspan="${span}">DUPLA ${k} — ${x.m.map(r => esc(r.name)).join(' / ')}${cat}</td></tr>` + x.m.map(r => trOf(r, n++)).join('');
+      });
+      const lone = regs.filter(r => !used.has(r.id)).sort(byNum);
+      if (lone.length) rowsDup += `<tr class="grp lone"><td colspan="${span}">INDIVIDUAIS / SEM DUPLA (${lone.length})</td></tr>` + lone.map(r => trOf(r, n++)).join('');
+    }
+  } catch (e) { console.error(e); }
+  const hasPairsRep = !!rowsDup;
+  let ordPre = 'az'; try { ordPre = localStorage.getItem('rep_order') || 'az'; } catch (e) {}
+  if (ordPre === 'dup' && !hasPairsRep) ordPre = 'az';
+  if (ordPre !== 'az' && ordPre !== 'num' && ordPre !== 'dup') ordPre = 'az';
   const now = new Date();
   const gerado = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -6786,7 +6812,10 @@ async function printEventReport(subKey) {
       .bar-t{font-weight:bold;margin-bottom:6px}
       .bar label{display:inline-block;margin:0 12px 4px 0;cursor:pointer}
       .bar button{margin:4px 8px 0 0;padding:5px 10px;font-size:12px}
-      @media print{ button,.bar{display:none} body{padding:0} }
+      table tr.grp>td{display:table-cell !important;background:#dfe7fb !important;font-weight:bold;font-size:12px}
+      table tr.grp.lone>td{background:#e6e6e6 !important}
+      .ord{margin:6px 0 2px}
+      @media print{ button,.bar{display:none} body{padding:0} tr{break-inside:avoid} tr.grp{break-after:avoid} }
     </style></head>
     <body>
       <h1>${esc(mine)}</h1>
@@ -6799,11 +6828,17 @@ async function printEventReport(subKey) {
       </div>
       <div class="lv">${levelsTxt}</div>
       <div class="bar"><div class="bar-t">Colunas do documento (impressão e PDF)</div><div id="collist"></div>
+        <div class="bar-t ord">Ordem da lista</div>
+        <label><input type="radio" name="ord" value="az"> A–Z (nome)</label>
+        <label><input type="radio" name="ord" value="num"> Nº de inscrição</label>
+        ${hasPairsRep ? '<label><input type="radio" name="ord" value="dup"> Por duplas</label>' : ''}<br>
         <button onclick="colAll()">Mostrar tudo</button><button onclick="colPrivacy()">🔒 Ocultar dados pessoais (telefone, idade, como soube)</button></div>
       <style id="colstyle"></style>
       <table>
         <thead><tr>${headerCols}</tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody id="tb-az" style="${ordPre === 'az' ? '' : 'display:none'}">${rowsAZ}</tbody>
+        <tbody id="tb-num" style="${ordPre === 'num' ? '' : 'display:none'}">${rowsNum}</tbody>
+        ${hasPairsRep ? `<tbody id="tb-dup" style="${ordPre === 'dup' ? '' : 'display:none'}">${rowsDup}</tbody>` : ''}
       </table>
       <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;font-size:14px">🖨️ Imprimir / Salvar como PDF</button>
       <script>
@@ -6821,6 +6856,15 @@ async function printEventReport(subKey) {
           cb.onchange=function(){ if(cb.checked) delete hidden[lab]; else hidden[lab]=1; apply(); }; l.appendChild(cb); l.appendChild(document.createTextNode(' '+lab)); list.appendChild(l); });
         window.colAll=function(){ hidden={}; apply(); };
         window.colPrivacy=function(){ PERSONAL.forEach(function(l){hidden[l]=1;}); apply(); };
+        var HASBIB=${hasBib ? 'true' : 'false'}, ORD='${ordPre}';
+        function setOrd(v,user){
+          ['az','num','dup'].forEach(function(k){ var t=document.getElementById('tb-'+k); if(t) t.style.display=(k===v)?'':'none'; });
+          [].slice.call(document.querySelectorAll('input[name=ord]')).forEach(function(r){ r.checked=(r.value===v); });
+          if(user && v!=='az' && HASBIB){ delete hidden['Pulseira']; apply(); }
+          try{ window.opener.localStorage.setItem('rep_order',v); }catch(e){}
+        }
+        [].slice.call(document.querySelectorAll('input[name=ord]')).forEach(function(r){ r.onchange=function(){ setOrd(r.value,true); }; });
+        setOrd(ORD,false);
         apply();
       })();
       <\/script>
