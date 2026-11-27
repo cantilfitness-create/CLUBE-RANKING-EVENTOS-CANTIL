@@ -8682,6 +8682,15 @@ function stProg(info, key, arr, cfg) {
   const fin = n >= cfg.count && (lastOnly || !!STATION_DONE[key]);
   return { n, done: fin ? cfg.count : Math.max(0, n - 1), fin, wait: !fin && n > 0 };
 }
+// Progresso em passos. Modo "corrida no início": cada corrida validada conta 1 passo e cada exercício concluído (feito quando a corrida seguinte é registrada) conta 1.
+// Com "última estação é só a corrida": total = N corridas + (N-1) exercícios, e a validação da última corrida já fecha 100%.
+function stUnits(info, arr, cfg, pr) {
+  if (!(info && info.stations_run_first)) return { done: pr.done, total: cfg.count };
+  const lastOnly = info.stations_last_run_only !== false, total = lastOnly ? 2 * cfg.count - 1 : 2 * cfg.count;
+  const runs = Math.min((arr || []).length, cfg.count);
+  const ex = pr.fin ? (lastOnly ? cfg.count - 1 : cfg.count) : Math.max(0, runs - 1);
+  return { done: Math.min(total, runs + ex), total };
+}
 const ST_LEVELS = [['Iniciante', 'I'], ['Intermediário', 'M'], ['Avançado', 'A']];
 // Estação = km + exercício funcional. Cada nível (cor) tem seu nº de estações, km e exercício.
 function stCfg(info, level) {
@@ -8710,7 +8719,8 @@ function stRowSummary(r, sfx) {
   if (!arr.length) return `<div class="lv-sv" style="color:var(--muted)">📍 Estação 0/${cfg.count} · aguardando</div>`;
   const pr = stProg(info, key, arr, cfg), km = stKm(stTotal(arr.slice(0, pr.done)));
   const wait = pr.wait ? `${pr.done ? ' · ' : ''}⏳ exercício ${pr.n} em andamento` : '';
-  return `<div class="lv-sv">📍 Estação ${pr.done}/${cfg.count}${pr.done ? ' · ' + km + ' km' : ''}${pr.fin ? ' · 🏁 COMPLETO' : ''}${wait}</div>`;
+  const runTxt = info && info.stations_run_first && !pr.fin ? `🏃 ${stKm(stTotal(arr))}K completado${stPairFor(r) ? ' com a dupla' : ''} · ` : '';
+  return `<div class="lv-sv">${runTxt}📍 Estação ${pr.done}/${cfg.count}${pr.done ? ' · ' + km + ' km' : ''}${pr.fin ? ' · 🏁 COMPLETO' : ''}${wait}</div>`;
 }
 function stRowBtn(r, sfx) {
   const info = EVENT_INFO, cfg = stCfgReg(info, r), key = r.id + (sfx || ''), arr = STATION_LOG[key] || [], n = arr.length;
@@ -8896,13 +8906,13 @@ function stationRows(info) {
   EVENT_REGISTRATIONS.filter(r => r.event_id === info.id).forEach(r => sfxs.forEach(sfx => {
     const arr = STATION_LOG[r.id + sfx], cfg = stCfgReg(info, r); if (!(arr && arr.length && cfg.count)) return;
     const sub = info.is_dual ? sfx.replace('_', '') : '0';
-    let rr = r, finalT = String(r['result_value' + sfx] || '');
+    let rr = r, finalT = String(r['result_value' + sfx] || ''), hasPair = false;
     if (pairsOn(info, sub === '0' ? '1' : sub)) {                      // dupla: uma linha só, com os dois nomes
       const p = pairOf(info, sub === '0' ? '1' : sub, r.id);
-      if (p) { if (p.b === r.id) return; const b = EVENT_REGISTRATIONS.find(x => x.id === p.b); if (b) { rr = { ...r, name: pairFirst(r) + ' / ' + pairFirst(b) }; if (!finalT) finalT = String(b['result_value' + sfx] || ''); } }
+      if (p) { if (p.b === r.id) return; const b = EVENT_REGISTRATIONS.find(x => x.id === p.b); if (b) { hasPair = true; rr = { ...r, name: pairFirst(r) + ' / ' + pairFirst(b) }; if (!finalT) finalT = String(b['result_value' + sfx] || ''); } }
     }
     const pr = stProg(info, r.id + sfx, arr, cfg);
-    rows.push({ r: rr, sfx, arr, cfg, n: pr.done, runs: arr.length, fin: pr.fin, wait: pr.wait, final: finalT, tot: stTotal(arr.slice(0, pr.done)) });
+    rows.push({ r: rr, sfx, arr, cfg, n: pr.done, runs: arr.length, fin: pr.fin, wait: pr.wait, final: finalT, pair: hasPair, u: stUnits(info, arr, cfg, pr), tot: stTotal(arr.slice(0, cfg.count)) });
   }));
   rows.sort((a, b) => (b.n - a.n) || (b.runs - a.runs) || (b.tot - a.tot) || a.r.name.localeCompare(b.r.name, 'pt-BR'));
   return { rows };
@@ -8911,14 +8921,15 @@ function stRowText(x, _unused, info) {
   const cfg = x.cfg;
   const sub = info.is_dual && x.sfx ? ' · ' + (x.sfx === '_2' ? (info.sub2_name || 'Evento 2') : (info.sub1_name || 'Evento 1')) : '';
   const done = x.fin !== undefined ? x.fin : x.n >= cfg.count;
-  const wait = x.wait ? `${x.n ? ' · ' : ''}⏳ exercício ${x.n + 1} em andamento` : '';
+  const wait = x.wait ? ` · ⏳ exercício ${x.n + 1} em andamento` : '';
   const last = x.n > 0 ? x.arr[x.n - 1] : null;
-  return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${cfg.count} estações` : (x.n > 0 ? `📍 Estação ${x.n}/${cfg.count} · ${stKm(+last.km)} km COMPLETO${last.v ? ' ✔' : ''}${wait}` : `📍 Estação 0/${cfg.count}${wait}`) };
+  const runTxt = info && info.stations_run_first && x.arr.length && !done ? `🏃 <b>${stKm(x.tot)}K COMPLETAD${x.tot > 1 ? 'OS' : 'O'}${x.pair ? ' COM A DUPLA' : ''}</b><br>` : '';
+  return { sub, done, line: done ? `🏁 PROVA COMPLETA · ${cfg.count} estações` : runTxt + (x.n > 0 ? `📍 Estação ${x.n}/${cfg.count} · ${stKm(+last.km)} km COMPLETO${last.v ? ' ✔' : ''}${wait}` : `📍 Estação 0/${cfg.count}${wait}`) };
 }
 function tvStationsPanel(info) {
   const d = stationRows(info); if (!d || !d.rows.length) return '';
   const rows = d.rows.map(x => { const t = stRowText(x, null, info);
-    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.n, x.cfg.count)}</div></div><div class="tv-val">${stKm(x.tot)} km${x.final ? `<div class="tv-final">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
+    return `<div class="tv-row${t.done ? ' p1' : ''}"><div class="tv-who"><div class="tv-name">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div class="tv-note">${t.line}<br>${stDots(x.u.done, x.u.total)}</div></div><div class="tv-val">${stKm(x.tot)} km${x.final ? `<div class="tv-final">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
   return `<div class="tv-panel"><div class="tv-panel-title">📍 Estações · ao vivo</div><div class="tv-groups" style="grid-template-columns:minmax(0,1fr)"><div class="tv-group"><div class="tv-scroll">${rows}</div></div></div></div>`;
 }
 async function renderStationsBoard(info) {
@@ -8931,7 +8942,7 @@ async function renderStationsBoard(info) {
     const d = stationRows(info);
     if (!d || !d.rows.length) { box.style.display = 'none'; return; }
     document.getElementById('stations-body').innerHTML = d.rows.map(x => { const t = stRowText(x, null, info);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.n, x.cfg.count)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);text-align:right">${stKm(x.tot)} km${x.final ? `<div style="font-size:20px;color:var(--text)">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.done ? 'rgba(61,232,154,.5)' : 'var(--border)'};border-radius:12px;background:var(--s1);margin-bottom:8px"><div style="flex:1;min-width:0"><div style="font-weight:800">${stLvl(x.r).emoji} ${tvEsc(x.r.name)}${tvEsc(t.sub)}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${t.line}</div><div style="font-size:12px;margin-top:3px">${stDots(x.u.done, x.u.total)}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--accent);text-align:right">${stKm(x.tot)} km${x.final ? `<div style="font-size:20px;color:var(--text)">${/time\s*cap/i.test(x.final) ? '⏰' : '⏱'} ${tvEsc(x.final)}</div>` : ''}</div></div>`; }).join('');
     box.style.display = '';
   } catch (e) { console.error('estações', e); }
 }
