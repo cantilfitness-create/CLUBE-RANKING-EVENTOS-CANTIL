@@ -1020,6 +1020,13 @@ details.live-ctl .live-row-head .live-chip { display:none; }
             </div>
               </div>
             </details>
+            <details class="lv-more" id="lv-notes" ontoggle="if(this.open) lvNotesRender()">
+              <summary>📝 Detalhes do resultado (por dupla) — pode preencher depois de finalizar</summary>
+              <div style="margin-top:12px">
+                <input type="search" id="lvn-search" placeholder="🔎 Buscar dupla ou nome…" oninput="lvNotesFilter()" autocomplete="off" style="margin-bottom:6px">
+                <div id="lvn-list"></div>
+              </div>
+            </details>
             <div class="lv-snack" id="lv-snack" style="display:none"></div>
           </div>
     </div>
@@ -4015,7 +4022,7 @@ function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField, opts
     if (p) {
       used.add(p.a); used.add(p.b);
       const a = byId[p.a], b = byId[p.b], c = LV.find(l => l.cat === p.cat);
-      items.push({ names: [a, b].filter(Boolean).map(x => x.name), value: r[resultField], note: noteOf(r), pair: true, gk: c ? c.key : 'duplas', lv: c || null });
+      items.push({ names: [a, b].filter(Boolean).map(x => x.name), value: r[resultField], note: noteOf(r) || (a ? noteOf(a) : '') || (b ? noteOf(b) : ''), pair: true, gk: c ? c.key : 'duplas', lv: c || null });
     } else {
       used.add(r.id);
       const c = LV.find(l => l.key === (r.fitness_level || 'Iniciante')) || LV[0];
@@ -4032,20 +4039,21 @@ function renderResultsGroupsHtml(regs, resultType, groupDescs, resultField, opts
   const best = items.map(it => ({ it, s: secs(it) })).filter(x => x.s !== Infinity).sort((x, y) => x.s - y.s)[0];
   let html = `<div class="res-summary"><span>✅ <b>${items.length}</b> ${items.length && items.every(i => i.pair) ? 'duplas' : 'finalizaram'}</span>${best && isTime ? `<span>⚡ melhor tempo <b>${tvEsc(best.it.value)}</b></span>` : ''}${items.some(i => /time\s*cap/i.test(i.value)) ? `<span>⏰ ${items.filter(i => /time\s*cap/i.test(i.value)).length} no time cap</span>` : ''}</div>`;
   list.forEach(g => {
-    g.items.sort((x, y) => secs(x) - secs(y) || x.names[0].localeCompare(y.names[0], 'pt-BR'));
+    // colocação calculada pelo desempenho (empate = mesma posição); a lista é exibida em ordem alfabética
+    const rankOf = new Map(); { let rk = 0, pv = null; g.items.slice().sort((x, y) => secs(x) - secs(y)).forEach((it, idx) => { const sc = secs(it); if (sc !== Infinity) { if (pv === null || sc !== pv) rk = idx + 1; pv = sc; rankOf.set(it, rk); } }); }
+    g.items.sort((x, y) => x.names[0].localeCompare(y.names[0], 'pt-BR'));
     const desc = g.lv ? groupDescs[g.lv.key] : '';
     const base = g.lv ? (desc ? desc : `Grupo ${g.lv.name}`) : 'categoria a definir';
     const title = (g.pair ? 'Duplas · ' : '') + base;
     const emoji = g.lv ? g.lv.emoji : '👥';
     const gBest = g.items.find(it => secs(it) !== Infinity);
-    let rank = 0, prev = null;
     html += `<div class="results-group">
       <div class="results-group-title">${emoji} ${tvEsc(title)}<span class="res-count">${g.items.length}</span></div>
       <div class="results-list">
         <div class="results-header-row"><span>${g.pair ? '👥 DUPLA' : '👤 PARTICIPANTE'}</span><span>${isTime ? '⏱ TEMPO' : '🏆 RESULTADO'}</span></div>
         ${g.items.map((it, idx) => {
           const sc = secs(it), ok = sc !== Infinity, cap = /time\s*cap/i.test(it.value);
-          if (ok) { if (prev === null || sc !== prev) rank = idx + 1; prev = sc; }
+          const rank = rankOf.get(it) || 0;
           const medal = ok ? (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '') : '';
           const badge = ok ? (medal || `<span class="res-pos">${rank}º</span>`) : '<span class="res-pos">—</span>';
           const nm = it.names.map(n => tvEsc(n)).join('<span class="res-amp"> &amp; </span>');
@@ -7786,21 +7794,20 @@ function tvGroupsHtml(regs, type, descs, field, stacked) {
   ];
   const cols = [];
   order.forEach(g => {
-    const items = regs.filter(r => (r.fitness_level || 'Iniciante') === g.key)
-      .slice().sort((a, b) => TV_BYNAME ? a.name.localeCompare(b.name) : tvCompare(a, b, type, field));
+    const base = regs.filter(r => (r.fitness_level || 'Iniciante') === g.key);
+    const ranked = base.slice().sort((a, b) => tvCompare(a, b, type, field));
+    const rankOf = new Map(); { let rk = 0, pk = null; ranked.forEach((r, idx) => { const k = tvIsCap(r[field]) ? null : tvSortKey(r[field], type); if (k) { const ks = k.join('|'); if (ks !== pk) rk = idx + 1; pk = ks; rankOf.set(r, rk); } }); }
+    const items = TV_BYNAME ? base.slice().sort((a, b) => a.name.localeCompare(b.name)) : ranked;
     if (!items.length) return;
     const title = descs[g.key] ? descs[g.key] : `Grupo ${g.name}`;
-    let pos = 0;
     const rows = items.map(r => {
       const cap = tvIsCap(r[field]);
-      let posHtml = '', cls = '';
-      if (!TV_BYNAME) {
-        if (!cap && tvSortKey(r[field], type)) { pos++; posHtml = pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + 'º'; if (pos <= 3) cls = ' p' + pos; }
-        else posHtml = '–';
-      }
+      const pos = rankOf.get(r) || 0;
+      let posHtml = '–', cls = '';
+      if (pos) { posHtml = pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + 'º'; if (pos <= 3) cls = ' p' + pos; }
       const note = getResultNote(r, sfx);
       return `<div class="tv-row${cls}">
-        ${TV_BYNAME ? '' : `<div class="tv-pos">${posHtml}</div>`}
+        <div class="tv-pos">${posHtml}</div>
         <div class="tv-who"><div class="tv-name">${tvEsc(r.name)}</div>${note ? `<div class="tv-note">${tvEsc(note)}</div>` : ''}</div>
         <div class="tv-val${cap ? ' cap' : ''}">${tvEsc(r[field])}</div>
       </div>`;
@@ -9443,6 +9450,61 @@ async function chkClearAll() {
 (function () {
   const orig = admTab;
   admTab = async function (name) { const r = await orig.apply(this, arguments); if (name === 'evento') chkAdminRender(); return r; };
+})();
+
+// ── Detalhes do resultado por dupla/participante (ex.: "carregou 64 kg por 100 m no KTB") ──
+// Salvo em 'result_notes' para os DOIS da dupla, então aparece no quadro público e na TV. Pode ser editado a qualquer momento.
+let LVN_ITEMS = [], LVN_SFX = '';
+async function lvNotesRender() {
+  const box = document.getElementById('lvn-list'); if (!box) return;
+  box.innerHTML = '<div class="lv-hint">Carregando…</div>';
+  try {
+    const info = EVENT_INFO || await getEventInfo();
+    const sub = info.is_dual ? String(currentSubEventContext || '1') : '';
+    const sfx = sub ? '_' + sub : '', field = 'result_value' + sfx, psub = info.is_dual ? sub : '0';
+    await loadResultNotes();
+    try { await loadPairs(info); } catch (e) {}
+    const byId = {}; EVENT_REGISTRATIONS.forEach(r => { byId[r.id] = r; });
+    const regs = EVENT_REGISTRATIONS.filter(r => r.event_id === info.id && r[field]);
+    const used = new Set(), items = [];
+    regs.forEach(r => {
+      if (used.has(r.id)) return;
+      const p = pairsOn(info, psub) ? pairOf(info, psub, r.id) : null;
+      if (p) {
+        const ids = [p.a, p.b].filter(id => byId[id]); ids.forEach(id => used.add(id));
+        items.push({ ids, names: ids.map(id => byId[id].name), value: r[field], pair: true });
+      } else { used.add(r.id); items.push({ ids: [r.id], names: [r.name], value: r[field], pair: false }); }
+    });
+    items.sort((x, y) => x.names[0].localeCompare(y.names[0], 'pt-BR'));
+    LVN_ITEMS = items; LVN_SFX = sfx;
+    box.innerHTML = items.map((it, i) => {
+      const note = it.ids.map(id => RESULT_NOTES[id + sfx]).find(Boolean) || '';
+      return `<div class="lvn-it" data-n="${tvEsc(listaNorm(it.names.join(' ')))}" style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:13px"><span>${it.pair ? '👥 ' : ''}${it.names.map(tvEsc).join(' &amp; ')}</span><span style="color:var(--gold);white-space:nowrap">${tvEsc(it.value)}</span></div>
+        <textarea id="lvn-${i}" rows="2" maxlength="200" placeholder="ex: carregou 64 kg por 100 m no KTB" style="width:100%;margin-top:6px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;resize:vertical">${tvEsc(note)}</textarea>
+        <button class="btn-sm" id="lvn-b${i}" style="width:100%;padding:9px;margin-top:6px" onclick="lvNotesSave(${i})">💾 Salvar descrição</button>
+      </div>`;
+    }).join('') || '<div class="lv-hint">Nenhum resultado lançado ainda. Depois que a equipe finalizar, os resultados aparecem aqui.</div>';
+    lvNotesFilter();
+  } catch (e) { console.error(e); box.innerHTML = '<div class="lv-hint">Erro ao carregar. Tente de novo.</div>'; }
+}
+function lvNotesFilter() {
+  const q = listaNorm((document.getElementById('lvn-search') || {}).value || '');
+  document.querySelectorAll('#lvn-list .lvn-it').forEach(el => { el.style.display = !q || el.dataset.n.includes(q) ? '' : 'none'; });
+}
+async function lvNotesSave(i) {
+  const it = LVN_ITEMS[i], ta = document.getElementById('lvn-' + i), btn = document.getElementById('lvn-b' + i); if (!it || !ta) return;
+  const text = (ta.value || '').trim();
+  if (btn) btn.disabled = true;
+  await loadResultNotes();
+  it.ids.forEach(id => { const k = id + LVN_SFX; if (text) RESULT_NOTES[k] = text; else delete RESULT_NOTES[k]; });
+  const ok = await setSetting('result_notes', RESULT_NOTES);
+  if (btn) { btn.disabled = false; if (ok) { btn.textContent = '✅ Salvo'; setTimeout(() => { btn.textContent = '💾 Salvar descrição'; }, 1800); } }
+  if (ok) toast('✅ Descrição salva'); else toast('⚠️ Não foi possível salvar');
+}
+(function () {
+  const o = onSubEventContextChange;
+  onSubEventContextChange = function () { const r = o.apply(this, arguments); const d = document.getElementById('lv-notes'); if (d && d.open) lvNotesRender(); return r; };
 })();
 </script>
 <!-- EDITAR INSCRIÇÃO -->
